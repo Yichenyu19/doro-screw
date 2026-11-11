@@ -15,7 +15,7 @@
   },
   "mid": {
     "moves": 6,
-    "runId": "f39af37d-3cc9-47c8-ae89-0c92a4423889",
+    "runId": "fef3e2aa-c946-49f6-85b6-15eb3a43526d",
     "levelId": 2,
     "phase": "playing"
   },
@@ -26,13 +26,13 @@
     "viewPaused": true
   },
   "copy": {
-    "value": "D4-3-C-2-0-U8N7V",
+    "value": "D4-4-C-2-0-KMT1M",
     "selected": 16,
     "toast": "长按选中这段挑战码即可复制。"
   },
   "restored": {
     "moves": 6,
-    "runId": "f39af37d-3cc9-47c8-ae89-0c92a4423889",
+    "runId": "fef3e2aa-c946-49f6-85b6-15eb3a43526d",
     "levelId": 2,
     "phase": "playing"
   },
@@ -43,5 +43,5 @@
   "failed": [],
   "problems": [],
   "shots": "/tmp/doro-mapp-check",
-  "video": "/tmp/doro-mapp-check/page@c25c598f956e79745a941afbea20d248.webm"
+  "video": "/tmp/doro-mapp-check/page@90fc633cce5968b12699d4ce04068f16.webm"
 }

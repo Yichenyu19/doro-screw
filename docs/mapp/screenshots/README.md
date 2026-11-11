@@ -1,6 +1,6 @@
 # 本地 SDK mock 验收记录（不是 Linux DO 官方沙箱）
 
-视口 390×844，设备像素比 2，触控。脚本：`npm run check:mapp`。时间：2026-11-10 11:16 PM America/Ojinaga（UTC-6）。完整报告见同目录 `report.json`（`"sandbox": "local-mock-not-official"`，`"ok": true`）。
+视口 390×844，设备像素比 2，触控。脚本：`npm run check:mapp`。时间：2026-11-10 11:51 PM America/Ojinaga（UTC-6）。完整报告见同目录 `report.json`（`"sandbox": "local-mock-not-official"`，`"ok": true`）。
 
 这些画面顶部都有深色条幅「本地 SDK mock / 不是 Linux DO 官方沙箱」。**不能当作官方沙箱或提审截图。** 正式提审截图须由作者在 `/apps-sandbox/...` 实机重拍，见 [SUBMISSION-DRAFT.md](../SUBMISSION-DRAFT.md)。
 

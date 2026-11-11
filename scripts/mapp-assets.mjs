@@ -17,6 +17,14 @@ export async function listMappRuntimeFiles(root='.'){
   return [...files].sort();
 }
 
-export function campaignFiles(revision=3,count=10){
+export function campaignFiles(revision=4,count=8){
   return Array.from({length:count},(_,i)=>`campaign/r${revision}/level-${i+1}.json`);
+}
+
+export async function listMappSfxFiles(root='.'){
+  const {readdir}=await import('node:fs/promises');
+  const {join}=await import('node:path');
+  const dir=join(root,'public/sfx');
+  const names=(await readdir(dir)).filter(name=>name.endsWith('.ogg')).sort();
+  return names.map(name=>'sfx/'+name);
 }

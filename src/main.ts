@@ -195,7 +195,7 @@ async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,versi
     presenter=new PresentationDirector(save.settings,{render:()=>updateHUD(),screenPoint:point=>view?.screenPoint(point)??null,boxSound:()=>{audio.play('box');react(1);},arriveSound:()=>{const filled=Math.max(0,...(engine?.state.boxes.map(b=>b.screws.length)??[1]));audio.play('arrive',{tone:Math.min(2,Math.max(0,filled-1))});},refillSound:()=>audio.play('refill')});presenter.reset(active.snapshot());
     const mounted=await renderer.mountGame(document.querySelector<HTMLElement>('#game-canvas')!,active,save.settings,{onPick:pick,onBoard:meltBoard,onReveal:events=>{services.cancelHint();hintSequence++;presenter?.reset(active.snapshot());audio.play('reveal');showBoardTip('新的一层露出来了。先看当前盒色。');saveNow();},onAmbiguous:()=>{showBoardTip('两颗钉靠得太近，先放大再拆。');const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu)menu.hidden=false;},onBlocked:ids=>{audio.play('blocked');showBoardTip(ids.length?'先移开闪动的玻璃，再拆下面这颗。':'先等玻璃摆稳。');},onFall:()=>audio.play('fall'),onInvalid:()=>showBoardTip('这颗钉被挡住了，或者位置变了。'),onInspect:text=>{tickClock();inspecting=!!text;lastClockTime=performance.now();const panel=document.querySelector<HTMLElement>('#board-inspect');if(panel){panel.hidden=!text;panel.textContent=text??'';}},onCamera:zoom=>{const label=document.querySelector('#zoom-value');if(label)label.textContent=Math.round(zoom*100)+'%';presenter?.flush();}});
     if(token!==generation){mounted.destroy();return;}view=mounted;lastClockTime=performance.now();document.querySelector('#board-loading')?.remove();view.setPaused(document.hidden||!!modal);presenter.prepareLayout();saveNow();
-    if(active.state.phase==='stuck')showRescue();else updateTeaching();if(save.settings.sound)audio.unlock();
+    if(active.state.phase==='stuck'){audio.play('full');showRescue();}else updateTeaching();if(save.settings.sound)audio.unlock();
   }catch(error){if(token!==generation)return;openModal('error',`${doro(3,'dialog-doro')}<h2>这一局还没准备好</h2><p>盘面记录仍保留着。请重新加载；如果仍未完成，可以先保存退出。</p><p class="small-note">${escapeText(error instanceof Error?error.message:'资源暂时不可用')}。</p>${artButton('retry','重新加载',{icon:12})}${artButton('home','保存退出',{secondary:true})}`,{closable:false});}
 }
 
@@ -285,6 +285,7 @@ function runAction(action:Action):void {
   if(engine.state.phase==='won'){
     void (async()=>{await presenter?.whenIdle();await view?.whenSettled(1800);if(engine===active&&generation===token&&!modal)showWin();})();
   }else if(engine.state.phase==='stuck'){
+    audio.play('full');
     void (async()=>{await presenter?.whenIdle();if(engine===active&&generation===token&&engine.state.phase==='stuck'&&!modal)showRescue();})();
   }
 }
@@ -423,6 +424,7 @@ function showLevels():void {
 }
 
 function showAlbum():void {
+  audio.play('album');
   const nextArt=ARTWORKS.findIndex((art,index)=>save.artworkProgress[index]<art.columns*art.rows);
   openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong><small>完成第一关得到的小纪念。<br>与你填出的六幅画分别保存。</small></div></div>':''}<p class="small-note">${save.album.length===6?'六幅都齐了。还剩 '+save.materialBalance+' 颗材料，可以精修成绩，或开一局主题挑战。':'还有 '+save.materialBalance+' 颗材料。先填一小片，再把整幅画完成。'}</p><div class="album-grid">${ARTWORKS.map((art,index)=>{
     const unlocked=save.album.includes(art.id),amount=save.artworkProgress[index],total=art.columns*art.rows;
@@ -464,6 +466,7 @@ function rewindToLastSolvable():void {
   meltMode=false;view?.setMeltMode(false);view?.sync([],true);view?.setPaused(document.hidden);
   presenter?.reset(engine.snapshot());
   lastClockTime=performance.now();saveNow();updateTeaching();
+  audio.play('undo');
   toast(result.reason);
   if(engine.state.phase==='stuck')showRescue();
 }
@@ -472,6 +475,7 @@ function undo():void {
   if (!engine) return;services.cancelHint();hintSequence++;
   tickClock();
   if (!engine.undo()) {toast('还没有可以撤回的操作。');return;}
+  audio.play('undo');
   modal=null;
   modalHistory=[];modalReturn=null;lastDecision='';
   document.querySelector('#modal-root')!.innerHTML='';
@@ -549,7 +553,9 @@ function dispatchButton(button:HTMLElement):void {
   if (action==='close-modal'||action==='close-settings') {closeModal();return;}
   if (action==='sound') {
     save.settings.sound=!save.settings.sound;
-    applySettings();saveNow();updateHUD();return;
+    applySettings();saveNow();updateHUD();
+    if(save.settings.sound)audio.play('ui');
+    return;
   }
   if (action==='setting') {
     const key=button.dataset.key as keyof typeof save.settings;
@@ -557,7 +563,9 @@ function dispatchButton(button:HTMLElement):void {
     save.settings[key]=!save.settings[key];
     applySettings();saveNow();view?.sync([],true);updateHUD();
     button.setAttribute('aria-pressed',String(save.settings[key]));
-    button.querySelector('.setting-state')!.textContent=save.settings[key]?'开启':'关闭';return;
+    button.querySelector('.setting-state')!.textContent=save.settings[key]?'开启':'关闭';
+    if(key==='sound'&&save.settings.sound)audio.play('ui');
+    return;
   }
   if (!engine || !view) return;
   if (action==='undo' || action==='undo-rescue') {undo();return;}

@@ -140,7 +140,7 @@ function showHome():void {
   app.innerHTML=`<main class="home-screen">
     <img class="scene-backdrop" src="${assetUrl('backdrop.png')}" alt="" fetchpriority="high">
     <nav class="home-top"><span class="club-label">Doro · 打个螺丝</span><button class="icon-button" data-action="settings" aria-label="设置">${icon(save.settings.sound?5:6)}</button></nav>
-    <header class="home-title"><span class="eyebrow">第二关？这里不看广告。</span><h1><img class="home-logo" src="${assetUrl('logo.png')}" alt="DORO 打个螺丝" fetchpriority="high"></h1><p class="home-quantity">第一关先装满一盒。第二关是 120 颗的墙，过不去就用免费辅助。</p></header>
+    <header class="home-title"><span class="eyebrow">第二关？这里不看广告。</span><h1><img class="home-logo" src="${assetUrl('logo.png')}" alt="DORO 打个螺丝" fetchpriority="high"></h1><p class="home-quantity">第一关先装满一盒。第二关是墙。</p></header>
     <div class="home-character" aria-label="一只准备拆螺丝的 Doro">${doro(1,'home-doro')}${sprite('fx',2,'home-heart')}${sprite('heads',0,'floating-screw screw-one')}${sprite('heads',4,'floating-screw screw-two')}<span class="character-note">你先拆，我看着。</span></div>
     <section class="home-actions" aria-label="开始游戏">
       ${artButton(save.current?'continue':progress===CAMPAIGN_COUNT?'random-menu':'start',save.current?'继续拆！':progress===CAMPAIGN_COUNT?'来一局主题挑战':'开始拆！',{className:'start-button',icon:12})}
@@ -156,7 +156,7 @@ function showHome():void {
       </button>
       <button type="button" class="home-code text-tool" data-action="challenge">有挑战码？贴进来一起拆</button>
     </section>
-    <footer class="home-footer"><span>Doro · 打个螺丝 · 修订4 · 主线 ${progress} / ${CAMPAIGN_COUNT} · 辅助全免费</span><button data-action="save-status" data-save-status>已保存</button></footer>
+    <footer class="home-footer"><span>Doro · 打个螺丝 · 修订4 · ${progress} / ${CAMPAIGN_COUNT}</span><button data-action="save-status" data-save-status>已保存</button></footer>
   </main>${shellAccessories()}`;
   updateSaveStatus();
 }
@@ -194,7 +194,7 @@ async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,versi
     preloadFrames('heads',COLORS.map((_,i)=>i));
     if(!saved){save.attempts[key]=Math.max(save.attempts[key]??0,attempt+1);save.attemptCounter++;}
     presenter=new PresentationDirector(save.settings,{render:()=>updateHUD(),screenPoint:point=>view?.screenPoint(point)??null,boxSound:()=>{audio.play('box');react(1);},arriveSound:()=>{const filled=Math.max(0,...(engine?.state.boxes.map(b=>b.screws.length)??[1]));audio.play('arrive',{tone:Math.min(2,Math.max(0,filled-1))});},refillSound:()=>audio.play('refill')});presenter.reset(active.snapshot());
-    const mounted=await renderer.mountGame(document.querySelector<HTMLElement>('#game-canvas')!,active,save.settings,{onPick:pick,onBoard:meltBoard,onReveal:events=>{services.cancelHint();hintSequence++;presenter?.reset(active.snapshot());audio.play('reveal');showBoardTip('新的一层露出来了。先看当前盒色，再安排空孔。');saveNow();},onAmbiguous:()=>{showBoardTip('两颗钉离得很近，可以点视图放大后再拆。');const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu)menu.hidden=false;},onBlocked:ids=>{audio.play('blocked');showBoardTip(ids.length?'先移开正在闪动的玻璃，再拆下面这一颗。':'先等玻璃摆稳，看看露出的钉。');},onFall:()=>audio.play('fall'),onInvalid:()=>showBoardTip('这颗钉的位置或遮挡变了，重新看准再点。'),onInspect:text=>{tickClock();inspecting=!!text;lastClockTime=performance.now();const panel=document.querySelector<HTMLElement>('#board-inspect');if(panel){panel.hidden=!text;panel.textContent=text??'';}},onCamera:zoom=>{const label=document.querySelector('#zoom-value');if(label)label.textContent=Math.round(zoom*100)+'%';presenter?.flush();}});
+    const mounted=await renderer.mountGame(document.querySelector<HTMLElement>('#game-canvas')!,active,save.settings,{onPick:pick,onBoard:meltBoard,onReveal:events=>{services.cancelHint();hintSequence++;presenter?.reset(active.snapshot());audio.play('reveal');showBoardTip('新的一层露出来了。先看当前盒色。');saveNow();},onAmbiguous:()=>{showBoardTip('两颗钉靠得太近，先放大再拆。');const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu)menu.hidden=false;},onBlocked:ids=>{audio.play('blocked');showBoardTip(ids.length?'先移开闪动的玻璃，再拆下面这颗。':'先等玻璃摆稳。');},onFall:()=>audio.play('fall'),onInvalid:()=>showBoardTip('这颗钉被挡住了，或者位置变了。'),onInspect:text=>{tickClock();inspecting=!!text;lastClockTime=performance.now();const panel=document.querySelector<HTMLElement>('#board-inspect');if(panel){panel.hidden=!text;panel.textContent=text??'';}},onCamera:zoom=>{const label=document.querySelector('#zoom-value');if(label)label.textContent=Math.round(zoom*100)+'%';presenter?.flush();}});
     if(token!==generation){mounted.destroy();return;}view=mounted;lastClockTime=performance.now();document.querySelector('#board-loading')?.remove();view.setPaused(document.hidden||!!modal);presenter.prepareLayout();saveNow();
     if(active.state.phase==='stuck')showRescue();else updateTeaching();if(save.settings.sound)audio.unlock();
   }catch(error){if(token!==generation)return;openModal('error',`${doro(3,'dialog-doro')}<h2>这一局还没准备好</h2><p>盘面记录仍保留着。请重新加载；如果仍未完成，可以先保存退出。</p><p class="small-note">${escapeText(error instanceof Error?error.message:'资源暂时不可用')}。</p>${artButton('retry','重新加载',{icon:12})}${artButton('home','保存退出',{secondary:true})}`,{closable:false});}
@@ -213,23 +213,38 @@ function updateHUD():void {
 function stageInfo(){return level?.curriculum?.stages.find(stage=>!engine||engine.state.moves<stage.until)??{until:Infinity,title:'按自己的节奏拆',advice:level?.strategy??''};}
 
 function showBoardTip(text:string):void {setText('#board-tip',text||stageInfo().advice||level?.subtitle||'');window.clearTimeout(tipTimer);}
+function cueVisualTeaching(events:GameEvent[]):void {
+  if(save.settings.reducedMotion)return;
+  const flags=teachingFlags(events);
+  const first=(name:string)=>{if(save.tutorialSeen.includes(name))return false;save.tutorialSeen.push(name);return true;};
+  if(flags.includes('refill-tip')&&first('refill-guide')){
+    document.querySelector('.buffer-area')?.classList.add('guide-refill');
+    document.querySelector('#box-tray')?.classList.add('guide-box-pulse');
+    window.setTimeout(()=>{document.querySelector('.buffer-area')?.classList.remove('guide-refill');document.querySelector('#box-tray')?.classList.remove('guide-box-pulse');},1600);
+  }
+  if(flags.includes('window-tip')&&first('window-guide')){
+    document.querySelector('#game-canvas')?.classList.add('guide-window');
+    window.setTimeout(()=>document.querySelector('#game-canvas')?.classList.remove('guide-window'),1800);
+  }
+}
 function updateTeaching(events:GameEvent[]=[],before?:GameState):void {
   if(!engine||!level)return;const state=engine.state;
   const record=(name:string)=>{if(!save.tutorialSeen.includes(name))save.tutorialSeen.push(name);};
   for(const name of tutorialEvidence(level,before,events))record(name);
   for(const flag of teachingFlags(events))record(flag);
+  cueVisualTeaching(events);
   if(save.tutorialSeen.includes('skip')){showBoardTip('');return;}
   const spoken=teachingTip(level,state,events,save.tutorialSeen);
   if(spoken!==null){showBoardTip(spoken);if(level.tutorial||level.id===1)return;}
   if(!level.tutorial){if(state.moves===0)showBoardTip(stageInfo().advice||level.strategy||'');return;}
   const pins=new Map(state.screws.map(s=>[s.id,s]));
-  if(state.contentVersion!=='v4'){showBoardTip('同色进盒，别的颜色先暂存；留一个支点让玻璃摆开。');return;}
-  if(state.moves===0)showBoardTip('先看长板的红钉与棕钉：当前没有它们的盒子，需要暂存两个位置。');
-  else if(remainingOnBoard(state,'l1-swing').length>1)showBoardTip('长板右侧两钉拆下后，左侧蓝钉会成为支点。提前拿其他颜色会占用开路空间。');
-  else if(pins.get('l1-under-s1')?.place==='board')showBoardTip('保留左支点，等长板摆开，再取露出的橘钉。长按可以检查遮挡。');
-  else if(save.tutorialSeen.includes('refill'))showBoardTip('看到了吗？新红盒一到，暂存红钉就自动回流。接着按盒色拆。');
-  else if(occupied(state)>0)showBoardTip('暂存钉等同色盒出现。每盒收三颗，空出孔位再继续。');
-  else showBoardTip('同色进盒，别的颜色先暂存；玻璃只剩一钉时会摆动。');
+  if(state.contentVersion!=='v4'){showBoardTip('同色进盒，别的颜色先暂存。');return;}
+  if(state.moves===0)showBoardTip('先看长板的红钉与棕钉，它们要先暂存。');
+  else if(remainingOnBoard(state,'l1-swing').length>1)showBoardTip('先拆长板右侧，留下左边当支点。');
+  else if(pins.get('l1-under-s1')?.place==='board')showBoardTip('留着左支点，等长板摆开再取橘钉。');
+  else if(save.tutorialSeen.includes('refill'))showBoardTip('新红盒一到，暂存红钉会自己回去。');
+  else if(occupied(state)>0)showBoardTip('暂存钉等同色盒出现，会自己回去。');
+  else showBoardTip('同色进盒，别的颜色先暂存。');
 }
 
 function react(index:number):void {
@@ -319,10 +334,10 @@ function showPause():void {
 }
 function confirmLaunch(launch:()=>void):void {
   const current=engine?.state.phase==='playing'||engine?.state.phase==='stuck'?engine.state:save.current;
-  if(current&&current.moves>0){pendingLaunch=launch;if(modal)modalHistory.push(modal);navigatingBack=true;openModal('restart-confirm',`<h2>开始选择的盘面？</h2><p>当前已经拆下 ${current.moves} 颗。继续会重置这次未完成的盘面；作品、材料和已完成记录都保留。</p>${artButton('cancel-launch','保留盘面，返回')}${artButton('confirm-launch','确定，开始选择的局面',{secondary:true})}`,{closable:false});}else launch();
+  if(current&&current.moves>0){pendingLaunch=launch;if(modal)modalHistory.push(modal);navigatingBack=true;openModal('restart-confirm',`<h2>开始选择的盘面？</h2><p>已经拆了 ${current.moves} 颗。继续会重置这局未完成的盘面，记录仍保留。</p>${artButton('cancel-launch','保留盘面，返回')}${artButton('confirm-launch','确定，开始选择的局面',{secondary:true})}`,{closable:false});}else launch();
 }
 function showHelp():void {
-  openModal('help',`<h2>先看盒，再拆钉。</h2><ol class="help-list"><li><strong>同色三颗装一盒。</strong>上面会预告之后两盒，方便提前留颜色。</li><li><strong>别的颜色先放孔里。</strong>新盒出现会自动回流；五孔全满就先救场。</li><li><strong>长按检查，松手结束。</strong>相关挡板会高亮，检查时物理与计时暂停，不会顺手拆钉。</li><li><strong>留一钉，板会摆。</strong>留合适的支点，等下面的入口稳定露出；拆光才整板落下。</li><li><strong>双指放大，拖动看清。</strong>“视图”里可缩放、复位；桌面也支持滚轮、加减号、方向键与数字 0。</li><li><strong>第二关是墙。</strong>120 颗，过不去很常见。辅助全免费，不用看广告；用了会记在成绩上，写成「完成（用了挂）」。</li><li><strong>保存也保留撤回。</strong>底部能看到保存状态；保存异常时可以导出恢复记录。</li></ol><p class="small-note">只看说明和盘面关系，不算小抄。点出具体目标才会记一次提示。辅助不扣材料。</p>${artButton('close-modal','懂了，继续')}${level?.tutorial?artButton('skip-tutorial','跳过教学文字',{secondary:true}):''}`);
+  openModal('help',`<h2>先看盒，再拆钉。</h2><ul class="help-cards"><li class="help-card"><div class="help-fig help-fig-box" aria-hidden="true"></div><p>同色三颗装一盒。</p></li><li class="help-card"><div class="help-fig help-fig-buffer" aria-hidden="true"></div><p>别的颜色先放孔里，新盒会接走。</p></li><li class="help-card"><div class="help-fig help-fig-hold" aria-hidden="true"></div><p>长按检查挡板，松手结束。</p></li><li class="help-card"><div class="help-fig help-fig-hinge" aria-hidden="true"></div><p>留一钉，板会自己摆开。</p></li><li class="help-card"><div class="help-fig help-fig-zoom" aria-hidden="true"></div><p>双指放大，拖动看清。</p></li></ul><p class="small-note">第二关？这里不看广告。用了挂会写在成绩上。</p>${artButton('close-modal','懂了，继续')}${level?.tutorial?artButton('skip-tutorial','跳过教学',{secondary:true}):''}`);
 }
 function showPocket():void {
   if(!engine)return;const counts=COLORS.map(color=>({color,n:engine!.state.pocket.filter(id=>engine!.state.screws.find(s=>s.id===id)?.color===color).length})).filter(x=>x.n);
@@ -332,11 +347,11 @@ function showTools(rescue=false):void {
   if(!engine)return;const previews=[{type:'expand-box' as const,label:'开启辅助盒'},{type:'expand-buffer' as const,label:'增加暂存孔'},{type:'clear-buffer' as const,label:'收进口袋'}].map(item=>({...item,preview:engine!.toolPreview({type:item.type})}));
   const rows=previews.filter(x=>x.preview.available&&(!rescue||x.preview.freed+x.preview.added>0)).map(({type,label,preview:p})=>`<button class="rescue-option" data-action="use-${type}"><strong>${label}</strong><span>${p.freed>0?'立即腾出 '+p.freed+' 个孔':p.added>0?'新增 '+p.added+' 个空孔':'现在腾出 0 孔'}${p.nextColor?' · '+COLOR_NAMES[p.nextColor]+'盒':''}</span></button>`).join('');
   const rewind=rescue?engine.solvableRewindPlan():{ok:false,steps:0,reason:''};
-  const why=rescue?`<div class="rescue-cause"><p>${lastDecision||'暂存孔已经全部占满。'}</p><p>${engine.state.boxes.filter(b=>b.color).map(b=>COLOR_NAMES[b.color!]+'盒还差 '+(3-b.screws.length)+' 颗').join('；')}。${rewind.ok&&rewind.steps>1?'只撤回一两步通常还是拆不开。可以回到还能继续的那一步，或用免费辅助腾出空孔。':'先腾出空孔，就能继续。'}</p></div>`:'';
+  const why=rescue?`<div class="rescue-cause"><p>${lastDecision||'暂存孔已经全部占满。'}</p><p>${engine.state.boxes.filter(b=>b.color).map(b=>COLOR_NAMES[b.color!]+'盒还差 '+(3-b.screws.length)+' 颗').join('；')}。${rewind.ok&&rewind.steps>1?'可以回到还能拆的那一步，或用免费辅助腾出空孔。':'先腾出空孔，就能继续。'}</p></div>`:'';
   const rewindButton=rescue&&rewind.ok&&rewind.steps>1?`<button class="rescue-option rescue-rewind" data-action="rewind-solvable"><strong>回到还能拆的地方</strong><span>撤回 ${rewind.steps} 步，记 ${rewind.steps} 次撤回。辅助仍全免费，会记进成绩档。</span></button>`:'';
   const wall=level?.mode==='campaign'&&level.id===2;
   const title=rescue?(wall?'别人这时候在看广告。这里不用。':'先腾出一点空间。'):(wall?'这关是墙，过不去很正常。':'要用挂，就用。');
-  const blurb=rescue?(wall?'辅助全免费。用了会记在成绩上，写成「完成（用了挂）」。下面只列现在用得上的办法。':'下面只列现在用得上的办法。用了会记进成绩，材料照拿。'):(wall?'口袋、加孔、开盒、提示、撤回，全都免费。不必硬刚。成绩会老实写着用了挂。':'撤回、提示、开盒、加孔、收进口袋，全都免费。用了会记在成绩上，材料不扣。');
+  const blurb=wall?'用了会记成「完成（用了挂）」。':'用了会记进成绩。';
   openModal(rescue?'rescue':'tools',`${rescue||wall?doro(rescue?3:0,'dialog-doro'):''}<h2>${title}</h2>${why}<p>${blurb}</p><div class="rescue-options">${rewindButton}${rescue&&engine.canUndo?'<button class="rescue-option" data-action="undo-rescue"><strong>撤回上一步</strong><span>换个选择 · 记一次撤回</span></button>':''}${rows}${rescue?'':'<button class="rescue-option" data-action="use-melt"><strong>融化一块玻璃</strong><span>选出一块，螺丝留在原处</span></button>'}</div><p class="small-note">独立解出：没用强辅助、没看具体目标，允许撤回。零回退还要求一次都没撤。</p>${artButton('home','保存退出',{secondary:true})}`,{closable:!rescue});
 }
 function showHint():void {
@@ -369,7 +384,7 @@ function showRecords():void {
 }
 function showRandomMenu():void {
   const unlocked=randomUnlocked(),daily=dailyPractice(),dailyReady=themeUnlocked(daily.theme);
-  openModal('random-menu',`<h2>再拆一局新的。</h2><p>从已经见过的主题里选。打完会按本局新拆的螺丝发材料。</p>${unlocked?`<label class="code-label" for="random-level">选择主题</label><select id="random-level">${R2_TITLES.filter(item=>item.id>=2).map(item=>`<option value="${item.id}" ${themeUnlocked(item.id)?'':'disabled'}>${item.id}. ${item.name}${themeUnlocked(item.id)?'':' · 完成这一关后开放'}</option>`).join('')}</select><div class="practice-options"><article><h3>残局解围</h3><p>已有暂存和半盒，从中途接回来。<br>本局新拆约 30–60 颗。</p>${artButton('practice-start','解开这个残局',{icon:12,attrs:'data-play-mode="rescue"'})}</article><article><h3>主题精修</h3><p>从头拆一盘，比较新的供给关系。<br>每局约 60–120 颗，六种编排。</p>${artButton('practice-start','来一局主题精修',{secondary:true,attrs:'data-play-mode="mastery"'})}</article></div>`:'<p class="unlock-note">完成第二关，残局解围和主题精修一起开放。</p>'}<section class="daily-practice"><span class="eyebrow">每日共享 · ${daily.date} UTC</span><h3>${R2_TITLES[daily.theme-1].name}</h3><p>今天大家拿到同一个盘面。挑战码可以把它留到以后。</p>${dailyReady?artButton('daily-start','打开今日精修',{secondary:true}):`<p class="small-note">完成主线第 ${practiceCampaignId(daily.theme)} 关后可玩，其他已学主题随时可选。</p>`}</section><p class="small-note">每个运行只结算一次；残局预置库存不发材料。辅助全免费，不扣材料。主线有完整终局，画册可以慢慢收集。</p>${artButton('challenge','输入挑战码',{secondary:true})}${artButton('records','挑战记录',{secondary:true})}`);
+  openModal('random-menu',`<h2>再拆一局新的。</h2><p>从见过的主题里选。打完按本局新拆的螺丝发材料。</p>${unlocked?`<label class="code-label" for="random-level">选择主题</label><select id="random-level">${R2_TITLES.filter(item=>item.id>=2).map(item=>`<option value="${item.id}" ${themeUnlocked(item.id)?'':'disabled'}>${item.id}. ${item.name}${themeUnlocked(item.id)?'':' · 完成这一关后开放'}</option>`).join('')}</select><div class="practice-options"><article><h3>残局解围</h3><p>已有暂存和半盒，从中途接回来。<br>本局新拆约 30–60 颗。</p>${artButton('practice-start','解开这个残局',{icon:12,attrs:'data-play-mode="rescue"'})}</article><article><h3>主题精修</h3><p>从头拆一盘，比较新的供给关系。<br>每局约 60–120 颗，六种编排。</p>${artButton('practice-start','来一局主题精修',{secondary:true,attrs:'data-play-mode="mastery"'})}</article></div>`:'<p class="unlock-note">完成第二关，残局解围和主题精修一起开放。</p>'}<section class="daily-practice"><span class="eyebrow">每日共享 · ${daily.date} UTC</span><h3>${R2_TITLES[daily.theme-1].name}</h3><p>今天大家拆同一局。挑战码可以以后再打开。</p>${dailyReady?artButton('daily-start','打开今日精修',{secondary:true}):`<p class="small-note">完成主线第 ${practiceCampaignId(daily.theme)} 关后可玩，其他已学主题随时可选。</p>`}</section><p class="small-note">每局只结算一次。残局预置库存不发材料。</p>${artButton('challenge','输入挑战码',{secondary:true})}${artButton('records','挑战记录',{secondary:true})}`);
 }
 function startPractice(id:number,playMode:'rescue'|'mastery',attempt?:number):void {if(!themeUnlocked(id)){showRandomMenu();return;}const nextAttempt=attempt??save.randomCounter++;confirmLaunch(()=>{void startLevel(id,undefined,nextAttempt,'v4',playMode,CONTENT_REVISION);});}
 function startRandom(id:number):void{startPractice(Math.max(2,Math.min(8,id)),'mastery');}
@@ -379,7 +394,7 @@ function launchNext():void {
   if(level.id===CAMPAIGN_COUNT){showRandomMenu();return;}
   void startLevel(level.id+1);
 }
-function showSaveState():void {const state=getSaveStatus();openModal('save-status',`<h2>${state.status==='saved'?'进度已妥善保存。':state.status==='local'?'恢复日志已保留。':'先把这份进度留好。'}</h2><p>${escapeText(state.message)||'盘面、撤回和已经使用的帮助一起保存。也可以下载恢复记录作为备份。'}</p>${artButton('export-save','导出恢复记录')}${artButton('import-save','导入恢复记录',{secondary:true})}${artButton('retry-save','重试保存',{secondary:true})}<p class="small-note">导入会使用文件中的进度，当前记录会先留存一份副本。</p>${artButton('close-modal','返回',{secondary:true})}`);}
+function showSaveState():void {const state=getSaveStatus();openModal('save-status',`<h2>${state.status==='saved'?'进度已妥善保存。':state.status==='local'?'恢复日志已保留。':'先把这份进度留好。'}</h2><p>${escapeText(state.message)||'盘面、撤回和已用的帮助会一起保存。'}</p>${artButton('export-save','导出恢复记录')}${artButton('import-save','导入恢复记录',{secondary:true})}${artButton('retry-save','重试保存',{secondary:true})}<p class="small-note">导入会使用文件中的进度，当前记录会先留存一份副本。</p>${artButton('close-modal','返回',{secondary:true})}`);}
 
 function chooseRecovery():void {
   saveNow();const input=document.createElement('input');input.type='file';input.accept='.json,application/json';
@@ -410,7 +425,7 @@ function showLevels():void {
 
 function showAlbum():void {
   const nextArt=ARTWORKS.findIndex((art,index)=>save.artworkProgress[index]<art.columns*art.rows);
-  openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong><small>完成第一关得到的小纪念。<br>与你填出的六幅画分别保存。</small></div></div>':''}<p class="small-note">${save.album.length===6?'六幅都齐了。还剩 '+save.materialBalance+' 颗材料，可以精修成绩，或开一局主题挑战。':'还有 '+save.materialBalance+' 颗材料。先填出一小片轮廓，再把整幅画完成。'}</p><div class="album-grid">${ARTWORKS.map((art,index)=>{
+  openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong><small>完成第一关得到的小纪念。<br>与你填出的六幅画分别保存。</small></div></div>':''}<p class="small-note">${save.album.length===6?'六幅都齐了。还剩 '+save.materialBalance+' 颗材料，可以精修成绩，或开一局主题挑战。':'还有 '+save.materialBalance+' 颗材料。先填一小片，再把整幅画完成。'}</p><div class="album-grid">${ARTWORKS.map((art,index)=>{
     const unlocked=save.album.includes(art.id),amount=save.artworkProgress[index],total=art.columns*art.rows;
     return `<button class="album-card ${unlocked?'':'album-in-progress'}" data-action="album-card" data-album="${art.id}" ${unlocked||index===nextArt?'':'disabled'}>${unlocked?`<img src="${assetUrl(`album-${art.id}.png`,'thumb')}" alt="${art.title}" loading="lazy">`:doro(index%6,'locked-doro')}<strong>${art.title}</strong><span>${unlocked?'已经收好':index===nextArt?`${amount} / ${total} 颗`:'下一幅等着你'}</span></button>`;
   }).join('')}</div>`,{wide:true});
@@ -438,7 +453,7 @@ function showWin(celebrate=true):void {
   const goal=describeAlbumGoal(save.artworkProgress,save.materialBalance);
   const nextGoal=`<section class="next-goal"><span class="eyebrow">下一目标</span><strong>${goal.completedCount>=6?'画册已经收齐':goal.title}</strong><p>${earnedThisRound?'这局收好 '+earnedThisRound+' 颗材料。':''}${goal.summary}</p>${goal.index>=0?`<p class="next-goal-meter">${goal.filled} / ${goal.total} · ${goal.stageName}</p>`:''}</section>`;
   modalHistory=[];
-  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册 · 与作画材料分别保存</p>':''}${finished?'<p>主线已经完整收好。画册和挑战可以慢慢玩。</p>':''}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}<br>撤回 ${stats.undos} · 小抄 ${stats.hintsShown} · 辅助 ${assistCount(stats)}</p>${nextGoal}<p class="small-note">${earnedThisRound?'':challenge?'本次运行的材料已经结算，成绩已保留。':legacy?'旧版成绩与材料记录已保留。':'这关的首通材料已经领过，本次成绩已记录。'}${allArt?' 六幅画都齐了。':''}</p>${finished?artButton('home','收下这次毕业',{icon:12}):canPaint?artButton('artwork','先填进画册，看看下一目标',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('next',nextText,{secondary:true})}${artButton('challenge','挑战码与最佳记录',{secondary:true})}</div>${finished?artButton('artwork','慢慢完成螺丝画册',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
+  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册 · 与作画材料分别保存</p>':''}${finished?'<p>主线收好了。画册和挑战可以慢慢玩。</p>':''}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}<br>撤回 ${stats.undos} · 小抄 ${stats.hintsShown} · 辅助 ${assistCount(stats)}</p>${nextGoal}<p class="small-note">${earnedThisRound?'':challenge?'本次运行的材料已经结算，成绩已保留。':legacy?'旧版成绩与材料记录已保留。':'这关的首通材料已经领过，本次成绩已记录。'}${allArt?' 六幅画都齐了。':''}</p>${finished?artButton('home','收下这次毕业',{icon:12}):canPaint?artButton('artwork','先填进画册，看看下一目标',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('next',nextText,{secondary:true})}${artButton('challenge','挑战码与最佳记录',{secondary:true})}</div>${finished?artButton('artwork','慢慢完成螺丝画册',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
 }
 
 function rewindToLastSolvable():void {

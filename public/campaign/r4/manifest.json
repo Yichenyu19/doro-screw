@@ -39,8 +39,8 @@
       "file": "level-2.json",
       "pins": 120,
       "seed": 4456450,
-      "bytes": 27650,
-      "sha256": "c6d8d16cd8d669103971e1fa323831946dfa7068d71ebf9a1946a37b799b3df9",
+      "bytes": 27692,
+      "sha256": "966825238fb1ab1fb87dd2ab500d31ca9bd49f4b9202ac5e53d48e7575b94953",
       "design": {
         "id": 2,
         "name": "四角借路",

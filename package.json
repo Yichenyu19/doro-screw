@@ -10,6 +10,7 @@
     "test": "tsx --test tests/*.test.ts",
     "check-release": "node scripts/check-release.mjs",
     "measure-release": "node scripts/measure-release.mjs",
+    "difficulty": "tsx scripts/difficulty-benchmark.ts",
     "build:mapp": "node scripts/build-mapp.mjs",
     "build:mapp:debug": "MINI_APP_DEBUG=1 node scripts/build-mapp.mjs",
     "preview:mapp": "node scripts/serve-mapp-preview.mjs",

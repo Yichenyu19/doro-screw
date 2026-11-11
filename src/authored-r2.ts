@@ -318,10 +318,13 @@ export function getCampaignLevel(id:number):LevelDef{
     level.seed=0x440000+id;
     level.contentRevision=4;
     level.name=CAMPAIGN_NAMES[1];
+    // 手作调整：第1段南桥略抬一层（+0.1，仅改变无同色时的层序）。无当前盒色时贪心先拆南桥、用晚盒色占满三孔；官方线仍先开北桥。针数、颜色、盒序、见证钉号不变。限深搜索在深度3下两座桥得分接近，会在两者间摇摆。
+    const south=level.boards.find(board=>board.id==='r2-l2-a1-south');
+    if(south)south.depth+=0.1;
     const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
     return annotateCampaign(level,2,[
       '修订 4 收回原第二关 120 颗大墙，五座四角桥保持手作，官方线无道具可解。',
-      '这关难是故意的。过不去时用免费辅助即可，成绩会写明用了挂。',
+      '第1段南桥略抬深度，避免“只点最上层就能过”。过不去可以用免费辅助，成绩会写明用了挂。',
       ...notes,
     ],4);
   }

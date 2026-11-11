@@ -139,6 +139,11 @@ async function main(){
         await shot(page,v.name+'-15-wall-seal');
         const seal=await page.evaluate(()=>{const r=document.querySelector('.dl-seal').getBoundingClientRect();return{l:r.left,r:r.right,t:r.top,b:r.bottom,w:innerWidth,h:innerHeight};});
         check(seal.l>=0&&seal.r<=seal.w&&seal.t>=0&&seal.b<=seal.h,v.name+' 印章完整在画面内');
+        const quiet=await page.evaluate(()=>{
+          const hidden=el=>{if(!el)return true;const s=getComputedStyle(el);return s.visibility==='hidden'||s.display==='none';};
+          return document.querySelector('.game-screen')?.classList.contains('dl-ceremony') && hidden(document.querySelector('.dl-wall-tally')) && hidden(document.querySelector('.board-guide')) && hidden(document.querySelector('.run-line'));
+        });
+        check(quiet,v.name+' 仪式中收起粉笔记号和底部说明');
         check(await page.evaluate(()=>window.__DORO__.delight.ledger.wallBroken===true),v.name+' 账本记下破墙');
         check(!(await page.$('.dialog[aria-label="win"]')),v.name+' 仪式中不抢先弹结算');
         await page.waitForSelector('.dialog[aria-label="win"]',{timeout:6000});await page.waitForTimeout(300);

@@ -475,8 +475,8 @@ button.art-button.secondary>.button-surface {display:none!important;}
   font-weight:700;
 }
 
-.floating-screw.screw-one {left:-1%;top:18%;width:30px;height:30px;transform:rotate(-28deg);}
-.floating-screw.screw-two {right:-2%;bottom:20%;width:38px;height:38px;transform:rotate(34deg);}
+.floating-screw.screw-one {left:10px;top:18%;width:30px;height:30px;transform:rotate(-28deg);}
+.floating-screw.screw-two {right:12px;bottom:20%;width:38px;height:38px;transform:rotate(34deg);}
 .home-heart {top:10%;right:10%;width:22px;height:22px;opacity:.58;transform:rotate(14deg);}
 @media (prefers-reduced-motion:no-preference) {
   html:not(.gentle) .floating-screw.screw-one {animation:pin-drift 6.4s ease-in-out infinite;}

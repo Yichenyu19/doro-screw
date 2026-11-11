@@ -45,6 +45,12 @@
 .dl-streak-heart .art{width:100%;height:100%;}
 .dl-streak-heart.sparkle{width:26px;height:26px;}
 .dl-wall-tally{position:absolute;right:42px;bottom:-11px;pointer-events:none;z-index:3;transform:rotate(-3deg);}
+/* 仪式进行时收起口袋下的粉笔记号、底部教学和说明，避免抢戏。 */
+.game-screen.dl-ceremony .dl-wall-tally,
+.game-screen.dl-ceremony .board-guide,
+.game-screen.dl-ceremony .board-camera,
+.game-screen.dl-ceremony .run-line{visibility:hidden;}
+
 
 /* 粉笔记号：四竖一斜。 */
 .dl-tally{position:relative;display:inline-flex;align-items:flex-end;gap:5px;padding:2px 4px;}

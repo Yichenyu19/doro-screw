@@ -47,12 +47,13 @@ export function wallBreakHtml(input:WallBreakInput):string{
 /** 挂到游戏屏上，按拍推进；返回在结束或被点掉时兑现的 Promise。 */
 export function playWallBreak(host:HTMLElement,input:WallBreakInput,opts:{reduced:boolean;onBeat?:(beat:WallBeat)=>void}):{done:Promise<void>;skip:()=>void}{
   host.querySelector('.dl-wall')?.remove();
+  host.classList.add('dl-ceremony');
   host.insertAdjacentHTML('beforeend',wallBreakHtml(input));
   const node=host.querySelector<HTMLElement>('.dl-wall')!;
   const timers:number[]=[];let finish:()=>void=()=>{};
   const done=new Promise<void>(resolve=>{finish=resolve;});
   let over=false;
-  const end=()=>{if(over)return;over=true;timers.forEach(t=>window.clearTimeout(t));node.classList.add('dl-leaving');window.setTimeout(()=>node.remove(),220);finish();};
+  const end=()=>{if(over)return;over=true;host.classList.remove('dl-ceremony');timers.forEach(t=>window.clearTimeout(t));node.classList.add('dl-leaving');window.setTimeout(()=>node.remove(),220);finish();};
   const beat=(id:WallBeat)=>{if(over)return;node.dataset.beat=id;node.classList.add('beat-'+id);opts.onBeat?.(id);if(id==='done')end();};
   if(opts.reduced){
     for(const id of ['crack','shatter','burst','stamp','strike'] as WallBeat[])node.classList.add('beat-'+id);

@@ -352,13 +352,13 @@ class PuzzleScene extends Phaser.Scene {
       if (!view) continue;
       view.image.setPosition(board.x, board.y).setRotation(board.angle).setVisible(!board.gone);
       const distance = Math.max(0, topDepth - board.depth);
-      const opacity = this.engine.state.contentVersion==='v4'?Math.max(.30,.77-distance*.105):Math.max(.60,.73-distance*.025);
+      const opacity = this.engine.state.contentVersion==='v4'?Math.max(.34,.84-distance*.11):Math.max(.60,.73-distance*.025);
       const blocked=(this.blockedUntil.get(board.id)??0)>this.clock;
       view.image.setAlpha(this.inspected?(this.inspectedBoards.has(board.id)?.96:.20):blocked?.86+Math.sin(this.clock/65)*.12:this.melt && !board.falling ? .72 + Math.sin(this.clock / 150) * .06 : opacity);
       for (const original of board.screws) {
         const hole = view.holes.get(original.id)!;
         const p = rotate(original, board.angle);
-        hole.setPosition(board.x + p.x, board.y + p.y).setRotation(board.angle).setVisible(!board.gone).setAlpha(this.engine.state.contentVersion==='v4'?.32:.68);
+        hole.setPosition(board.x + p.x, board.y + p.y).setRotation(board.angle).setVisible(!board.gone).setAlpha(this.engine.state.contentVersion==='v4'?.46:.68);
       }
     }
     const boxColors=new Set(this.engine.state.boxes.map(b=>b.color).filter((c):c is NonNullable<typeof c>=>!!c));

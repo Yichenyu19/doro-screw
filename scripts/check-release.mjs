@@ -120,14 +120,19 @@ async function clearAllStorage(page){
   });
 }
 
+const SFX_FILES=['pick','loosen','arrive-0','arrive-1','arrive-2','box','refill','fall','reveal','tool','blocked','chain','win','wall'].map(name=>'sfx/'+name+'.ogg');
+const R4_FILES=['manifest.json',...Array.from({length:8},(_,i)=>'level-'+(i+1)+'.json')].map(name=>'campaign/r4/'+name);
+
 async function assertPack(distDir){
   const missing=[];
-  for(const file of ['index.html','favicon.ico','og-image.jpg','campaign/r4/level-1.json','ASSETS.md','THIRD-PARTY-NOTICES.txt']){
+  for(const file of ['index.html','favicon.ico','og-image.jpg','ASSETS.md','THIRD-PARTY-NOTICES.txt',...R4_FILES,...SFX_FILES]){
     try{await access(path.join(distDir,file));}catch{missing.push(file);}
   }
-  let hasR1=false;
-  try{await access(path.join(distDir,'campaign/r1/level-1.json'));hasR1=true;}catch{}
-  return{missing,hasR1};
+  const leftovers=[];
+  for(const file of ['campaign/r1/level-1.json','campaign/r3/level-1.json','campaign/r3/manifest.json']){
+    try{await access(path.join(distDir,file));leftovers.push(file);}catch{}
+  }
+  return{missing,leftovers,hasR1:leftovers.some(f=>f.includes('/r1/')),hasR3:leftovers.some(f=>f.includes('/r3/'))};
 }
 
 async function main(){
@@ -163,8 +168,19 @@ async function main(){
     await tracker.ready();
     const t0=Date.now();
     await page.goto(`http://127.0.0.1:${port}/?check=1`,{waitUntil:'networkidle',timeout:60000});
-    await page.waitForSelector('text=Doro · 打个螺丝 · 修订3',{timeout:20000});
+    await page.waitForSelector('text=Doro · 打个螺丝 · 修订4',{timeout:20000});
+    const sfxProbe=await page.evaluate(async(files)=>{
+      const rows=[];
+      for(const file of files){
+        const res=await fetch(file);
+        rows.push({file,ok:res.ok,status:res.status,type:res.headers.get('content-type')||''});
+      }
+      return rows;
+    },SFX_FILES);
+    const sfxFailed=sfxProbe.filter(row=>!row.ok||row.status>=400);
+    if(sfxFailed.length)throw Error('发行包音效无法加载：'+JSON.stringify(sfxFailed));
     await page.waitForTimeout(300);
+
     const homeMs=Date.now()-t0;
     const firstScreen=tracker.snapshot();
     await page.screenshot({path:path.join(shots,viewport.name+'-home.png'),fullPage:true});
@@ -225,7 +241,9 @@ async function main(){
 
   const problems=[];
   if(pack.missing.length)problems.push('构建缺文件：'+pack.missing.join(', '));
+  if(pack.leftovers?.length)problems.push('生产包仍含旧关卡：'+pack.leftovers.join(', '));
   if(pack.hasR1)problems.push('生产包仍含 campaign/r1');
+  if(pack.hasR3)problems.push('生产包仍含 campaign/r3');
   for(const view of views){
     if(view.pageErrors.length)problems.push(view.name+' 页面异常：'+view.pageErrors.join(' | '));
     if(view.consoleErrors.length)problems.push(view.name+' 控制台错误：'+view.consoleErrors.join(' | '));

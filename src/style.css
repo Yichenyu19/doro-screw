@@ -66,13 +66,13 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .home-screen {display:flex;flex-direction:column;align-items:center;padding:calc(12px + var(--safe-top)) 27px calc(17px + var(--safe-bottom));}
 .home-top {display:flex;align-items:center;justify-content:space-between;width:100%;height:44px;flex-shrink:0;}
 .club-label {font-size:11px;letter-spacing:.02em;font-weight:700;color:var(--muted);}
-.home-title {text-align:center;position:relative;z-index:2;margin-top:22px;flex-shrink:0;}
+.home-title {text-align:center;position:relative;z-index:3;isolation:isolate;margin-top:22px;padding-bottom:14px;flex-shrink:0;}
 .home-title>.eyebrow {display:block;font-size:13px;letter-spacing:0;margin-bottom:9px;font-weight:800;color:var(--ink);}
 .home-title h1 {margin:0;line-height:1;font-size:0;}
 .home-logo {display:block;width:min(322px,83vw);height:120px;object-fit:contain;}
 .home-title p {margin:11px 0 0;font-size:13px;letter-spacing:0;color:var(--muted);}
-.home-character {position:relative;flex:1;width:100%;min-height:130px;max-height:325px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0;}
-.home-doro {width:90%;height:100%;max-height:280px;animation:doro-breathe 4s ease-in-out infinite;}
+.home-character {position:relative;z-index:1;flex:1;width:100%;min-height:130px;max-height:325px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;margin:12px 0 8px;padding-top:12px;overflow:hidden;}
+.home-doro {width:70%;height:auto;max-height:calc(100% - 32px);margin-top:0;flex-shrink:1;object-fit:contain;animation:doro-breathe 4s ease-in-out infinite;transform-origin:center bottom;}
 .home-heart {position:absolute;width:28px;height:28px;top:14%;right:8%;transform:rotate(8deg);opacity:.72;}
 .floating-screw {position:absolute;width:34px;height:34px;}
 .screw-one {left:0;top:30%;transform:rotate(-20deg);}
@@ -81,7 +81,7 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .home-actions {width:100%;max-width:342px;flex-shrink:0;}
 .start-button {height:66px;font-size:22px;letter-spacing:0;}
 .start-button .button-symbol {width:30px;height:30px;}
-.home-quantity {margin:8px 0 5px;text-align:center;color:var(--ink);font-size:12px;line-height:1.5;font-weight:800;}
+.home-quantity {position:relative;z-index:4;display:inline-block;margin:8px 0 0;padding:3px 10px 4px;text-align:center;color:var(--ink);font-size:12px;line-height:1.5;font-weight:800;background:#fff6f0;border-radius:8px;}
 .continue-note {text-align:center;margin:7px 0 11px;font-size:11px;line-height:1.5;color:var(--muted);}
 .home-secondary {display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 .home-footer {width:100%;display:flex;justify-content:space-between;gap:8px;margin-top:17px;font-size:11px;line-height:1.4;color:var(--muted);flex-shrink:0;}
@@ -228,7 +228,7 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .artwork-dialog .small-note {margin:5px 0;font-size:11px;line-height:1.4;}
 .album-card .progress-track {height:12px;margin-top:2px;}
 
-@keyframes doro-breathe {0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-4px) rotate(1deg);}}
+@keyframes doro-breathe {0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(5px) rotate(1deg);}}
 @keyframes box-pop {0%,100%{transform:scale(1);}45%{transform:scale(1.06);}}
 @keyframes tiny-shake {0%,100%{transform:rotate(4deg);}30%{transform:rotate(-5deg);}60%{transform:rotate(8deg);}}
 @keyframes dialog-in {from{transform:translateY(7px) scale(.98);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
@@ -242,11 +242,12 @@ button.art-button.secondary>.button-surface {display:none!important;}
   .home-title {margin-top:5px;}
   .home-title>.eyebrow {margin-bottom:4px;font-size:11px;}
   .home-logo {height:92px;width:280px;}
+  .home-title {padding-bottom:12px;}
   .home-title p {margin-top:4px;font-size:12px;}
-  .home-character {min-height:108px;margin:2px 0;}
-  .home-doro {max-height:196px;}
+  .home-character {min-height:108px;margin:8px 0 4px;padding-top:10px;overflow:hidden;}
+  .home-doro {width:66%;max-height:calc(100% - 28px);}
   .start-button {height:56px;min-height:56px;font-size:22px;}
-  .home-quantity {margin:5px 0 3px;}
+  .home-quantity {margin:4px 0 0;}
   .continue-note {margin:4px 0 7px;font-size:11px;}
   .home-secondary button.art-button {min-height:46px;font-size:13px;}
   .home-footer {margin-top:10px;font-size:11px;}
@@ -427,11 +428,11 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .art-button[aria-busy="true"] {opacity:1;cursor:progress;}
 .board-guide {padding-right:96px;}
 .run-line {height:44px;align-items:center;font-size:11px;}
-.home-title {margin-top:10px;}.home-character {min-height:110px;margin:2px 0;}.home-secondary {row-gap:6px;}
+.home-title {margin-top:10px;padding-bottom:16px;}.home-character {min-height:130px;margin:12px 0 6px;padding-top:12px;overflow:hidden;}.home-secondary {row-gap:6px;}
 .home-footer {margin-top:6px;align-items:center;}.home-code {min-height:44px;}
 [data-art-stage] {font-size:12px;color:#68414f;margin:6px 0 10px;line-height:1.5;}
 [data-art-milestone] {font-size:13px;font-weight:700;color:#436d52;margin:2px 0 8px;}
-@media(max-height:700px) and (orientation:portrait){.home-title>.eyebrow{display:none}.home-title>.home-quantity{margin-top:2px}.home-title .home-logo{height:88px}.home-character{min-height:64px;max-height:120px}.home-actions .start-button{height:52px}.home-secondary .art-button.secondary{min-height:44px}.home-share{margin-top:6px;gap:6px}.home-daily{min-height:64px;padding:6px 10px}.home-footer{margin-top:0}.home-screen{padding-top:5px;padding-bottom:5px}.home-top{height:36px}}
+@media(max-height:700px) and (orientation:portrait){.home-title>.eyebrow{display:none}.home-title{padding-bottom:12px}.home-title>.home-quantity{margin-top:2px}.home-title .home-logo{height:88px}.home-character{min-height:72px;max-height:120px;margin-top:10px;padding-top:8px;overflow:hidden}.home-actions .start-button{height:52px}.home-secondary .art-button.secondary{min-height:44px}.home-share{margin-top:6px;gap:6px}.home-daily{min-height:64px;padding:6px 10px}.home-footer{margin-top:0}.home-screen{padding-top:5px;padding-bottom:5px}.home-top{height:36px}}
 @media(orientation:landscape) and (max-height:540px){.game-screen{grid-template-rows:44px 82px 26px 48px 1fr 88px}.run-line{height:44px;font-size:10px}.board-guide{padding-right:96px}.home-screen{display:grid;grid-template-columns:190px 1fr;grid-template-rows:36px 108px 1fr 44px;max-width:680px;column-gap:14px;padding:4px 12px}.home-top{grid-column:1/3}.home-title{grid-column:1;grid-row:2;margin:0}.home-title .eyebrow{display:none}.home-title .home-logo{height:86px;width:100%}.home-title .home-quantity{margin:0;font-size:11px}.home-character{grid-column:1;grid-row:3;min-height:40px;max-height:130px;margin:0}.home-actions{grid-column:2;grid-row:2/4;align-self:center}.home-share{grid-column:2;grid-row:4;margin-top:0;gap:4px}.home-daily{min-height:52px;padding:6px 10px}.home-code{grid-column:auto;grid-row:auto;font-size:11px}.home-footer{grid-column:1;grid-row:4;font-size:10px}.home-footer>span{max-width:115px}.character-note,.floating-screw,.home-heart{display:none}}
 
 /* 八关地图保留主题名，挑战说明与开始动作放在同一区域。 */

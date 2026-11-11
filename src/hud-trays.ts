@@ -20,7 +20,7 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
       node.dataset.color=color??'';
       node.innerHTML=(color?sprite('cases',COLORS.indexOf(color),'box-art')+'<div class="box-screws">'+Array.from({length:3},()=>'<span class="box-hole">'+sprite('screws',8,'box-empty-hole')+'<span data-head></span></span>').join('')+'</div>':'')+'<span class="box-caption"></span><span class="box-next" hidden></span>';
     }
-    attr(node,'data-generation',String(box.completed));cls(node,'box-packing',presenter?.closing.has(box.id)??false);cls(node,'box-finished',!color);
+    attr(node,'data-generation',String(box.completed));cls(node,'box-packing',presenter?.closing.has(box.id)??false);cls(node,'box-finished',!color);cls(node,'box-active',!!color);
     attr(node,'aria-label',color?COLOR_NAMES[color]+'盒，已接收'+box.screws.length+'颗':'收集盒已完成');
     if(color)for(const [slot,hole]of [...node.querySelectorAll<HTMLElement>('.box-hole')].entries()){
       const id=box.screws[slot],arrived=!!id&&(presenter?.isArrived(id,box.id)??false);

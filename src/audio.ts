@@ -117,6 +117,8 @@ export function scheduleRecipe(context:BaseAudioContext,destination:AudioNode,re
 }
 
 export interface PlayOptions{tone?:number}
+/** 小彩蛋与仪式感用的合成短句：分类沿用音效总线命名，便于并入分类增益链。 */
+export interface CueOptions{bus?:'action'|'impact'|'reward'|'warn'|'ui';gain?:number;delay?:number}
 
 interface VoiceSlot{priority:number;gain:GainNode}
 
@@ -236,6 +238,29 @@ export class GameAudio {
     try{slot.gain.disconnect();}catch{ /* already torn down */ }
     this.voices.delete(victim);
     return true;
+  }
+
+  /** 播放一段现场合成的短句（不引入新素材）。走分类总线，并计入复音上限。 */
+  cue(recipe:SynthVoice[],options:CueOptions={}):void {
+    if(!this.enabled||(typeof document!=='undefined'&&document.hidden)||!recipe.length)return;
+    this.unlock();
+    const context=this.context;
+    if(!context||context.state!=='running'||!this.master)return;
+    const priority=options.bus==='reward'?8:2;
+    if(!this.stealVoice(priority))return;
+    try{
+      this.duckAction(context,priority);
+      const gain=context.createGain();
+      gain.gain.value=Math.max(0,Math.min(1,options.gain??1));
+      const bus=this.buses.get(options.bus??'ui')??this.master;
+      gain.connect(bus);
+      const sources=scheduleRecipe(context,gain,recipe,context.currentTime+Math.max(0,options.delay??0));
+      const lead=sources[0];
+      if(lead){
+        this.voices.set(lead,{priority,gain});
+        lead.onended=()=>{this.voices.delete(lead);try{gain.disconnect();}catch{ /* already torn down */ }};
+      }
+    }catch{ /* 合成失败不影响游戏。 */ }
   }
 
   play(name:SoundName,options:PlayOptions={}):void{

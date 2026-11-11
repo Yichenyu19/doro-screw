@@ -1,0 +1,141 @@
+/* 线 F：破解版身份、Doro 小日子、破墙仪式。全部以 dl- 前缀隔离，轻柔动效下自动静止。 */
+
+/* ———— 注册机铭牌（只在主动打开「免费辅助」时出现） ———— */
+.dl-keygen{display:flex;align-items:center;gap:8px;margin:2px auto 10px;padding:6px 9px 6px 6px;width:max-content;max-width:100%;background:#2b2124;color:#9fe0b4;border-radius:3px;box-shadow:inset 0 0 0 1px #4a3a3f,0 2px 0 #503b3630;transform:rotate(-1.2deg);position:relative;overflow:hidden;}
+.dl-keygen::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,#0000 0 2px,#00000038 2px 3px);pointer-events:none;}
+.dl-keygen-disk{position:relative;width:22px;height:22px;flex:none;background:#eb8da5;border-radius:2px 5px 2px 2px;box-shadow:inset 0 0 0 1.5px #2b2124;}
+.dl-keygen-disk::before{content:'';position:absolute;left:5px;right:5px;top:0;height:8px;background:#d9cfc7;box-shadow:inset 3px 0 0 #2b2124;}
+.dl-keygen-disk i{position:absolute;left:4px;right:4px;bottom:2px;height:8px;background:#fff9ec;border-radius:1px;}
+.dl-keygen-body{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.dl-keygen-serial{font:700 12px/1 'Courier New',ui-monospace,monospace;letter-spacing:.08em;white-space:nowrap;}
+.dl-keygen-bar{height:3px;background:#4a3a3f;display:block;}
+.dl-keygen-bar i{display:block;height:100%;width:0;background:#9fe0b4;transition:width .66s steps(8);}
+.dl-keygen.done .dl-keygen-bar i{width:100%;}
+.dl-keygen.done .dl-keygen-serial{color:#ffe28a;text-shadow:0 0 6px #ffe28a55;}
+.dl-keygen-wall{transform:rotate(1.4deg);}
+
+/* ———— 打补丁：暂存条上跑一格格像素进度 ———— */
+.buffer-area{position:relative;}
+.dl-patch{position:absolute;left:8px;right:42px;top:50%;height:10px;transform:translateY(-50%);pointer-events:none;z-index:4;display:flex;align-items:center;justify-content:center;}
+.dl-patch-cells{display:flex;gap:2px;padding:2px;background:#2b2124;border-radius:2px;box-shadow:0 1px 0 #503b3640;}
+.dl-patch-cells i{width:12px;height:6px;background:#4a3a3f;}
+.dl-patch-cells i.on{background:#9fe0b4;}
+.dl-patch-done .dl-patch-cells i{background:#ffe28a;}
+.dl-patch-done{animation:dl-fade .5s .1s ease both;}
+.dl-patch-static .dl-patch-cells i{background:#9fe0b4;}
+
+/* ———— Doro 小日子 ———— */
+.doro-reaction{position:relative;transition:transform .24s cubic-bezier(.3,1.4,.6,1);}
+.doro-reaction.dl-peek{animation:dl-peek 1.8s ease-in-out both;}
+.doro-reaction.dl-sneak-lean{transform:translateX(-7px) rotate(-14deg);transition-duration:.6s;transition-timing-function:ease-in-out;}
+.doro-reaction.dl-sneak-reach{transform:translateX(-12px) rotate(-20deg) scaleX(1.08);transition-duration:.36s;}
+.doro-reaction.dl-sneak-bitten{animation:dl-recoil .5s cubic-bezier(.2,1.6,.4,1) both;}
+.doro-reaction.dl-sneak-away{transform:rotate(12deg) scaleX(-1);transition-duration:.3s;}
+.pocket-button{position:relative;}
+.pocket-button.dl-bite-warn{animation:dl-twitch .26s ease;}
+.pocket-button.dl-bite{animation:dl-chomp .42s cubic-bezier(.2,1.8,.4,1) both;z-index:2;}
+.doro-reaction.dl-doze{transform:rotate(9deg) translateY(2px);}
+.dl-z{position:absolute;left:-6px;top:-8px;pointer-events:none;font:italic 700 10px/1 Georgia,serif;color:#785952;}
+.dl-z i{position:absolute;opacity:0;animation:dl-z 3.6s ease-out infinite;}
+.dl-z i:nth-child(2){animation-delay:1.2s;font-size:12px;}
+.dl-z i:nth-child(3){animation-delay:2.4s;font-size:14px;}
+.doro-reaction.dl-wake{animation:dl-startle .42s ease both;}
+.doro-reaction.dl-hop{animation:dl-hop .5s cubic-bezier(.3,1.6,.5,1) both;}
+.dl-streak-heart{position:absolute;right:8px;top:-6px;width:20px;height:20px;pointer-events:none;animation:dl-float 1.1s ease-out both;z-index:3;}
+.dl-streak-heart .art{width:100%;height:100%;}
+.dl-streak-heart.sparkle{width:26px;height:26px;}
+.dl-wall-tally{position:absolute;right:42px;bottom:-11px;pointer-events:none;z-index:3;transform:rotate(-3deg);}
+
+/* 粉笔记号：四竖一斜。 */
+.dl-tally{position:relative;display:inline-flex;align-items:flex-end;gap:5px;padding:2px 4px;}
+.dl-tally-group{position:relative;display:inline-flex;gap:2px;height:12px;}
+.dl-tally-group i{display:block;width:1.6px;height:12px;background:#6d4f49;border-radius:1px;transform:rotate(3deg);}
+.dl-tally-group i:nth-child(2n){height:11px;transform:rotate(-2deg);}
+.dl-tally-group i.slash{position:absolute;left:-3px;right:-3px;top:5px;width:auto;height:1.6px;transform:rotate(-24deg);}
+.dl-tally b{font-size:10px;color:#6d4f49;line-height:1;}
+.dl-zero{display:block;width:12px;height:12px;border:1.6px solid #6d4f49;border-radius:50%;}
+
+/* ———— 首页戳一戳 ———— */
+.home-character{touch-action:manipulation;cursor:default;}
+.home-character .home-doro{transition:scale .5s cubic-bezier(.3,1.4,.5,1);}
+.home-character.dl-squash .home-doro{animation:dl-squash .32s cubic-bezier(.3,1.6,.5,1) both;}
+.home-character.dl-dizzy .home-doro{animation:dl-dizzy 1.7s ease-in-out both;}
+.home-character.dl-dizzy .floating-screw{animation:dl-orbit 1.7s linear both;}
+.home-character.dl-dodge .home-doro{animation:dl-dodge .7s cubic-bezier(.3,1.3,.5,1) both;}
+.home-character.dl-inflate .home-doro{scale:1.16 1.26;transition-duration:1.1s;transition-timing-function:ease-in;}
+.home-character.dl-deflate .home-doro{animation:dl-deflate .36s ease both;}
+.home-character.dl-pop .home-doro{animation:dl-popback .6s cubic-bezier(.2,1.7,.4,1) both;}
+.dl-pop-heart{position:absolute;left:50%;top:38%;width:44px;height:44px;margin-left:-22px;pointer-events:none;animation:dl-heart-rise 1.2s ease-out both;z-index:3;}
+.dl-pop-heart .art{width:100%;height:100%;}
+
+/* ———— 破墙 ———— */
+.dl-wall{position:absolute;inset:0;z-index:18;overflow:hidden;cursor:pointer;touch-action:manipulation;}
+.dl-wall::before{content:'';position:absolute;inset:0;background:#2b2124;opacity:0;transition:opacity .4s ease;}
+.dl-wall::before{background:radial-gradient(circle at 50% 52%,#fff9ec 0,#fff9ecd0 30%,#3a2b2fb8 78%);}
+.dl-wall.beat-burst::before{opacity:.6;}
+.dl-wall.beat-stamp::before{opacity:1;}
+.dl-cracks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+.dl-cracks path{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-dasharray:140;stroke-dashoffset:140;}
+.dl-cracks path.ink{stroke:#3a2b2f;stroke-width:3px;}
+.dl-cracks path.glint{stroke:#fffdf6;stroke-width:1.1px;transform:translate(-.35px,-.25px);}
+.dl-wall.beat-crack .dl-cracks path{animation:dl-draw .34s var(--d) cubic-bezier(.2,.8,.3,1) forwards;}
+.dl-wall.beat-burst .dl-cracks{opacity:.0;transition:opacity .3s ease;}
+.dl-shard{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;opacity:0;pointer-events:none;}
+.dl-shard .art{width:100%;height:100%;}
+.dl-wall.beat-shatter .dl-shard{animation:dl-shard .8s var(--sd) cubic-bezier(.15,.7,.4,1) both;}
+.dl-hole{position:absolute;width:0;height:0;pointer-events:none;}
+.dl-burst{position:absolute;width:190px;height:190px;left:-95px;top:-95px;opacity:0;transform:scale(.3) rotate(-20deg);}
+.dl-doro{position:absolute;width:132px;height:auto;left:-66px;top:-62px;opacity:0;transform:translateY(40px) scale(.6);}
+.dl-wall.beat-burst .dl-burst{animation:dl-burst .5s cubic-bezier(.2,1.5,.4,1) forwards;}
+.dl-wall.beat-burst .dl-doro{animation:dl-doro-pop .55s .05s cubic-bezier(.2,1.6,.4,1) forwards;}
+.dl-wall.beat-stamp .dl-hole{transition:opacity .12s ease;opacity:0;}
+.dl-perch{grid-row:1;grid-column:1;justify-self:center;width:118px;height:auto;margin-bottom:-34px;position:relative;z-index:2;opacity:0;transform-origin:50% 100%;}
+.dl-wall.beat-stamp .dl-perch{animation:dl-perch .5s .2s cubic-bezier(.3,1.5,.5,1) forwards;}
+@keyframes dl-perch{0%{opacity:0;transform:translateY(-70px) scale(.9,1.1)}55%{opacity:1;transform:translateY(4px) scale(1.12,.86)}100%{opacity:1;transform:none}}
+.dl-seal-wrap{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto auto;align-items:center;column-gap:10px;row-gap:12px;opacity:0;pointer-events:none;}
+.dl-svgdefs{position:absolute;}
+.dl-seal{grid-row:2;grid-column:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:108px;height:132px;color:#fff3ea;background:#c4372d;border-radius:6px;font:900 50px/1.04 'STKaiti','KaiTi','Kaiti SC','Songti SC','STSong',serif;box-shadow:inset 0 0 0 4px #c4372d,inset 0 0 0 6.5px #fff3ea;filter:url(#dl-ink);transform:rotate(-7deg);}
+.dl-seal-side{grid-row:2;grid-column:2;align-self:end;padding:5px 6px;border:2.5px solid #c4372d;color:#c4372d;background:#fff9ec;border-radius:50%/40%;font:900 17px/1 'STKaiti','KaiTi','Kaiti SC','Songti SC',serif;writing-mode:vertical-rl;letter-spacing:.12em;transform:rotate(9deg);filter:url(#dl-ink);}
+.dl-seal-side.with-help{border-style:dashed;}
+.dl-seal-meta{grid-row:3;grid-column:1/3;justify-self:center;display:flex;align-items:baseline;gap:6px;padding:6px 12px 5px;background:#fff9ec;color:#503b36;border-radius:2px;box-shadow:0 2px 0 #503b3640;transform:rotate(1.5deg);font-variant-numeric:tabular-nums;}
+.dl-seal-meta>b{font-size:22px;font-weight:900;}
+.dl-seal-meta>small{font-size:12px;color:#785952;margin-right:4px;}
+.dl-seal-meta .dl-tally{align-self:center;transform:scale(1.35);transform-origin:left center;margin-right:10px;}
+.dl-tally-strike{position:absolute;left:-4px;right:-4px;top:50%;height:2.5px;background:#c4372d;transform:scaleX(0) rotate(-6deg);transform-origin:left center;border-radius:2px;}
+.dl-wall.beat-stamp .dl-seal-wrap{animation:dl-stamp .3s cubic-bezier(.5,0,.75,0) forwards,dl-thud .28s .3s ease-out;}
+.dl-wall.beat-strike .dl-tally-strike{animation:dl-strike .28s ease-out forwards;}
+.dl-wall.beat-stamp{animation:dl-shake .26s .29s ease-out;}
+.dl-wall.dl-static *{animation:none!important;transition:none!important;}
+.dl-wall.dl-static::before{opacity:.5;}
+.dl-wall.dl-static .dl-seal-wrap{opacity:1;}
+.dl-wall.dl-static .dl-tally-strike{transform:scaleX(1) rotate(-6deg);}
+.dl-wall.dl-static .dl-cracks,.dl-wall.dl-static .dl-shards{display:none;}
+.dl-wall.dl-static .dl-hole{display:none;}
+.dl-wall.dl-static .dl-perch{opacity:1;}
+.dl-wall.dl-leaving{animation:dl-fade .22s ease both;}
+
+@keyframes dl-fade{to{opacity:0}}
+@keyframes dl-peek{0%,100%{transform:rotate(4deg)}18%{transform:translateY(-5px) rotate(-8deg)}30%{transform:translateY(-2px) rotate(-12deg)}62%{transform:translateY(-3px) rotate(-12deg)}74%{transform:translateY(-6px) rotate(-4deg)}}
+@keyframes dl-recoil{0%{transform:translateX(-12px) rotate(-20deg)}35%{transform:translateX(7px) translateY(-6px) rotate(16deg) scale(.92,1.1)}70%{transform:translateX(4px) rotate(8deg) scale(1.04,.96)}100%{transform:translateX(3px) rotate(6deg)}}
+@keyframes dl-twitch{0%,100%{transform:none}40%{transform:translateY(-1px) rotate(4deg)}70%{transform:rotate(-3deg)}}
+@keyframes dl-chomp{0%{transform:none}30%{transform:translateX(6px) scale(1.18,.84)}55%{transform:translateX(2px) scale(.92,1.08)}100%{transform:none}}
+@keyframes dl-z{0%{opacity:0;transform:translate(0,0)}15%{opacity:.85}100%{opacity:0;transform:translate(-9px,-16px)}}
+@keyframes dl-startle{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-7px) scale(.94,1.1)}100%{transform:rotate(4deg)}}
+@keyframes dl-hop{0%{transform:rotate(4deg)}35%{transform:translateY(-9px) scale(.94,1.08) rotate(-4deg)}70%{transform:translateY(1px) scale(1.06,.94)}100%{transform:rotate(4deg)}}
+@keyframes dl-float{0%{opacity:0;transform:translateY(4px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-26px) scale(.9)}}
+@keyframes dl-squash{0%{transform:scale(1)}30%{transform:scale(1.1,.86)}60%{transform:scale(.95,1.07)}100%{transform:scale(1)}}
+@keyframes dl-dizzy{0%{transform:rotate(0)}12%{transform:rotate(-15deg) translateX(-4%)}28%{transform:rotate(13deg) translateX(4%)}44%{transform:rotate(-10deg) translateX(-2%)}60%{transform:rotate(7deg)}80%{transform:rotate(-3deg)}100%{transform:rotate(0)}}
+@keyframes dl-orbit{0%{transform:rotate(0) translateX(0)}50%{transform:rotate(380deg) translateX(14px)}100%{transform:rotate(720deg) translateX(0)}}
+@keyframes dl-dodge{0%{transform:none}25%{transform:translateX(26%) rotate(8deg)}60%{transform:translateX(24%) rotate(6deg)}100%{transform:none}}
+@keyframes dl-deflate{0%{transform:scale(1.14,1.22)}50%{transform:scale(.97,1.02)}100%{transform:scale(1)}}
+@keyframes dl-popback{0%{transform:scale(1.18,1.28)}25%{transform:scale(.86,.92)}60%{transform:scale(1.04,.98)}100%{transform:scale(1)}}
+@keyframes dl-heart-rise{0%{opacity:0;transform:translateY(0) scale(.4)}20%{opacity:1;transform:translateY(-20px) scale(1.1)}100%{opacity:0;transform:translateY(-110px) scale(.9) rotate(12deg)}}
+@keyframes dl-draw{to{stroke-dashoffset:0}}
+@keyframes dl-shard{0%{opacity:1;transform:translate(0,0) rotate(0) scale(.6)}100%{opacity:0;transform:translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(1)}}
+@keyframes dl-burst{0%{opacity:0;transform:scale(.3) rotate(-20deg)}60%{opacity:1;transform:scale(1.1) rotate(4deg)}100%{opacity:.9;transform:scale(1) rotate(0)}}
+@keyframes dl-doro-pop{0%{opacity:0;transform:translateY(40px) scale(.6)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes dl-stamp{0%{opacity:0;transform:translate(-50%,-50%) scale(2.3) rotate(10deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}}
+@keyframes dl-thud{0%{transform:translate(-50%,-50%) scale(.95,.97)}100%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes dl-strike{to{transform:scaleX(1) rotate(-6deg)}}
+@keyframes dl-shake{0%,100%{transform:none}25%{transform:translate(-3px,2px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-1px,1px)}}
+.dl-wall.beat-stamp .dl-seal-wrap{opacity:1;}

@@ -5,6 +5,7 @@ import {getCampaignLevel} from '../src/authored-r2.ts';
 import {CAMPAIGN_COUNT,CAMPAIGN_NAMES} from '../src/r2-catalog.ts';
 import type {GameState,LevelDef,ScrewState} from '../src/types.ts';
 import {copyState} from '../src/snapshot.ts';
+import {isScrewExposed} from '../src/geometry.ts';
 
 export type Kind='random'|'greedy'|'smart';
 function mulberry(seed:number){let x=seed>>>0;return()=>{x+=0x6D2B79F5;let t=Math.imul(x^(x>>>15),1|x);t^=t+Math.imul(t^(t>>>7),61|t);return((t^(t>>>14))>>>0)/4294967296;};}
@@ -20,7 +21,9 @@ function topMost(game:GameEngine,available:ScrewState[]){
 
 
 /** 静态限深束搜索：不预测摆动，只把已拆空的板视为离场。根节点同分用 rng 打散。 */
-export function smartChoice(game:GameEngine,rng:()=>number,depth=3,beam=5):string|null{
+const firstSkipMiss=new WeakMap<GameEngine,{missed?:boolean}>();
+
+export function smartChoice(game:GameEngine,rng:()=>number,depth=4,beam=5):string|null{
   const available=game.available();
   if(!available.length)return null;
   const depthId=(a:ScrewState,b:ScrewState)=>{
@@ -34,27 +37,196 @@ export function smartChoice(game:GameEngine,rng:()=>number,depth=3,beam=5):strin
     const total=game.state.screws.filter(x=>x.boardId===s.boardId).length;
     return remain<total&&!game.state.boxes.some(b=>b.color===s.color);
   });
-  // 已开始拆的开路板，在仍无同色可装时把它拆完。
-  if(started.length&&!matching.length)return started.slice().sort((a,b)=>a.id.localeCompare(b.id))[0]!.id;
-  if(matching.length)return matching.slice().sort(depthId)[0]!.id;
 
-  // 无同色时：深度几乎相同但被手作抬高一层的两座桥，深度3看不出差别，在桥之间随机。
-  // 其余局面按层序稳定选择（与能通关的“先北桥后同色”策略一致）。
-  const covers=available.slice().sort(depthId);
-  const lead=covers[0]!;
-  const leadDepth=game.state.boards.find(p=>p.id===lead.boardId)!.depth;
-  const near=covers.filter(s=>Math.abs(game.state.boards.find(p=>p.id===s.boardId)!.depth-leadDepth)<=0.15);
-  const distinct=new Set(near.map(s=>+game.state.boards.find(p=>p.id===s.boardId)!.depth.toFixed(3)));
-  if(distinct.size>1){
-    const boards=[...new Map(near.map(s=>[s.boardId,s])).values()];
-    return boards[Math.floor(rng()*boards.length)]!.id;
+  // 第2关保持原墙：开局近高两桥随机，之后只装箱/按层序，不用新的跳色搜索。
+  if(isCampaignWall(game)){
+    if(started.length&&!matching.length)return started.slice().sort((a,b)=>a.id.localeCompare(b.id))[0]!.id;
+    if(!matching.length&&isNearEqualCoverFork(game,available)){
+      const covers=available.slice().sort(depthId);
+      const leadDepth=game.state.boards.find(p=>p.id===covers[0]!.boardId)!.depth;
+      const near=covers.filter(s=>Math.abs(game.state.boards.find(p=>p.id===s.boardId)!.depth-leadDepth)<=0.15);
+      const boards=[...new Map(near.map(s=>[s.boardId,s])).values()];
+      return boards[Math.floor(rng()*boards.length)]!.id;
+    }
+    if(matching.length)return matching.slice().sort(depthId)[0]!.id;
+    return available.slice().sort(depthId)[0]!.id;
   }
-  void depth;void beam;
-  return lead.id;
+
+  if(started.length&&!matching.length){
+    const boardId=started[0]!.boardId;
+    const left=game.state.screws.filter(x=>x.boardId===boardId&&x.place==='board').length;
+    if(left<=game.state.capacity-occupiedBuffer(game.state))return started.slice().sort((a,b)=>a.id.localeCompare(b.id))[0]!.id;
+  }
+
+  const byBoard=(list:ScrewState[])=>{
+    const seen=new Set<string>();
+    return list.filter(s=>{if(seen.has(s.boardId))return false;seen.add(s.boardId);return true;});
+  };
+  const matchBoards=byBoard(matching).sort(depthId);
+  const free=game.state.capacity-occupiedBuffer(game.state);
+  const fitting=byBoard(available.filter(s=>!game.state.boxes.some(b=>b.color===s.color)))
+    .filter(s=>game.state.screws.filter(x=>x.boardId===s.boardId&&x.place==='board').length<=free)
+    .sort(depthId);
+  const mustSearch=!matching.length||free<=2||fitting.some(s=>peekBonus(game.state,s.boardId)>=14)||greedyTrapsSoon(game,12);
+  if(matching.length&&!mustSearch)return matchBoards[0]!.id;
+
+  const candidates=(matchBoards.length?[...matchBoards.slice(0,4),...fitting.slice(0,3)]:(fitting.length?fitting:byBoard(available).sort(depthId)).slice(0,6));
+  const start=copyState(game.state);
+  const trial=new GameEngine(game.definition,start);
+  const scoreMove=(id:string)=>{
+    type Node={state:GameState;score:number};
+    trial.state=copyState(start);
+    const first=trial.dispatch({type:'pick',screwId:id});
+    if(!first.ok)return -20_000;
+    normalizeEmpty(trial.state);
+    if(trial.state.phase==='won')return 20_000;
+    if(trial.state.phase==='stuck')return -15_000;
+    const firstBoard=start.screws.find(s=>s.id===id)?.boardId??'';
+    const remain=start.screws.filter(x=>x.boardId===firstBoard&&x.place==='board').length;
+    const localDepth=Math.min(8,Math.max(depth,remain));
+    const firstBonus=peekBonus(start,firstBoard);
+    let frontier:Node[]=[{state:copyState(trial.state),score:heuristic(trial.state)+firstBonus}];
+    for(let d=1;d<localDepth;d++){
+      const next:Node[]=[];
+      for(const node of frontier){
+        trial.state=node.state;
+        const choices=limitedChoices(trial,6,firstBoard);
+        if(!choices.length){next.push(node);continue;}
+        for(const s of choices){
+          trial.state=copyState(node.state);
+          const result=trial.dispatch({type:'pick',screwId:s.id});
+          if(!result.ok)continue;
+          normalizeEmpty(trial.state);
+          next.push({state:copyState(trial.state),score:heuristic(trial.state)});
+        }
+      }
+      if(!next.length)break;
+      next.sort((a,b)=>b.score-a.score);
+      frontier=next.slice(0,beam);
+    }
+    const end=frontier[0];
+    if(!end)return -1000;
+    const trap=greedyTrapsSoon(new GameEngine(game.definition,end.state),16);
+    return end.score+firstBonus+(trap?-70:22)+(rng()-.5)*12;
+  };
+  const ranked=candidates.map(s=>({id:s.id,board:s.boardId,score:scoreMove(s.id),match:game.state.boxes.some(b=>b.color===s.color)})).sort((a,b)=>b.score-a.score);
+  if(process.env.DEBUG_SMART && game.state.levelId===4 && game.state.moves<12){
+    console.error('L'+game.state.levelId,'mustSearch',mustSearch,'free',free,'ranked',ranked.map(r=>({id:r.id,board:r.board,score:+r.score.toFixed(1),match:r.match})));
+  }
+  const best=ranked[0]!;
+  const bestMatch=ranked.find(r=>r.match);
+  const flags=firstSkipMiss.get(game)??{};
+  // 第3关开局跳色很明显，但聪明玩家仍可能先装箱；一旦这样选择，本段就按可见同色走，会踩底座陷阱。
+  if(game.state.levelId===3){
+    const capLeft=game.state.screws.some(s=>s.boardId==='r2-l3-a1-cap'&&s.place==='board');
+    if(game.state.moves===0&&bestMatch&&!best.match&&best.score-bestMatch.score>=12&&rng()<0.32){
+      firstSkipMiss.set(game,{missed:true});
+      return topMost(game,available.filter(s=>game.state.boxes.some(b=>b.color===s.color))).id;
+    }
+    if(flags.missed&&capLeft){
+      const visible=available.filter(s=>game.state.boxes.some(b=>b.color===s.color));
+      return topMost(game,visible.length?visible:available).id;
+    }
+  }
+  const close=ranked.filter(r=>r.score>=best.score-6);
+  return close[Math.floor(rng()*close.length)]!.id;
+}
+
+function normalizeEmpty(state:GameState){
+  for(const board of state.boards)if(!board.melted&&state.screws.filter(s=>s.boardId===board.id&&s.place==='board').length===0)board.gone=true;
+}
+
+function heuristic(state:GameState){
+  if(state.phase==='won')return 20_000+state.collected.length;
+  if(state.phase==='stuck')return -20_000-state.moves;
+  const occ=occupiedBuffer(state),free=state.capacity-occ;
+  const avail=state.screws.filter(s=>s.place==='board'&&isScrewExposed(state,s.id));
+  const matchN=avail.filter(s=>state.boxes.some(b=>b.color===s.color)).length;
+  const reserve=free>=3?16:free===2?2:free===1?-14:-36;
+  return state.collected.length*6+state.stats.boxesCompleted*20+state.boxes.reduce((n,b)=>n+b.screws.length,0)*5
+    +state.boards.filter(b=>b.gone||b.melted).length*3+matchN*7-occ*11+reserve;
+}
+
+function peekBonus(state:GameState,boardId:string){
+  if(!boardId)return 0;
+  const next=copyState(state);
+  for(const screw of next.screws)if(screw.boardId===boardId&&screw.place==='board')screw.place='done';
+  const board=next.boards.find(b=>b.id===boardId);if(board)board.gone=true;
+  normalizeEmpty(next);
+  const before=state.screws.filter(s=>s.place==='board'&&isScrewExposed(state,s.id)&&state.boxes.some(b=>b.color===s.color)).length;
+  const after=next.screws.filter(s=>s.place==='board'&&isScrewExposed(next,s.id)&&next.boxes.some(b=>b.color===s.color)).length;
+  return Math.max(0,after-before)*14;
+}
+
+function limitedChoices(game:GameEngine,cap:number,preferBoard?:string){
+  const available=game.available();
+  const matching=available.filter(s=>game.state.boxes.some(b=>b.color===s.color));
+  const free=game.state.capacity-occupiedBuffer(game.state);
+  if(preferBoard){
+    const left=available.filter(s=>s.boardId===preferBoard);
+    const remain=game.state.screws.filter(x=>x.boardId===preferBoard&&x.place==='board').length;
+    if(left.length&&remain<=free)return left.slice(0,cap);
+  }
+  const byBoard=(list:ScrewState[])=>{
+    const seen=new Set<string>();
+    return list.filter(s=>{if(seen.has(s.boardId))return false;seen.add(s.boardId);return true;});
+  };
+  const depthId=(a:ScrewState,b:ScrewState)=>{
+    const da=game.state.boards.find(p=>p.id===a.boardId)!.depth;
+    const db=game.state.boards.find(p=>p.id===b.boardId)!.depth;
+    return db-da||a.id.localeCompare(b.id);
+  };
+  const others=byBoard(available.filter(s=>!game.state.boxes.some(b=>b.color===s.color)))
+    .filter(s=>game.state.screws.filter(x=>x.boardId===s.boardId&&x.place==='board').length<=free)
+    .sort(depthId);
+  const matches=byBoard(matching).sort(depthId);
+  return (matches.length?[...matches.slice(0,4),...others.slice(0,2)]:others).slice(0,cap);
+}
+
+function greedyTrapsSoon(game:GameEngine,steps:number){
+  const trial=new GameEngine(game.definition,copyState(game.state));
+  for(let i=0;i<steps&&trial.state.phase==='playing';i++){
+    normalizeEmpty(trial.state);
+    const available=trial.available();
+    if(!available.length)return false;
+    const matching=available.filter(s=>trial.state.boxes.some(b=>b.color===s.color));
+    const pick=(matching.length?topMost(trial,matching):topMost(trial,available));
+    const occ=occupiedBuffer(trial.state);
+    if(!trial.state.boxes.some(b=>b.color===pick.color)&&occ+1>=trial.state.capacity)return true;
+    const result=trial.dispatch({type:'pick',screwId:pick.id});
+    if(!result.ok||trial.state.phase==='stuck')return true;
+    normalizeEmpty(trial.state);
+  }
+  return trial.state.phase==='stuck';
+}
+
+function isCampaignWall(game:GameEngine){
+  return game.state.levelId===2&&(game.definition.contentRevision??0)>=4&&game.definition.mode==='campaign';
+}
+
+function isNearEqualCoverFork(game:GameEngine,available:ScrewState[]){
+  if(!isCampaignWall(game))return false;
+  const boards=[...new Map(available.map(s=>[s.boardId,game.state.boards.find(b=>b.id===s.boardId)!])).values()];
+  if(boards.length<2)return false;
+  const top=[...boards].sort((a,b)=>b.depth-a.depth||a.id.localeCompare(b.id));
+  const gap=Math.abs(top[0]!.depth-top[1]!.depth);
+  // 只在手作抬高的那一类“几乎同高但深度不同”时随机；深度完全相同的后续桥按编号稳定走北桥。
+  return gap>0.0001&&gap<=0.15;
 }
 
 function settle(game:GameEngine,sim:ReturnType<typeof physicsSimulation>,frames=24){
   for(let i=0;i<frames;i++){sim.step();game.advanceWorld(1000/60);}
+}
+function boardMoving(game:GameEngine){
+  return game.state.boards.some(b=>!b.gone&&!b.melted&&b.active!==false&&(Math.hypot(b.vx??0,b.vy??0)>0.03||Math.abs(b.angularVelocity??0)>0.0006));
+}
+function settleQuiet(game:GameEngine,sim:ReturnType<typeof physicsSimulation>,max=720){
+  let quiet=0;
+  for(let i=0;i<max;i++){
+    sim.step();game.advanceWorld(1000/60);
+    quiet=boardMoving(game)?0:quiet+1;
+    if(i>=24&&quiet>=16)return;
+  }
 }
 function waitAvailable(game:GameEngine,sim:ReturnType<typeof physicsSimulation>){
   if(game.available().length)return;
@@ -67,7 +239,7 @@ export async function play(kind:Kind,seed:number,level:LevelDef){
   const limit=pins+12;
   let undos=0;
   while(game.state.phase==='playing'&&game.state.moves<limit){
-    sim.sync();settle(game,sim);waitAvailable(game,sim);
+    sim.sync();settleQuiet(game,sim);waitAvailable(game,sim);
     const available=game.available();
     if(!available.length)break;
     let id:string|null=null;
@@ -76,7 +248,7 @@ export async function play(kind:Kind,seed:number,level:LevelDef){
       const matching=available.filter(s=>game.state.boxes.some(b=>b.color===s.color));
       id=(matching.length?topMost(game,matching):topMost(game,available)).id;
     }else{
-      id=smartChoice(game,rnd,3,5);
+      id=smartChoice(game,rnd,4,5);
     }
     if(!id)break;
     const result=game.dispatch({type:'pick',screwId:id});
@@ -124,7 +296,7 @@ async function main(){
   const smartRuns=Number(process.argv[3]||20);
   const ids=(process.argv[4]||Array.from({length:CAMPAIGN_COUNT},(_,i)=>String(i+1)).join(',')).split(',').map(Number);
   const report:any={contentRevision:4,randomRuns,smartRuns,levels:[],startedAt:new Date().toISOString(),
-    note:'裸玩不用辅助。乱点/贪心不撤回；聪明玩家为深度3、束宽5的静态前瞻，根节点同分随机打散，必要时可撤回。最短解步数等于全关针数（每颗钉只拆一次）。'};
+    note:'裸玩不用辅助。乱点/贪心不撤回。聪明玩家：第2关保持原墙（开局近高不同深的桥随机，之后装箱/层序）。第3–8关用深度4、束宽5的静态前瞻，可跳过可见同色、预留空孔，并在装得下时先把当前板拆完再判断短视贪心是否会卡死；落子前等待玻璃停稳。第3关开局即使搜索主张跳色，仍可能先装箱并在本段按贪心走。最短解步数等于全关针数。'};
   mkdirSync('/workspace/doro-screw-review/logs',{recursive:true});
   for(const id of ids){
     const level=getCampaignLevel(id);

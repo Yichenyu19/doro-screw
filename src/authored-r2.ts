@@ -332,8 +332,16 @@ export function getCampaignLevel(id:number):LevelDef{
     const previous=getR2Prototype(id);
     const level=structuredClone(previous);
     level.id=id;level.seed=0x440000+id;level.contentRevision=4;level.name=CAMPAIGN_NAMES[id-1];
+    if(id===3){
+      // 手作：把前三段底座略抬到各自顶盖之上。贪心先装箱再拆最上层，会用底座色占满三孔，四钉顶盖就开不出来；官方线仍先开顶盖。针数、盒序、见证钉号不变。
+      for(const boardId of ['r2-l3-a1-base','r2-l3-a2-base','r2-l3-a3-base']){
+        const base=level.boards.find(board=>board.id===boardId);
+        if(base)base.depth+=1.2;
+      }
+    }
     const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
-    return annotateCampaign(level,id,[`修订 4 主线：布局与修订 2 第 ${id} 关相同。`,...notes],4);
+    const extra=id===3?'第1段底座略抬深度，避免只点最上层同色就能过。':'修订 4 主线：布局与修订 2 第 '+id+' 关相同。';
+    return annotateCampaign(level,id,[extra,...notes],4);
   }
   throw Error('战役关卡不存在');
 }

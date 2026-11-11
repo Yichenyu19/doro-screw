@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "sandbox": "local-mock-not-official",
+  "banner": "\n    本地 SDK mock\n    不是 Linux DO 官方沙箱。官方本地预览不提供假 SDK；真实能力需上传 app.zip 到 /apps-sandbox。\n    静音进入状态：有声\n    模拟页面隐藏\n  ",
+  "muted": {
+    "flag": true,
+    "gain": 0
+  },
+  "end": {
+    "phase": "won",
+    "moves": 15,
+    "completed": [
+      1
+    ]
+  },
+  "mid": {
+    "moves": 6,
+    "runId": "f39af37d-3cc9-47c8-ae89-0c92a4423889",
+    "levelId": 2,
+    "phase": "playing"
+  },
+  "paused": {
+    "hidden": true,
+    "modal": true,
+    "title": "我帮你盯着。",
+    "viewPaused": true
+  },
+  "copy": {
+    "value": "D4-3-C-2-0-U8N7V",
+    "selected": 16,
+    "toast": "长按选中这段挑战码即可复制。"
+  },
+  "restored": {
+    "moves": 6,
+    "runId": "f39af37d-3cc9-47c8-ae89-0c92a4423889",
+    "levelId": 2,
+    "phase": "playing"
+  },
+  "picks": 15,
+  "midPicks": 6,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failed": [],
+  "problems": [],
+  "shots": "/tmp/doro-mapp-check",
+  "video": "/tmp/doro-mapp-check/page@c25c598f956e79745a941afbea20d248.webm"
+}

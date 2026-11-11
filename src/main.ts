@@ -10,7 +10,7 @@ import { GameServices } from './worker-client';
 import { assistCount, challengeCode, clearRank, parseChallengeCode, RANK_NAMES, CONTENT_REVISION } from './run';
 import type { ContentVersion,PlayMode } from './types';
 import type { GameView } from './render';
-import { loadSaveAsync, persistSave, awardVictory, ARTWORKS,setCurrentRun,currentRun,exportRecovery,importRecovery,describeAlbumGoal } from './storage';
+import { loadSaveAsync, persistSave, awardVictory, ARTWORKS,setCurrentRun,currentRun,exportRecovery,importRecovery,describeAlbumGoal,type ProgressSave } from './storage';
 import {onSaveStatus,getSaveStatus,flushJournal,noteUnsaved} from './journal';
 import { PresentationDirector } from './presentation';
 import {renderTrays} from './hud-trays';
@@ -18,15 +18,15 @@ import { ScrewArtwork } from './collection';
 import { COLORS, COLOR_NAMES, type Action, type GameEvent, type GameState, type LevelDef } from './types';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
-const loaded=await loadSaveAsync();
-const save=loaded.data;
+let loaded:{data:ProgressSave;warning:string|null;run:import('./types').RunCheckpoint|null};
+let save:ProgressSave;
 const services=new GameServices();
 let pendingLaunch:(()=>void)|null=null;
 let pendingStart:{id:number;saved?:GameState;attempt?:number;version:ContentVersion;playMode:PlayMode;revision:number}|null=null;
 let hintSequence=0;
 let artHighDefinition=false;
 let artworkIndex=-1;
-const audio=new GameAudio(save.settings.sound);
+let audio:GameAudio;
 let engine:GameEngine|null=null;
 let view:GameView|null=null;
 let level:LevelDef|null=null;
@@ -85,6 +85,7 @@ function applySettings():void {
 }
 
 function saveNow(snapshot?:GameState):void {
+  if(!save)return;
   if(saveFrame)cancelAnimationFrame(saveFrame);if(saveTask)clearTimeout(saveTask);saveFrame=saveTask=0;
   tickClock();
   if (mode==='game' && engine) {
@@ -355,7 +356,7 @@ async function requestHint():Promise<void> {
 function showChallenge():void {
   const code=level?challengeCode(level.id,level.attempt??0,level.contentVersion,level.mode,level.contentRevision):'',record=engine?save.records[engine.state.attemptId]:null;
   const goal=engine?.state.goal??'complete';
-  openModal('challenge',`<h2>把这局留给下次。</h2>${code?'<p>同一个挑战码，总是同一个初始盘面。</p><input id="current-code" aria-label="当前挑战码" readonly value="'+code+'">'+artButton('copy-code','复制挑战码',{secondary:true}):''}${engine?.state.phase==='playing'?'<p class="code-label">给自己选个目标，随时可改</p><div class="record-tabs">'+(['complete','independent','clean'] as const).map(rank=>`<button data-action="set-goal" data-goal="${rank}" aria-pressed="${goal===rank}">${rank==='complete'?'轻松完成':RANK_NAMES[rank]}</button>`).join('')+'</div>':''}${record?'<p class="record-best">最佳：'+RANK_NAMES[record.rank]+' · '+Math.round(record.elapsedMs/1000)+' 秒 · 完成 '+record.clears+' 次</p>':''}${artButton('records','查看全部历史记录',{secondary:true})}<label class="code-label" for="challenge-input">输入挑战码</label><input id="challenge-input" autocomplete="off" spellcheck="false" placeholder="D4-…（兼容 D2 / D3）"><p id="code-error" class="small-note" role="status"></p>${artButton('import-code','打开这个局面')}<p class="small-note">独立解出：未看具体目标、未用强辅助，允许撤回。零回退再要求从未撤回。改目标不会抹去已经使用的帮助。</p>`);
+  openModal('challenge',`<h2>把这局留给下次。</h2>${code?'<p>同一个挑战码，总是同一个初始盘面。</p><input id="current-code" class="challenge-code" aria-label="当前挑战码" readonly value="'+code+'">'+artButton('copy-code','复制挑战码',{secondary:true}):''}${engine?.state.phase==='playing'?'<p class="code-label">给自己选个目标，随时可改</p><div class="record-tabs">'+(['complete','independent','clean'] as const).map(rank=>`<button data-action="set-goal" data-goal="${rank}" aria-pressed="${goal===rank}">${rank==='complete'?'轻松完成':RANK_NAMES[rank]}</button>`).join('')+'</div>':''}${record?'<p class="record-best">最佳：'+RANK_NAMES[record.rank]+' · '+Math.round(record.elapsedMs/1000)+' 秒 · 完成 '+record.clears+' 次</p>':''}${artButton('records','查看全部历史记录',{secondary:true})}<label class="code-label" for="challenge-input">输入挑战码</label><input id="challenge-input" autocomplete="off" spellcheck="false" placeholder="D4-…（兼容 D2 / D3）"><p id="code-error" class="small-note" role="status"></p>${artButton('import-code','打开这个局面')}<p class="small-note">独立解出：未看具体目标、未用强辅助，允许撤回。零回退再要求从未撤回。改目标不会抹去已经使用的帮助。</p>`);
 }
 
 function showRecords():void {
@@ -501,7 +502,7 @@ function dispatchButton(button:HTMLElement):void {
   if(action==='save-status'){showSaveState();return;}
   if(action==='import-save'){chooseRecovery();return;}
   if(action==='retry-save'){lastSaveWarning=false;saveNow();void flushJournal().then(()=>{if(modal==='save-status')showSaveState();});return;}
-  if(action==='export-save'){saveNow();const blob=new Blob([exportRecovery(save)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='Doro-V4-恢复记录-'+new Date().toISOString().slice(0,10)+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);toast('恢复记录已导出，请保存好这份文件。');return;}
+  if(action==='export-save'){saveNow();const text=exportRecovery(save),name='Doro-V4-恢复记录-'+new Date().toISOString().slice(0,10)+'.json';const handed=window.__DORO_MAPP__?.saveFile;if(handed){void Promise.resolve(handed(name,text)).then(()=>toast('恢复记录已导出，请保存好这份文件。')).catch(()=>toast('未能导出文件，可先复制文本备份。'));return;}const blob=new Blob([text],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);toast('恢复记录已导出，请保存好这份文件。');return;}
   if(action==='confirm-launch'){const launch=pendingLaunch;pendingLaunch=null;launch?.();return;}
   if(action==='cancel-launch'){pendingLaunch=null;closeModal();return;}
   if(action==='help'){showHelp();return;}
@@ -512,7 +513,7 @@ function dispatchButton(button:HTMLElement):void {
   if(action==='hint-relations'){void requestRelations();return;}
   if(action==='hint-arrow'){void requestHint();return;}
   if(action==='challenge'){showChallenge();return;}
-  if(action==='copy-code'){const input=document.querySelector<HTMLInputElement>('#current-code');if(input){void navigator.clipboard?.writeText(input.value).then(()=>toast('挑战码已复制')).catch(()=>{input.select();toast('长按选中这段挑战码即可复制。');});}return;}
+  if(action==='copy-code'){const input=document.querySelector<HTMLInputElement>('#current-code');if(input){input.focus();input.select();input.setSelectionRange(0,input.value.length);const canClipboard=!import.meta.env.DORO_MAPP&&!!navigator.clipboard?.writeText;if(canClipboard){void navigator.clipboard.writeText(input.value).then(()=>toast('挑战码已复制')).catch(()=>toast('长按选中这段挑战码即可复制。'));}else toast('长按选中这段挑战码即可复制。');}return;}
   if(action==='import-code'){const input=document.querySelector<HTMLInputElement>('#challenge-input'),parsed=parseChallengeCode(input?.value??'');const error=document.querySelector('#code-error');if(!parsed){if(error)error.textContent='挑战码不完整或内容修订版暂不支持，请核对后再试。';return;}if(parsed.contentVersion==='v4'&&((parsed.mode==='random'&&!randomUnlocked())||(parsed.mode==='endless'&&!endlessUnlocked()))){if(error)error.textContent=parsed.mode==='random'?'完成第二关后可打开随机挑战。':'完成三十关后可打开无尽挑战。';return;}if((parsed.contentRevision??1)>=2&&(parsed.mode==='rescue'||parsed.mode==='mastery')&&!themeUnlocked(parsed.levelId)){if(error)error.textContent='完成主线第 '+practiceCampaignId(parsed.levelId)+' 关后即可打开这个主题。';return;}confirmLaunch(()=>{void startLevel(parsed.levelId,undefined,parsed.attempt,parsed.contentVersion,parsed.mode,parsed.contentRevision??1);});return;}
   if (action==='home') {showHome();return;}
   if (action==='levels') {showLevels();return;}
@@ -521,7 +522,7 @@ function dispatchButton(button:HTMLElement):void {
   if (action==='art-next') {if(engine?.state.phase==='playing'||engine?.state.phase==='stuck')closeModal();else if(engine?.state.phase==='won')launchNext();else void startLevel(nextCampaignLevel());return;}
   if (action==='art-claim') {if(save.album.length===6)showAlbum();else showArtwork();return;}
   if(action==='art-fill'){artwork?.fillAll();return;}
-  if(action==='art-hd'){const image=document.querySelector<HTMLImageElement>('.artwork-hd'),canvas=document.querySelector<HTMLElement>('.artwork-stage canvas');if(image&&canvas&&save.album.includes(artworkIndex+1)){artHighDefinition=!artHighDefinition;if(artHighDefinition&&!image.src)image.src=assetUrl('album-'+(artworkIndex+1)+'.png','hd');image.hidden=!artHighDefinition;canvas.hidden=artHighDefinition;button.textContent=artHighDefinition?'看看螺丝点阵':'欣赏高清原图';}return;}
+  if(action==='art-hd'){const image=document.querySelector<HTMLImageElement>('.artwork-hd'),canvas=document.querySelector<HTMLElement>('.artwork-stage canvas');if(image&&canvas&&save.album.includes(artworkIndex+1)){artHighDefinition=!artHighDefinition;if(artHighDefinition&&!image.src){const src=assetUrl('album-'+(artworkIndex+1)+'.png','hd');if(!src){toast('这个微应用包没有附带高清原图。');artHighDefinition=false;return;}image.src=src;}image.hidden=!artHighDefinition;canvas.hidden=artHighDefinition;button.textContent=artHighDefinition?'看看螺丝点阵':'欣赏高清原图';}return;}
   if (action==='art-retry') {artwork?.reload();return;}
   if (action==='art-shoot') {artwork?.start();window.setTimeout(()=>artwork?.stop(),100);return;}
   if (action==='album-card') {showAlbumCard(Number(button.dataset.album));return;}
@@ -598,7 +599,11 @@ document.addEventListener('keydown',event=>{
 });
 document.addEventListener('visibilitychange',()=>{
   lastClockTime=performance.now();
-  if(document.hidden){presenter?.flush();artwork?.stop();saveNow();view?.setPaused(true);audio.suspend();}
+  if(document.hidden){
+    presenter?.flush();artwork?.stop();saveNow();view?.setPaused(true);audio.suspend();
+    // 微应用要求离开可见区域时暂停游戏；网站版仍只停物理和计时，不强制弹出暂停页。
+    if(import.meta.env.DORO_MAPP&&mode==='game'&&!['pause','win','rescue','error'].includes(modal??''))showPause();
+  }
   else {view?.setPaused(Boolean(modal));audio.unlock();}
 });
 window.addEventListener('pagehide',()=>{presenter?.flush();artwork?.stop();saveNow();view?.setPaused(true);audio.suspend();});
@@ -607,15 +612,20 @@ window.addEventListener('resize',()=>presenter?.flush());
 function clockFrame(time:number){tickClock(time);requestAnimationFrame(clockFrame);}
 requestAnimationFrame(clockFrame);
 window.setInterval(()=>{
-  if(mode==='game'&&engine&&!document.hidden)saveNow();
+  if(save&&mode==='game'&&engine&&!document.hidden)saveNow();
 },5000);
 
-applySettings();
-showHome();
-if(loaded.warning)toast(loaded.warning,5500);
-
-if(import.meta.env.DEV||import.meta.env.MODE==='verification'||new URLSearchParams(location.search).has('check')) {
-  Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,get save(){return save;},get artwork(){return artwork;}},configurable:true});
+export async function bootGame():Promise<void> {
+  loaded=await loadSaveAsync();
+  save=loaded.data;
+  audio=new GameAudio(save.settings.sound);
+  applySettings();
+  showHome();
+  if(loaded.warning)toast(loaded.warning,5500);
+  if(import.meta.env.DEV||import.meta.env.MODE==='verification'||import.meta.env.DORO_MAPP&&new URLSearchParams(location.search).has('check')||new URLSearchParams(location.search).has('check')) {
+    Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,get save(){return save;},get artwork(){return artwork;}},configurable:true});
+  }
 }
+if(!import.meta.env.DORO_MAPP)void bootGame();
 
 

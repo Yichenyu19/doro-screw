@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "id": "019a0d0d-0000-7000-8000-00000000d0d0",
+  "name": "Doro · 打个螺丝",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "script": "app.js",
+  "style": "app.css",
+  "permissions": [
+    "theme.read",
+    "storage.read",
+    "storage.write",
+    "audio.webAudio",
+    "files.save"
+  ]
+}

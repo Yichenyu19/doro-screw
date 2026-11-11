@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <title>Doro · 打个螺丝 · 微应用本地 mock（非官方沙箱）</title>
+  <link rel="stylesheet" href="./app.css">
+  <style>
+    #mapp-mock-bar{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:#3b1d28;color:#fff;font:12px/1.3 sans-serif;}
+    #mapp-mock-bar button{background:#fff;color:#3b1d28;border:0;border-radius:999px;padding:4px 8px;font-weight:700;}
+    body{padding-top:52px;box-sizing:border-box;}
+  </style>
+</head>
+<body>
+  <div id="mapp-mock-bar" role="note">
+    <strong>本地 SDK mock</strong>
+    <span>不是 Linux DO 官方沙箱。官方本地预览不提供假 SDK；真实能力需上传 app.zip 到 /apps-sandbox。</span>
+    <button type="button" id="mock-sound">静音进入状态：有声</button>
+    <button type="button" id="mock-hide">模拟页面隐藏</button>
+  </div>
+  <div id="app"></div>
+  <script src="./mock-sdk.js"></script>
+  <script>
+    document.getElementById("mock-sound").addEventListener("click", function () {
+      var mock = window.__DORO_MAPP_MOCK__;
+      mock.setMuted(!mock.isMuted());
+      this.textContent = mock.isMuted() ? "声音开关：静音" : "声音开关：有声";
+    });
+    document.getElementById("mock-hide").addEventListener("click", function () {
+      var mock = window.__DORO_MAPP_MOCK__;
+      mock.setHidden(!mock.isHidden());
+      this.textContent = mock.isHidden() ? "模拟恢复可见" : "模拟页面隐藏";
+    });
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>

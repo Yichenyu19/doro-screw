@@ -2,11 +2,22 @@ import runtime from './runtime-art.json';
 import originalPaths from './asset-paths.json';
 export const ART=runtime;
 export type ArtKind=keyof typeof runtime.sheets;
-export function assetUrl(file:string,variant?:'thumb'|'hd'):string{
-  if(file.startsWith('runtime/'))return `${import.meta.env.BASE_URL}${file}`;
+let assetResolver:((path:string)=>string|null)|null=null;
+/** 微应用启动时注入 Blob URL；网站版保持原路径。 */
+export function setAssetResolver(resolver:((path:string)=>string|null)|null):void{assetResolver=resolver;}
+export function resolvedAssetPath(file:string,variant?:'thumb'|'hd'):string{
+  if(file.startsWith('runtime/'))return file;
   const key=variant?`${file}:${variant}`:file;
   const optimized=(runtime.raw as Record<string,string>)[key];
-  return optimized?`${import.meta.env.BASE_URL}${optimized}`:`${import.meta.env.BASE_URL}assets/${(originalPaths as Record<string,string>)[file]??file}`;
+  return optimized??`assets/${(originalPaths as Record<string,string>)[file]??file}`;
+}
+export function assetUrl(file:string,variant?:'thumb'|'hd'):string{
+  const path=resolvedAssetPath(file,variant);
+  if(assetResolver)return assetResolver(path)??'';
+  if(file.startsWith('runtime/'))return `${import.meta.env?.BASE_URL??'/'}${file}`;
+  const key=variant?`${file}:${variant}`:file;
+  const optimized=(runtime.raw as Record<string,string>)[key];
+  return optimized?`${import.meta.env?.BASE_URL??'/'}${optimized}`:`${import.meta.env?.BASE_URL??'/'}assets/${(originalPaths as Record<string,string>)[file]??file}`;
 }
 export const PANEL_SLICE=runtime.panelSlice;
 const warmed=new Map<string,HTMLImageElement>();

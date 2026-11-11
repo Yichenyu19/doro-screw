@@ -9,10 +9,15 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "tsx --test tests/*.test.ts",
     "check-release": "node scripts/check-release.mjs",
-    "measure-release": "node scripts/measure-release.mjs"
+    "measure-release": "node scripts/measure-release.mjs",
+    "build:mapp": "node scripts/build-mapp.mjs",
+    "build:mapp:debug": "MINI_APP_DEBUG=1 node scripts/build-mapp.mjs",
+    "preview:mapp": "node scripts/serve-mapp-preview.mjs",
+    "check:mapp": "node scripts/check-mapp.mjs"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "phaser": "^3.90.0",
+    "@discourse-mini-app/sdk": "file:./vendor/discourse-mini-app-sdk"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

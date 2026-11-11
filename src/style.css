@@ -422,3 +422,5 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .practice-options p,.daily-practice p {font-size:13px;line-height:1.65;margin:0 0 10px;}
 .daily-practice {margin:16px 0;background:#fff4ee;}
 .daily-practice .eyebrow {display:block;margin-bottom:7px;}
+
+.challenge-code {user-select:all;-webkit-user-select:all;cursor:text;}

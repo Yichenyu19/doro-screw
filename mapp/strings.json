@@ -1,0 +1,26 @@
+{
+  "zh_CN": {
+    "name": "Doro · 打个螺丝",
+    "tagline": "拆开玻璃，收好颜色，再陪 Doro 玩一关。",
+    "loading": "正在打开微应用…",
+    "soundHint": "声音由社区的声音开关控制，也可在游戏设置里关闭音效。",
+    "copyHint": "长按选中挑战码即可复制。",
+    "previewNote": "本地预览若使用 mock，并不是官方沙箱。"
+  },
+  "zh_TW": {
+    "name": "Doro · 打個螺絲",
+    "tagline": "拆開玻璃，收好顏色，再陪 Doro 玩一關。",
+    "loading": "正在開啟微應用…",
+    "soundHint": "聲音由社群的聲音開關控制，也可在遊戲設定裡關閉音效。",
+    "copyHint": "長按選中挑戰碼即可複製。",
+    "previewNote": "本地預覽若使用 mock，並不是官方沙箱。"
+  },
+  "en": {
+    "name": "Doro Screw Puzzle",
+    "tagline": "Clear glass plates, sort colors, and play a round with Doro.",
+    "loading": "Opening the mini app…",
+    "soundHint": "Use the community sound switch, or turn effects off in settings.",
+    "copyHint": "Long-press the challenge code to copy it.",
+    "previewNote": "A local mock is not the official sandbox."
+  }
+}

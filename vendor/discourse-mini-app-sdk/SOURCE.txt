@@ -1,0 +1,3 @@
+Vendored from https://github.com/linux-do/mapp-developer-guide (sdk/, package @discourse-mini-app/sdk 0.3.0).
+Source commit: acbe781
+Do not edit these files by hand; replace the directory when the official SDK is updated.

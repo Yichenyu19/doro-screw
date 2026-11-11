@@ -1,5 +1,6 @@
 import {assertConservation,makeAttemptId,occupiedBuffer} from './core';
-import {assistCount,clearRank,freshStats,newRunId,RANK_ORDER} from './run';
+import {assistCount,clearRank,freshStats,newRunId,RANK_ORDER,CONTENT_REVISION} from './run';
+import {CAMPAIGN_COUNT,remapR2Completed,remapR2Unlocked} from './r2-catalog';
 import type {BestRecord,GameState,RunCheckpoint,RunStats,SaveData,Settings} from './types';
 import {readJournal,unpackRun,writeJournal,recoveryText as exportJournal,readPending,archiveRecovery,flushJournal,getSaveStatus} from './journal';
 
@@ -18,7 +19,7 @@ export interface ProgressSave extends SaveData {
   attemptCounter:number;attempts:Record<string,number>;legacyCompleted:number[];currentAttempt:number;
   records:Record<string,BestRecord>;endlessNextId:number;tutorialSeen:string[];totalScrews:number;
   starterSticker:boolean;randomCounter:number;
-  contentRevision:2;r1Campaign:{completed:number[];unlocked:number};
+  contentRevision:number;r1Campaign:{completed:number[];unlocked:number};
 }
 export const DEFAULT_SETTINGS:Settings={sound:true,reducedMotion:false,colorLabels:false};
 let recoveryText:string|null=null;
@@ -31,7 +32,7 @@ const ids=(value:unknown,max=30):number[]=>Array.isArray(value)?[...new Set(valu
 const strings=(value:unknown):string[]=>Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'):[];
 export function freshSave():ProgressSave {
   const reducedMotion=typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  return{version:4,contentRevision:2,r1Campaign:{completed:[],unlocked:1},current:null,completed:[],unlocked:1,album:[],settings:{...DEFAULT_SETTINGS,reducedMotion:!!reducedMotion},updatedAt:Date.now(),materialBalance:0,artworkProgress:ARTWORKS.map(()=>0),rewardedAttempts:[],completedRuns:[],attemptCounter:0,attempts:{},legacyCompleted:[],currentAttempt:0,records:{},endlessNextId:31,tutorialSeen:[],totalScrews:0,starterSticker:false,randomCounter:0};
+  return{version:4,contentRevision:CONTENT_REVISION,r1Campaign:{completed:[],unlocked:1},current:null,completed:[],unlocked:1,album:[],settings:{...DEFAULT_SETTINGS,reducedMotion:!!reducedMotion},updatedAt:Date.now(),materialBalance:0,artworkProgress:ARTWORKS.map(()=>0),rewardedAttempts:[],completedRuns:[],attemptCounter:0,attempts:{},legacyCompleted:[],currentAttempt:0,records:{},endlessNextId:31,tutorialSeen:[],totalScrews:0,starterSticker:false,randomCounter:0};
 }
 function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
   data.completed=ids(stored.completed);data.legacyCompleted=ids(stored.legacyCompleted);
@@ -53,9 +54,15 @@ function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
     if(record&&key===record.puzzleId&&['complete','independent','clean'].includes(record.rank)&&integer(record.levelId)&&integer(record.seed)&&Number.isFinite(record.elapsedMs)&&record.elapsedMs>=0&&integer(record.clears))data.records[key]=record;
   }
 }
+export function revisionWarning(storedRevision:unknown):string|null {
+  if(storedRevision===CONTENT_REVISION)return null;
+  if(storedRevision===2)return '主线在第二关后补了两道短桥关。已通关的进度已按新顺序接好。';
+  return '旧修订的盘面、成绩和画册已保留；当前主线从新的成绩记录开始。';
+}
 function migrateRevision(data:ProgressSave,stored:Partial<ProgressSave>):void {
-  if(stored.version===4&&stored.contentRevision!==2){data.r1Campaign={completed:[...data.completed],unlocked:data.unlocked};data.completed=[];}
-  data.completed=ids(data.completed,8);data.unlocked=Math.min(9,data.unlocked);data.contentRevision=2;
+  if(stored.version===4&&stored.contentRevision===1){data.r1Campaign={completed:[...data.completed],unlocked:data.unlocked};data.completed=[];data.unlocked=1;}
+  else if(stored.version===4&&stored.contentRevision===2){data.completed=remapR2Completed(data.completed);data.unlocked=remapR2Unlocked(data.unlocked,data.completed);}
+  data.completed=ids(data.completed,CAMPAIGN_COUNT);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(1,data.unlocked,...data.completed.map(id=>id+1)));data.contentRevision=CONTENT_REVISION;
 }
 export function migrateV2State(raw:unknown):GameState {
   const state=JSON.parse(JSON.stringify(raw)) as GameState&{version:number};
@@ -79,7 +86,7 @@ export function loadSave():{data:ProgressSave;warning:string|null} {
       if(stored.version!==4||!Array.isArray(stored.completed))throw Error('存档版本不匹配');
       readMeta(data,stored);
       if(stored.current){assertConservation(stored.current);data.current=stored.current.phase==='won'?null:stored.current;}
-      migrateRevision(data,stored);return{data,warning:stored.contentRevision===2?null:'旧修订的盘面、成绩和画册已保留；八关主线从新的成绩记录开始。'};
+      migrateRevision(data,stored);return{data,warning:revisionWarning(stored.contentRevision)};
     }
     const v3Text=localStorage.getItem(V3_KEY);
     if(v3Text){
@@ -126,16 +133,19 @@ export function awardVictory(data:ProgressSave,state:GameState,attempt=0):number
   const better=!old||RANK_ORDER[rank]>RANK_ORDER[old.rank]||(rank===old.rank&&(record.elapsedMs<old.elapsedMs||(record.elapsedMs===old.elapsedMs&&record.undos<old.undos)));
   data.records[state.attemptId]=better?record:{...old,clears:record.clears,updatedAt:record.updatedAt};
   const v4campaign=state.contentVersion==='v4'&&(state.mode??'campaign')==='campaign';
-  const campaign=v4campaign&&(state.contentRevision??1)===2;
+  const campaign=v4campaign&&((state.contentRevision??1)===CONTENT_REVISION||(state.contentRevision??1)===2);
+  const currentCampaign=v4campaign&&(state.contentRevision??1)===CONTENT_REVISION;
+  const legacyR2=v4campaign&&(state.contentRevision??1)===2;
   const oldCampaign=v4campaign&&!campaign;
   const legacy=state.contentVersion!=='v4';
   const firstClear=campaign?!data.completed.includes(state.levelId):oldCampaign?!data.r1Campaign.completed.includes(state.levelId):legacy&&state.levelId<=30&&!data.legacyCompleted.includes(state.levelId);
   if(!data.rewardedAttempts.includes(state.attemptId))data.rewardedAttempts.push(state.attemptId);
-  if(campaign&&!data.completed.includes(state.levelId)){data.completed.push(state.levelId);data.completed.sort((a,b)=>a-b);data.unlocked=Math.min(9,Math.max(data.unlocked,state.levelId+1));if(state.levelId===1)data.starterSticker=true;}
+  if(currentCampaign&&!data.completed.includes(state.levelId)){data.completed.push(state.levelId);data.completed.sort((a,b)=>a-b);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(data.unlocked,state.levelId+1));if(state.levelId===1)data.starterSticker=true;}
+  if(legacyR2){const mapped=remapR2Completed([state.levelId]);for(const id of mapped)if(!data.completed.includes(id))data.completed.push(id);data.completed.sort((a,b)=>a-b);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(data.unlocked,...mapped.map(id=>id+1)));if(mapped.includes(1))data.starterSticker=true;}
   if(oldCampaign){if(!data.r1Campaign.completed.includes(state.levelId))data.r1Campaign.completed.push(state.levelId);data.r1Campaign.unlocked=Math.min(31,Math.max(data.r1Campaign.unlocked,state.levelId+1));}
   if(legacy&&state.levelId<=30&&!data.legacyCompleted.includes(state.levelId)){data.legacyCompleted.push(state.levelId);data.unlocked=Math.min(9,Math.max(data.unlocked,state.levelId+1));}
   if(state.contentVersion==='v4'&&state.mode==='endless')data.endlessNextId=Math.min(1000000,Math.max(data.endlessNextId,state.levelId+1));
-  const challenge=state.contentVersion==='v4'&&state.contentRevision===2&&(state.mode==='rescue'||state.mode==='mastery');
+  const challenge=state.contentVersion==='v4'&&((state.contentRevision??1)>=2)&&(state.mode==='rescue'||state.mode==='mastery');
   const eligible=new Set(state.rewardableIds??state.screws.map(s=>s.id));
   const newCollected=state.screws.filter(s=>eligible.has(s.id)&&s.place==='done').length;
   const earned=firstClear?state.screws.length:challenge?newCollected:0;data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;return earned;

@@ -2,8 +2,8 @@ import './geometry-setup';
 import {strategyModule} from './strategy-modules';
 import type {BoardDef,BoardShape,ColorId,DifficultyProfile,LevelDef,RevealPacket,Vec2,WitnessStep} from './types';
 
-import {R2_TOTALS,R2_NAMES} from './r2-catalog';
-export {R2_TOTALS,R2_NAMES};
+import {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS} from './r2-catalog';
+export {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS};
 const COLORS:ColorId[]=['orange','cyan','red','purple','green','brown','yellow','blue','rose','gray'];
 type Pin=[number,number,ColorId];
 interface Scene {boards:BoardDef[];queue:ColorId[];route:string[];packets:string[][];critical:string[];decisions:string[];entry:string}
@@ -127,7 +127,7 @@ function singleHinge(prefix:string,palette:ColorId[],depth:number):Scene {
 function profile(theme:string,decisions:string[],critical:string[],depth:number):DifficultyProfile {
   return{theme,decisions,dependencies:critical.slice(1).map((to,i)=>({from:critical[i],to,reason:'上一处开路改变当前盒序与后续开路所需空孔'})),planningDepth:depth,crossRegionLinks:critical.length,crossRevealLinks:0,bufferMargin:1,predecessorComparison:'待统一策略与整局物理对照验收。',originalComparison:'原作录像的四阶段画面已归档；待关键状态逐项对照。',verification:'pending',evidence:[]};
 }
-function assemble(id:number,scenes:Scene[],initialIds:string[],name=R2_NAMES[id-1],expectedTotal:number=R2_TOTALS[id-1]):LevelDef {
+function assemble(id:number,scenes:Scene[],initialIds:string[],name=R2_NAMES[id-1],expectedTotal:number=R2_TOTALS[id-1],revision=2):LevelDef {
   const boards=scenes.flatMap(s=>s.boards),initial=new Set(initialIds),packets:RevealPacket[]=[];
   for(const [index,scene]of scenes.entries())for(const [part,boardIds]of scene.packets.entries()){
     const reserved=boardIds.filter(id=>!initial.has(id));if(!reserved.length)continue;
@@ -140,10 +140,10 @@ function assemble(id:number,scenes:Scene[],initialIds:string[],name=R2_NAMES[id-
   const total=boards.reduce((n,b)=>n+b.screws.length,0);
   if(total!==expectedTotal)throw Error(`第${id}关总量${total}不符`);
   const decisions=scenes.flatMap(s=>s.decisions),critical=scenes.flatMap(s=>s.critical);
-  return{id,name,subtitle:'先看上下两处供给，再决定把空孔花在哪里',seed:0x420000+id,attempt:0,mode:'campaign',contentRevision:2,contentVersion:'v4',geometryVersion:'v4',theme:'quadrants',sourceKind:'doro-original',boards,boxQueue:scenes.flatMap(s=>s.queue),witness,revealPlan:{threshold:4,stableMs:250,packets},difficulty:profile(name,decisions,critical,id),strategy:'当前盒需要的颜色被哪座桥挡住？留意另一座桥会先占去几孔。',designNotes:['全关五轮双桥供给关系，开路决策持续到最后一轮；没有通用随机尾段。','初始十四块板；后续每批2至3块从更深处显露。盒序、颜色与显层蓝图在开局固定。'],curriculum:{objective:'在两座桥之间选择先投资哪一侧',prerequisites:['第一关的支点、暂存与回流'],decision:decisions[0],failure:'把旁支颜色提前放进暂存，会挤掉当前盒色桥的开路空间。',release:'解除一座桥后，两个工区补齐当前盒，并接回开路暂存。',criticalBoardIds:critical,stages:scenes.map((s,i)=>({until:scenes.slice(0,i+1).reduce((n,s)=>n+s.route.length,0),title:`第${i+1}段 · 两处桥接`,advice:'比较两座桥下面的颜色。先拆哪座，会改变随后两盒接走什么。'}))}};
+  return{id,name,subtitle:'先看上下两处供给，再决定把空孔花在哪里',seed:(revision>=3?0x430000:0x420000)+id,attempt:0,mode:'campaign',contentRevision:revision,contentVersion:'v4',geometryVersion:'v4',theme:'quadrants',sourceKind:'doro-original',boards,boxQueue:scenes.flatMap(s=>s.queue),witness,revealPlan:{threshold:4,stableMs:250,packets},difficulty:profile(name,decisions,critical,id),strategy:'当前盒需要的颜色被哪座桥挡住？留意另一座桥会先占去几孔。',designNotes:['全关五轮双桥供给关系，开路决策持续到最后一轮；没有通用随机尾段。','初始十四块板；后续每批2至3块从更深处显露。盒序、颜色与显层蓝图在开局固定。'],curriculum:{objective:'在两座桥之间选择先投资哪一侧',prerequisites:['第一关的支点、暂存与回流'],decision:decisions[0],failure:'把旁支颜色提前放进暂存，会挤掉当前盒色桥的开路空间。',release:'解除一座桥后，两个工区补齐当前盒，并接回开路暂存。',criticalBoardIds:critical,stages:scenes.map((s,i)=>({until:scenes.slice(0,i+1).reduce((n,s)=>n+s.route.length,0),title:`第${i+1}段 · 两处桥接`,advice:'比较两座桥下面的颜色。先拆哪座，会改变随后两盒接走什么。'}))}};
 }
 
-export function getR2Practice(theme:number,variant:number):LevelDef {
+export function getR2Practice(theme:number,variant:number,revision=2):LevelDef {
   if(!Number.isInteger(theme)||theme<2||theme>8||!Number.isInteger(variant)||variant<0||variant>=6)throw Error('挑战主题或编排无效');
   const palette=(i:number)=>Array.from({length:10},(_,n)=>COLORS[(n+i*3+variant)%10]),prefix=(i:number)=>`r2-t${theme}-v${variant}-a${i+1}`,angle=(i:number)=>(i+variant)%2?Math.PI:0;
   let scenes:Scene[];
@@ -164,7 +164,7 @@ export function getR2Practice(theme:number,variant:number):LevelDef {
     while(oldPins.some((pin,j)=>pin.color===newPins[j].color)){for(const b of next.boards){for(const s of b.screws)s.color=COLORS[(COLORS.indexOf(s.color)+1)%10];b.color=b.screws[0].color;}next.queue=next.queue.map(c=>COLORS[(COLORS.indexOf(c)+1)%10]);}
     if(two)carryTwo(previous,next);else carry(previous,next);
   }
-  const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].packets.slice(0,2).flat()],total=scenes.reduce((n,s)=>n+s.route.length,0),level=assemble(theme,scenes,initial,R2_NAMES[theme-1],total);
+  const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].packets.slice(0,2).flat()],total=scenes.reduce((n,s)=>n+s.route.length,0),level=assemble(theme,scenes,initial,R2_NAMES[theme-1],total,revision);
   if(total<60||total>120)throw Error('主题挑战总量必须保持在60至120颗');
   level.name=R2_NAMES[theme-1]+' · 精修 '+(variant+1);level.subtitle='熟悉的主题，新的供给安排';level.mode='mastery';level.tutorial=false;level.strategy='比较当前盒、预告和挡板关系，再决定开路顺序。';
   level.curriculum!.objective='在不同供给编排中重新解决这个主题';level.curriculum!.stages.forEach((s,i)=>{s.title=`第${i+1}段 · 接好供给`;s.advice=level.strategy!;});level.designNotes=[`主题${theme}的第${variant+1}种确定编排。${total}颗，所有供给和后备在开局确定。`,'编排变化包括分散供给、单色与双色开路、跨段库存、连接次序及板件方向。'];return level;
@@ -231,4 +231,52 @@ export function getR2Prototype(id:number):LevelDef {
   const orientations=[0,Math.PI,Math.PI/2,-Math.PI/2,0];
   const scenes=orientations.map((orientation,i)=>corners(`r2-l2-a${i+1}`,Array.from({length:8},(_,n)=>COLORS[(n+i*3)%COLORS.length]),(5-i)*4,orientation));
   const level=assemble(2,scenes,[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)]);level.designNotes=['全关五轮双桥供给关系，关键开路选择贯穿全关。','初始十二块板，后层的下半区与旁支供给按低入口条件显露，避免开局过早跨段借色。'];return level;
+}
+
+function oldL2Palette(sceneIndex:number):ColorId[]{
+  return Array.from({length:8},(_,n)=>COLORS[(n+sceneIndex*3)%COLORS.length]);
+}
+function annotateCampaign(level:LevelDef,id:number,notes:string[]):LevelDef{
+  level.subtitle='第 '+id+' 关 · '+CAMPAIGN_TOTALS[id-1]+' 颗钉';
+  level.designNotes=notes;
+  return level;
+}
+export function getCampaignLevel(id:number):LevelDef{
+  if(id===1){
+    const part=strategyModule('hinge','r2-l1');
+    const scene:Scene={boards:part.boards,queue:part.queue,route:part.witness.map(s=>s.screwId),packets:[],critical:[part.hinge!.boardId],entry:part.witness[0].screwId,decisions:[part.curriculum.decision,part.curriculum.failure]};
+    const level=assemble(1,[scene],scene.boards.map(b=>b.id),CAMPAIGN_NAMES[0],CAMPAIGN_TOTALS[0],3);
+    level.theme='hinge';level.hinge=part.hinge;level.tutorial=true;level.revealPlan=undefined;
+    level.strategy='先认出当前盒色还压在长板下面，再用两孔暂存换开窗口。';
+    level.curriculum={...part.curriculum,objective:'理解支点和有限暂存的取舍',decision:part.curriculum.decision,stages:[{until:5,title:'先看盒色和空孔',advice:'上面两个盒子的颜色还压在长板下面。其他颜色会先占暂存孔。只剩一钉时，玻璃会绕着它摆开。'},{until:15,title:'接回暂存的颜色',advice:'新盒出现会把同色钉接回去。空孔腾出来后，再看下一处入口。'}]};
+    return annotateCampaign(level,1,['修订 3 加强开局辨认：当前盒色在棋盘上可对上，被压住的目标色会隐约露出来。','窗口摆开和首次回流各给一句短提示；教学结构仍是留下支点，让长板自己让出入口。']);
+  }
+  if(id===2){
+    const scene=corners('r3-l2',oldL2Palette(0),20,0);
+    const level=assemble(2,[scene],scene.boards.map(b=>b.id),CAMPAIGN_NAMES[1],CAMPAIGN_TOTALS[1],3);
+    level.theme='quadrants';
+    level.strategy='三颗桥钉会先占三个空孔，同时打开左右两个工区。先看清当前盒色再决定。';
+    level.curriculum={objective:'只用一座桥学会开路成本',prerequisites:['第一关的支点、暂存与回流'],decision:scene.decisions[0],failure:scene.decisions[1]??'',release:'桥板落下后左右盒色同时露出；先装箱，再接回开路暂存。',criticalBoardIds:scene.critical,stages:[{until:scene.route.length,title:'先拆这一座',advice:'桥钉会占三个空孔。左右两边的盒色会一起露出来，先装箱再收回开路的暂存。'}]};
+    return annotateCampaign(level,2,['把旧第二关五座四角桥拆成短关。这一关只交一座桥，24 颗钉全部开局可见。','官方线无道具可解；见证含物理等待。']);
+  }
+  if(id===3){
+    const scenes=[corners('r3-l3-a',oldL2Palette(1),16,Math.PI),corners('r3-l3-b',oldL2Palette(2),12,Math.PI/2)];
+    const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)];
+    const level=assemble(3,scenes,initial,CAMPAIGN_NAMES[2],CAMPAIGN_TOTALS[2],3);
+    return annotateCampaign(level,3,['旧第二关的第二、第三座桥。第一座清掉关键板后，下一层才会露出来。','48 颗钉，手作供给与显层，官方线无道具可解。']);
+  }
+  if(id===4){
+    const scenes=[corners('r3-l4-a',oldL2Palette(3),8,-Math.PI/2),corners('r3-l4-b',oldL2Palette(4),4,0)];
+    const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)];
+    const level=assemble(4,scenes,initial,CAMPAIGN_NAMES[3],CAMPAIGN_TOTALS[3],3);
+    return annotateCampaign(level,4,['旧第二关的最后两座桥，收回“四角借路”这个名字。','48 颗钉，布局仍是手作四角桥，不含新增玩法。']);
+  }
+  if(id>=5&&id<=10){
+    const previous=getR2Prototype(id-2);
+    const level=structuredClone(previous);
+    level.id=id;level.seed=0x430000+id;level.contentRevision=3;level.name=CAMPAIGN_NAMES[id-1];
+    const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
+    return annotateCampaign(level,id,[`修订 3 主线：旧第 ${id-2} 关按新顺序后移，布局保持手作。`,...notes]);
+  }
+  throw Error('战役关卡不存在');
 }

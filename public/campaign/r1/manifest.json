@@ -1,0 +1,2032 @@
+{
+  "contentVersion": "v4",
+  "contentRevision": 1,
+  "mode": "campaign",
+  "files": [
+    {
+      "id": 1,
+      "file": "level-1.json",
+      "pins": 15,
+      "seed": 1965263920,
+      "bytes": 3756,
+      "sha256": "1df28d64bcb759d548415980fc63b63279ddd8e3a2d8b5fbcba7116c0b72b17a",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "hinge",
+        "functionalGroups": 4,
+        "groupBoardCounts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "activeColors": [
+          "orange",
+          "cyan",
+          "red",
+          "blue",
+          "brown"
+        ],
+        "choices": [],
+        "crossBoardSwitches": 9,
+        "maxBuffer": 3,
+        "generationPass": 0,
+        "seed": 1965263920,
+        "chainCount": 1
+      }
+    },
+    {
+      "id": 2,
+      "file": "level-2.json",
+      "pins": 120,
+      "seed": 1934937561,
+      "bytes": 18092,
+      "sha256": "2189f4b587241e61d51c4a0cf2a96ca75c8c9ed8556bd6131e9cc26e39f8b320",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "quadrants",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "activeColors": [
+          "yellow",
+          "orange",
+          "purple",
+          "rose",
+          "red",
+          "brown",
+          "cyan",
+          "blue"
+        ],
+        "choices": [
+          {
+            "atMove": 33,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l2-b15-s4",
+              "l2-b13-s1",
+              "l2-b15-s6",
+              "l2-b15-s5",
+              "l2-b15-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 72,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l2-b10-s2",
+              "l2-b11-s5",
+              "l2-b10-s4",
+              "l2-b12-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 96,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l2-b7-s2",
+              "l2-b7-s1",
+              "l2-b7-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 66,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 1934937561,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 3,
+      "file": "level-3.json",
+      "pins": 129,
+      "seed": 4107596886,
+      "bytes": 17466,
+      "sha256": "aaa342880de6f3b3675b470270c528b8ad02ff36cfe1bae4f0287ae1ded7539e",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "embrace",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          3
+        ],
+        "activeColors": [
+          "purple",
+          "green",
+          "rose",
+          "cyan",
+          "yellow",
+          "red",
+          "blue",
+          "brown"
+        ],
+        "choices": [
+          {
+            "atMove": 33,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l3-b15-s2",
+              "l3-b15-s1",
+              "l3-b15-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 75,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l3-b4-s4",
+              "l3-b8-s3",
+              "l3-b11-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 102,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l3-b1-s1",
+              "l3-b1-s6",
+              "l3-b6-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 76,
+        "maxBuffer": 3,
+        "generationPass": 0,
+        "seed": 4107596886,
+        "chainCount": 1
+      }
+    },
+    {
+      "id": 4,
+      "file": "level-4.json",
+      "pins": 135,
+      "seed": 400162815,
+      "bytes": 18133,
+      "sha256": "a390f73c11e3a41cba3b1348a059e49daa779ec8054f8e2800e81784eda35e3b",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "embrace",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          3
+        ],
+        "activeColors": [
+          "red",
+          "purple",
+          "rose",
+          "blue",
+          "brown",
+          "gray",
+          "green",
+          "orange",
+          "yellow"
+        ],
+        "choices": [
+          {
+            "atMove": 34,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l4-b12-s3",
+              "l4-b15-s9",
+              "l4-b15-s5",
+              "l4-b15-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 78,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l4-b10-s8"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 111,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l4-b2-s4",
+              "l4-b2-s7",
+              "l4-b2-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 84,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 400162815,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 5,
+      "file": "level-5.json",
+      "pins": 141,
+      "seed": 3859750159,
+      "bytes": 19068,
+      "sha256": "4436512243f3d0a844014cb7b8c8ace10ddb0c65bda2eb284c99ff1c94d6ec46",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "lattice",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "activeColors": [
+          "brown",
+          "red",
+          "orange",
+          "purple",
+          "yellow",
+          "green",
+          "rose",
+          "blue",
+          "gray"
+        ],
+        "choices": [
+          {
+            "atMove": 37,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l5-b13-s7",
+              "l5-b13-s2",
+              "l5-b18-s8",
+              "l5-b18-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 83,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l5-b4-s5",
+              "l5-b4-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 112,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l5-b4-s3",
+              "l5-b1-s8",
+              "l5-b10-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 83,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 3859750159,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 6,
+      "file": "level-6.json",
+      "pins": 156,
+      "seed": 1626948773,
+      "bytes": 21474,
+      "sha256": "82eebfe2fa13226e89320398c1dbc8d94244bb1a41a1be8ae7bbce0bf33f730d",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "hinge",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          5,
+          5,
+          4,
+          4,
+          4,
+          4
+        ],
+        "activeColors": [
+          "green",
+          "red",
+          "cyan",
+          "blue",
+          "gray",
+          "yellow",
+          "purple",
+          "brown",
+          "rose"
+        ],
+        "choices": [
+          {
+            "atMove": 43,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l6-b18-s3",
+              "l6-b15-s4",
+              "l6-b15-s2",
+              "l6-b10-s6",
+              "l6-b12-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 92,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l6-b9-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 124,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l6-b8-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 96,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 1626948773,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 7,
+      "file": "level-7.json",
+      "pins": 156,
+      "seed": 1437627490,
+      "bytes": 20793,
+      "sha256": "d451ad62fa800e6a11774d80260aec64bd0e1e85e79a8ab66305f0c514d2d7b7",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "interlock",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          5,
+          5,
+          4,
+          4,
+          4,
+          4
+        ],
+        "activeColors": [
+          "yellow",
+          "gray",
+          "rose",
+          "blue",
+          "red",
+          "purple",
+          "green",
+          "brown"
+        ],
+        "choices": [
+          {
+            "atMove": 40,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l7-b14-s2",
+              "l7-b17-s6",
+              "l7-b17-s5",
+              "l7-b17-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 92,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l7-b8-s5",
+              "l7-b12-s2",
+              "l7-b12-s4",
+              "l7-b8-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 124,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l7-b7-s5",
+              "l7-b3-s3",
+              "l7-b1-s1",
+              "l7-b5-s2",
+              "l7-b3-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 95,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 1437627490,
+        "chainCount": 1
+      }
+    },
+    {
+      "id": 8,
+      "file": "level-8.json",
+      "pins": 168,
+      "seed": 3609131803,
+      "bytes": 21782,
+      "sha256": "24d860582a650d12dc9ecc08fb3a6651d42cf170f600f8589ee2af46e8e2bb94",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "embrace",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          5,
+          5,
+          5,
+          5,
+          4,
+          3
+        ],
+        "activeColors": [
+          "green",
+          "yellow",
+          "cyan",
+          "red",
+          "orange",
+          "blue",
+          "rose",
+          "brown",
+          "gray"
+        ],
+        "choices": [
+          {
+            "atMove": 40,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l8-b17-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 97,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l8-b8-s5",
+              "l8-b4-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 134,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l8-b7-s6",
+              "l8-b7-s7",
+              "l8-b3-s6",
+              "l8-b6-s2",
+              "l8-b3-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 101,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 3609131803,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 9,
+      "file": "level-9.json",
+      "pins": 162,
+      "seed": 2794540203,
+      "bytes": 21627,
+      "sha256": "6c858243d1c84611381fa727cf84f8ffb16d0eca73aad48c937762c879c3eb0c",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "quadrants",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          5,
+          5,
+          4,
+          4,
+          4,
+          4
+        ],
+        "activeColors": [
+          "cyan",
+          "gray",
+          "rose",
+          "brown",
+          "purple",
+          "red",
+          "yellow",
+          "orange",
+          "green"
+        ],
+        "choices": [
+          {
+            "atMove": 43,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l9-b15-s7",
+              "l9-b18-s2",
+              "l9-b18-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 94,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l9-b12-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 129,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l9-b4-s5",
+              "l9-b10-s8"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 102,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 2794540203,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 10,
+      "file": "level-10.json",
+      "pins": 195,
+      "seed": 393546006,
+      "bytes": 25709,
+      "sha256": "689be90be9afffa2024cab8e29dc29f10a8019a9e3bec494b1d2d2f92b21e5c3",
+      "design": {
+        "sourceKind": "reference-inspired",
+        "family": "interlock",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "green",
+          "cyan",
+          "blue",
+          "gray",
+          "yellow",
+          "red",
+          "orange",
+          "brown",
+          "purple",
+          "rose"
+        ],
+        "choices": [
+          {
+            "atMove": 48,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l10-b21-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 112,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l10-b11-s11",
+              "l10-b9-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 155,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l10-b2-s1",
+              "l10-b6-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 88,
+        "maxBuffer": 4,
+        "generationPass": 2,
+        "seed": 393546006,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 11,
+      "file": "level-11.json",
+      "pins": 180,
+      "seed": 510383072,
+      "bytes": 24746,
+      "sha256": "b60c8f085508a9e2d20138e99b57197170267bbcdf562adaeffdd4ee04acad82",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "hinge",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          5,
+          5,
+          5,
+          5,
+          4,
+          4
+        ],
+        "activeColors": [
+          "orange",
+          "purple",
+          "yellow",
+          "blue",
+          "cyan",
+          "red",
+          "brown",
+          "gray",
+          "green",
+          "rose"
+        ],
+        "choices": [
+          {
+            "atMove": 49,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l11-b19-s1",
+              "l11-b20-s8",
+              "l11-b13-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 105,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l11-b14-s7",
+              "l11-b13-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 143,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l11-b1-s6",
+              "l11-b5-s4",
+              "l11-b1-s4",
+              "l11-b5-s6",
+              "l11-b7-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 114,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 510383072,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 12,
+      "file": "level-12.json",
+      "pins": 186,
+      "seed": 2254835894,
+      "bytes": 24144,
+      "sha256": "0042652130f4c3ee13ae6dc652446454217588e06b2da7af166b733a946ec461",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "lattice",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "orange",
+          "yellow",
+          "brown",
+          "gray",
+          "red",
+          "blue",
+          "green",
+          "rose",
+          "purple",
+          "cyan"
+        ],
+        "choices": [
+          {
+            "atMove": 46,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l12-b17-s1",
+              "l12-b18-s7",
+              "l12-b18-s2",
+              "l12-b18-s1",
+              "l12-b20-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 108,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l12-b11-s7",
+              "l12-b11-s8"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 147,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l12-b5-s7",
+              "l12-b5-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 105,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 2254835894,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 13,
+      "file": "level-13.json",
+      "pins": 192,
+      "seed": 2583996326,
+      "bytes": 25645,
+      "sha256": "67b7db3fcfb30197354918cf56378ca803137566e3beacc889cefec43f103f9d",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "cascade",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "orange",
+          "green",
+          "gray",
+          "rose",
+          "yellow",
+          "blue",
+          "brown",
+          "purple",
+          "red",
+          "cyan"
+        ],
+        "choices": [
+          {
+            "atMove": 48,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l13-b18-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 111,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l13-b11-s3",
+              "l13-b11-s5",
+              "l13-b14-s4",
+              "l13-b15-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 153,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l13-b5-s2",
+              "l13-b3-s4",
+              "l13-b8-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 127,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 2583996326,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 14,
+      "file": "level-14.json",
+      "pins": 177,
+      "seed": 1990211548,
+      "bytes": 23805,
+      "sha256": "b7774fc8d787650552cec7f2cd4c3a8df6acc7105e5053d2be45784510757d5c",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "embrace",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          5,
+          5,
+          5,
+          5,
+          4,
+          3
+        ],
+        "activeColors": [
+          "red",
+          "orange",
+          "yellow",
+          "cyan",
+          "green",
+          "purple",
+          "gray",
+          "brown"
+        ],
+        "choices": [
+          {
+            "atMove": 42,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l14-b17-s2",
+              "l14-b17-s6",
+              "l14-b14-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 101,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l14-b11-s6",
+              "l14-b12-s7",
+              "l14-b12-s8"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 140,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l14-b3-s2",
+              "l14-b1-s1",
+              "l14-b1-s4",
+              "l14-b3-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 111,
+        "maxBuffer": 2,
+        "generationPass": 0,
+        "seed": 1990211548,
+        "chainCount": 1
+      }
+    },
+    {
+      "id": 15,
+      "file": "level-15.json",
+      "pins": 198,
+      "seed": 657267916,
+      "bytes": 26184,
+      "sha256": "404529bb7aa90496be7bd71e92c5d6064732ac211e9ca9cefd5514f0fe226531",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "interlock",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "blue",
+          "cyan",
+          "green",
+          "purple",
+          "brown",
+          "orange",
+          "gray",
+          "rose",
+          "red",
+          "yellow"
+        ],
+        "choices": [
+          {
+            "atMove": 49,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l15-b19-s8",
+              "l15-b19-s6",
+              "l15-b21-s4",
+              "l15-b18-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 115,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l15-b12-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 158,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l15-b4-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 134,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 657267916,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 16,
+      "file": "level-16.json",
+      "pins": 204,
+      "seed": 4250999106,
+      "bytes": 27540,
+      "sha256": "f2a3445fc95f4837c08b547c750a48f3372633e5d1ac802a41ae002e31f8414c",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "quadrants",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "red",
+          "purple",
+          "green",
+          "blue",
+          "yellow",
+          "gray",
+          "rose",
+          "cyan",
+          "orange",
+          "brown"
+        ],
+        "choices": [
+          {
+            "atMove": 51,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l16-b23-s1",
+              "l16-b23-s5",
+              "l16-b18-s2",
+              "l16-b19-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 117,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l16-b15-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 161,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l16-b2-s2",
+              "l16-b2-s5",
+              "l16-b6-s5",
+              "l16-b9-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 134,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 4250999106,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 17,
+      "file": "level-17.json",
+      "pins": 189,
+      "seed": 4207251717,
+      "bytes": 25459,
+      "sha256": "051b8daba5df8abc862076f7ad2111598713a158bd0a7ffddac2c6e15bf36719",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "cascade",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "blue",
+          "rose",
+          "brown",
+          "cyan",
+          "purple",
+          "green",
+          "yellow",
+          "red"
+        ],
+        "choices": [
+          {
+            "atMove": 47,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l17-b18-s5",
+              "l17-b18-s7",
+              "l17-b18-s2",
+              "l17-b17-s3",
+              "l17-b20-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 109,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l17-b11-s3",
+              "l17-b13-s2",
+              "l17-b12-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 152,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l17-b3-s6",
+              "l17-b6-s4",
+              "l17-b4-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 119,
+        "maxBuffer": 3,
+        "generationPass": 0,
+        "seed": 4207251717,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 18,
+      "file": "level-18.json",
+      "pins": 210,
+      "seed": 3210633464,
+      "bytes": 28292,
+      "sha256": "bc42344619130367c88dd80af6058b0aa6b0cd07b37d5a6797c0562968c6a964",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "hinge",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "yellow",
+          "green",
+          "cyan",
+          "brown",
+          "orange",
+          "rose",
+          "blue",
+          "purple",
+          "gray",
+          "red"
+        ],
+        "choices": [
+          {
+            "atMove": 54,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l18-b27-s3",
+              "l18-b19-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 122,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l18-b16-s4",
+              "l18-b16-s6",
+              "l18-b16-s2",
+              "l18-b12-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 167,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l18-b6-s6",
+              "l18-b5-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 133,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 3210633464,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 19,
+      "file": "level-19.json",
+      "pins": 201,
+      "seed": 4046013416,
+      "bytes": 25620,
+      "sha256": "fbeaeab0fefc25f23bd3e969ab853ce279c7da3f79b7b4efbcb1b2be7f25d0a1",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "lattice",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "cyan",
+          "purple",
+          "green",
+          "rose",
+          "brown",
+          "orange",
+          "gray",
+          "red",
+          "blue",
+          "yellow"
+        ],
+        "choices": [
+          {
+            "atMove": 50,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l19-b20-s3",
+              "l19-b21-s10",
+              "l19-b17-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 115,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l19-b10-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 159,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l19-b5-s2",
+              "l19-b5-s8",
+              "l19-b5-s3",
+              "l19-b5-s9"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 130,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 4046013416,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 20,
+      "file": "level-20.json",
+      "pins": 216,
+      "seed": 3586007995,
+      "bytes": 28086,
+      "sha256": "698a5e6abc3234b633911a595d34607d91231c0ae48a7585d1cfdcf7938cdd70",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "embrace",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          3
+        ],
+        "activeColors": [
+          "orange",
+          "yellow",
+          "purple",
+          "blue",
+          "gray",
+          "green",
+          "brown",
+          "red",
+          "cyan",
+          "rose"
+        ],
+        "choices": [
+          {
+            "atMove": 50,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l20-b21-s2",
+              "l20-b20-s5",
+              "l20-b24-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 122,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l20-b9-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 170,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l20-b5-s2",
+              "l20-b3-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 135,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 3586007995,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 21,
+      "file": "level-21.json",
+      "pins": 198,
+      "seed": 2733850424,
+      "bytes": 26370,
+      "sha256": "2df0d33de310320a26b5ec2a0aed98fd0083f4634198df2c2f7cbf600a98f2f2",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "cascade",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          5,
+          5,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "blue",
+          "yellow",
+          "cyan",
+          "red",
+          "rose",
+          "orange",
+          "brown",
+          "gray"
+        ],
+        "choices": [
+          {
+            "atMove": 49,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l21-b17-s4",
+              "l21-b20-s1",
+              "l21-b24-s6",
+              "l21-b17-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 114,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l21-b11-s7",
+              "l21-b11-s5",
+              "l21-b10-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 158,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l21-b3-s4",
+              "l21-b8-s1",
+              "l21-b4-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 130,
+        "maxBuffer": 3,
+        "generationPass": 0,
+        "seed": 2733850424,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 22,
+      "file": "level-22.json",
+      "pins": 213,
+      "seed": 957665179,
+      "bytes": 27949,
+      "sha256": "db7f5d847a2d13e8a9ebc7051f84912046596ee7d7d31e8ae0ecb886af9d3595",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "interlock",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "yellow",
+          "orange",
+          "rose",
+          "green",
+          "gray",
+          "red",
+          "purple",
+          "cyan",
+          "blue",
+          "brown"
+        ],
+        "choices": [
+          {
+            "atMove": 52,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l22-b24-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 123,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l22-b10-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 168,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l22-b4-s2",
+              "l22-b6-s3",
+              "l22-b6-s5",
+              "l22-b5-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 142,
+        "maxBuffer": 4,
+        "generationPass": 2,
+        "seed": 957665179,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 23,
+      "file": "level-23.json",
+      "pins": 219,
+      "seed": 2497937937,
+      "bytes": 29142,
+      "sha256": "9018def9035f15d4544a0eeb6eff2b4c6bb214a7287de146877dd0839761a0aa",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "hinge",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "yellow",
+          "green",
+          "blue",
+          "purple",
+          "gray",
+          "red",
+          "brown",
+          "rose",
+          "cyan",
+          "orange"
+        ],
+        "choices": [
+          {
+            "atMove": 57,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l23-b23-s5",
+              "l23-b23-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 127,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l23-b16-s5",
+              "l23-b13-s7",
+              "l23-b16-s7",
+              "l23-b14-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 174,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l23-b9-s10",
+              "l23-b1-s3",
+              "l23-b6-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 136,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 2497937937,
+        "chainCount": 1
+      }
+    },
+    {
+      "id": 24,
+      "file": "level-24.json",
+      "pins": 204,
+      "seed": 3257230855,
+      "bytes": 27126,
+      "sha256": "2748772ff3a130c17f8aab3763b095d1ef977911e98572f6c5242009fc9961ec",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "embrace",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          3
+        ],
+        "activeColors": [
+          "green",
+          "orange",
+          "purple",
+          "cyan",
+          "red",
+          "blue",
+          "rose",
+          "yellow"
+        ],
+        "choices": [
+          {
+            "atMove": 48,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l24-b20-s2",
+              "l24-b22-s2",
+              "l24-b21-s2"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 116,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l24-b14-s3",
+              "l24-b9-s5",
+              "l24-b13-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 161,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l24-b3-s3",
+              "l24-b3-s4",
+              "l24-b1-s4",
+              "l24-b3-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 121,
+        "maxBuffer": 3,
+        "generationPass": 0,
+        "seed": 3257230855,
+        "chainCount": 1
+      }
+    },
+    {
+      "id": 25,
+      "file": "level-25.json",
+      "pins": 222,
+      "seed": 279538551,
+      "bytes": 28246,
+      "sha256": "0754d2f123aa132ae8aa7aa9e17d7b83cce960b27e6d38d04ee64adc628a2c58",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "lattice",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          6,
+          6,
+          4
+        ],
+        "activeColors": [
+          "purple",
+          "red",
+          "yellow",
+          "orange",
+          "cyan",
+          "gray",
+          "blue",
+          "rose",
+          "brown",
+          "green"
+        ],
+        "choices": [
+          {
+            "atMove": 54,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l25-b25-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 127,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l25-b15-s4",
+              "l25-b13-s4",
+              "l25-b13-s3",
+              "l25-b15-s8"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 175,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l25-b6-s6",
+              "l25-b6-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 142,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 279538551,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 26,
+      "file": "level-26.json",
+      "pins": 216,
+      "seed": 850294157,
+      "bytes": 28635,
+      "sha256": "fc09ccf01a14c98dc2b152320bb19e0da3a683f9f2b9c9155c3bf90aeabedebb",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "quadrants",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "blue",
+          "red",
+          "cyan",
+          "purple",
+          "green",
+          "gray",
+          "orange",
+          "yellow",
+          "rose",
+          "brown"
+        ],
+        "choices": [
+          {
+            "atMove": 53,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l26-b23-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 124,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l26-b16-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 171,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l26-b5-s5",
+              "l26-b5-s4",
+              "l26-b6-s3",
+              "l26-b1-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 139,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 850294157,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 27,
+      "file": "level-27.json",
+      "pins": 225,
+      "seed": 2655268541,
+      "bytes": 29461,
+      "sha256": "d896b80b1b64c5e21eb25dc34b7f9c5755b840e8870aa7f49d03829bc2af13a5",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "interlock",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          6,
+          6,
+          4
+        ],
+        "activeColors": [
+          "green",
+          "red",
+          "brown",
+          "cyan",
+          "yellow",
+          "blue",
+          "rose",
+          "purple",
+          "gray",
+          "orange"
+        ],
+        "choices": [
+          {
+            "atMove": 54,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l27-b24-s3",
+              "l27-b22-s1",
+              "l27-b21-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 130,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l27-b13-s1",
+              "l27-b13-s3"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 178,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l27-b4-s1",
+              "l27-b6-s6",
+              "l27-b6-s5",
+              "l27-b6-s8",
+              "l27-b8-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 146,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 2655268541,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 28,
+      "file": "level-28.json",
+      "pins": 210,
+      "seed": 50377651,
+      "bytes": 27652,
+      "sha256": "f6d33b693b8863297c2a0af03eafb29a68403fd9669611a60ca27660e7b4c791",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "cascade",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          5,
+          5,
+          4
+        ],
+        "activeColors": [
+          "orange",
+          "gray",
+          "blue",
+          "cyan",
+          "red",
+          "rose",
+          "brown",
+          "green"
+        ],
+        "choices": [
+          {
+            "atMove": 51,
+            "bufferBefore": 0,
+            "wrongScrewIds": [
+              "l28-b23-s4",
+              "l28-b26-s3",
+              "l28-b26-s7",
+              "l28-b22-s3",
+              "l28-b23-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 120,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l28-b11-s1",
+              "l28-b14-s3",
+              "l28-b10-s5"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 166,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l28-b5-s1",
+              "l28-b8-s8",
+              "l28-b6-s7"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 135,
+        "maxBuffer": 3,
+        "generationPass": 0,
+        "seed": 50377651,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 29,
+      "file": "level-29.json",
+      "pins": 228,
+      "seed": 4178175024,
+      "bytes": 30346,
+      "sha256": "ff567f51e644b64ca265588f11788f4f359ec7856131ac632dbf23ccc15ba9a7",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "hinge",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          6,
+          6,
+          4
+        ],
+        "activeColors": [
+          "gray",
+          "red",
+          "green",
+          "purple",
+          "rose",
+          "brown",
+          "yellow",
+          "orange",
+          "blue",
+          "cyan"
+        ],
+        "choices": [
+          {
+            "atMove": 57,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l29-b28-s8",
+              "l29-b28-s2",
+              "l29-b19-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 132,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l29-b14-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 181,
+            "bufferBefore": 4,
+            "wrongScrewIds": [
+              "l29-b3-s4"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 147,
+        "maxBuffer": 4,
+        "generationPass": 0,
+        "seed": 4178175024,
+        "chainCount": 2
+      }
+    },
+    {
+      "id": 30,
+      "file": "level-30.json",
+      "pins": 228,
+      "seed": 3874577525,
+      "bytes": 28769,
+      "sha256": "37f11bd0a4d42888bf65954d8c9a1ff433ca6a6c196e431209fb94f49fea5aba",
+      "design": {
+        "sourceKind": "doro-original",
+        "family": "lattice",
+        "functionalGroups": 6,
+        "groupBoardCounts": [
+          6,
+          6,
+          6,
+          6,
+          6,
+          4
+        ],
+        "activeColors": [
+          "green",
+          "brown",
+          "cyan",
+          "orange",
+          "purple",
+          "blue",
+          "red",
+          "yellow",
+          "rose",
+          "gray"
+        ],
+        "choices": [
+          {
+            "atMove": 55,
+            "bufferBefore": 2,
+            "wrongScrewIds": [
+              "l30-b23-s6",
+              "l30-b24-s1",
+              "l30-b19-s1"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 135,
+            "bufferBefore": 1,
+            "wrongScrewIds": [
+              "l30-b14-s1",
+              "l30-b11-s9",
+              "l30-b12-s3",
+              "l30-b11-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          },
+          {
+            "atMove": 180,
+            "bufferBefore": 3,
+            "wrongScrewIds": [
+              "l30-b5-s7",
+              "l30-b5-s6"
+            ],
+            "explanation": "当前盒尚未打开这些颜色；同时拿满这一组会占住最后一孔。"
+          }
+        ],
+        "crossBoardSwitches": 142,
+        "maxBuffer": 4,
+        "generationPass": 1,
+        "seed": 3874577525,
+        "chainCount": 2
+      }
+    }
+  ]
+}

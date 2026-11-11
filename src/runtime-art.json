@@ -1,0 +1,1507 @@
+{
+  "version": 3,
+  "sheets": {
+    "doro": {
+      "file": "runtime/doro-atlas.9884942203.webp",
+      "width": 588,
+      "height": 392,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 192,
+          "height": 182
+        },
+        {
+          "x": 198,
+          "y": 2,
+          "width": 192,
+          "height": 178
+        },
+        {
+          "x": 394,
+          "y": 2,
+          "width": 192,
+          "height": 184
+        },
+        {
+          "x": 2,
+          "y": 198,
+          "width": 192,
+          "height": 174
+        },
+        {
+          "x": 198,
+          "y": 198,
+          "width": 192,
+          "height": 164
+        },
+        {
+          "x": 394,
+          "y": 198,
+          "width": 186,
+          "height": 192
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/doro-0.3348a3166e.webp",
+          "width": 192,
+          "height": 182
+        },
+        {
+          "file": "runtime/doro-1.207e6506ba.webp",
+          "width": 192,
+          "height": 178
+        },
+        {
+          "file": "runtime/doro-2.0595cc3518.webp",
+          "width": 192,
+          "height": 184
+        },
+        {
+          "file": "runtime/doro-3.b5457861f5.webp",
+          "width": 192,
+          "height": 174
+        },
+        {
+          "file": "runtime/doro-4.8a905dd032.webp",
+          "width": 192,
+          "height": 164
+        },
+        {
+          "file": "runtime/doro-5.02ec46a8d1.webp",
+          "width": 186,
+          "height": 192
+        }
+      ]
+    },
+    "screws": {
+      "file": "runtime/screws-atlas.24e06b5501.webp",
+      "width": 400,
+      "height": 300,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 2,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 202,
+          "y": 2,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 302,
+          "y": 2,
+          "width": 85,
+          "height": 96
+        },
+        {
+          "x": 2,
+          "y": 102,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 102,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 202,
+          "y": 102,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 302,
+          "y": 102,
+          "width": 84,
+          "height": 96
+        },
+        {
+          "x": 2,
+          "y": 202,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 202,
+          "width": 95,
+          "height": 96
+        },
+        {
+          "x": 202,
+          "y": 202,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 302,
+          "y": 202,
+          "width": 96,
+          "height": 81
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/screws-0.1c9186fd43.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-1.200aa32d5e.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-2.db39d2b89f.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-3.925b401771.webp",
+          "width": 85,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-4.1d4822286c.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-5.21fe3242b7.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-6.a0aa4cf3ec.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-7.660f910130.webp",
+          "width": 84,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-8.23cffc5a7a.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-9.9685e5d66a.webp",
+          "width": 95,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-10.6c223ccbd6.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/screws-11.fa1ae454f7.webp",
+          "width": 96,
+          "height": 81
+        }
+      ]
+    },
+    "plates": {
+      "file": "runtime/plates-atlas.fd79b9dfa1.webp",
+      "width": 1348,
+      "height": 903,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 327,
+          "height": 156
+        },
+        {
+          "x": 339,
+          "y": 2,
+          "width": 267,
+          "height": 265
+        },
+        {
+          "x": 676,
+          "y": 2,
+          "width": 293,
+          "height": 261
+        },
+        {
+          "x": 1013,
+          "y": 2,
+          "width": 260,
+          "height": 253
+        },
+        {
+          "x": 2,
+          "y": 303,
+          "width": 292,
+          "height": 290
+        },
+        {
+          "x": 339,
+          "y": 303,
+          "width": 297,
+          "height": 250
+        },
+        {
+          "x": 676,
+          "y": 303,
+          "width": 322,
+          "height": 199
+        },
+        {
+          "x": 1013,
+          "y": 303,
+          "width": 296,
+          "height": 221
+        },
+        {
+          "x": 2,
+          "y": 604,
+          "width": 300,
+          "height": 283
+        },
+        {
+          "x": 339,
+          "y": 604,
+          "width": 253,
+          "height": 264
+        },
+        {
+          "x": 676,
+          "y": 604,
+          "width": 195,
+          "height": 297
+        },
+        {
+          "x": 1013,
+          "y": 604,
+          "width": 333,
+          "height": 232
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/plates-0.c29ce84ecd.webp",
+          "width": 327,
+          "height": 156
+        },
+        {
+          "file": "runtime/plates-1.831bc64152.webp",
+          "width": 267,
+          "height": 265
+        },
+        {
+          "file": "runtime/plates-2.b1137229d1.webp",
+          "width": 293,
+          "height": 261
+        },
+        {
+          "file": "runtime/plates-3.957253cd2f.webp",
+          "width": 260,
+          "height": 253
+        },
+        {
+          "file": "runtime/plates-4.fb41456f82.webp",
+          "width": 292,
+          "height": 290
+        },
+        {
+          "file": "runtime/plates-5.4f5fbe34d5.webp",
+          "width": 297,
+          "height": 250
+        },
+        {
+          "file": "runtime/plates-6.ed189a5d2c.webp",
+          "width": 322,
+          "height": 199
+        },
+        {
+          "file": "runtime/plates-7.516431f37d.webp",
+          "width": 296,
+          "height": 221
+        },
+        {
+          "file": "runtime/plates-8.a12f46812b.webp",
+          "width": 300,
+          "height": 283
+        },
+        {
+          "file": "runtime/plates-9.0145560fa8.webp",
+          "width": 253,
+          "height": 264
+        },
+        {
+          "file": "runtime/plates-10.da8800c098.webp",
+          "width": 195,
+          "height": 297
+        },
+        {
+          "file": "runtime/plates-11.c5d2c053c7.webp",
+          "width": 333,
+          "height": 232
+        }
+      ]
+    },
+    "boxes": {
+      "file": "runtime/boxes-atlas.631b0767a6.webp",
+      "width": 784,
+      "height": 579,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 198,
+          "y": 2,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 394,
+          "y": 2,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 590,
+          "y": 2,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 2,
+          "y": 195,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 198,
+          "y": 195,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 394,
+          "y": 195,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 590,
+          "y": 195,
+          "width": 192,
+          "height": 172
+        },
+        {
+          "x": 2,
+          "y": 388,
+          "width": 192,
+          "height": 153
+        },
+        {
+          "x": 198,
+          "y": 388,
+          "width": 192,
+          "height": 65
+        },
+        {
+          "x": 394,
+          "y": 388,
+          "width": 192,
+          "height": 167
+        },
+        {
+          "x": 590,
+          "y": 388,
+          "width": 192,
+          "height": 189
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/boxes-0.96ccfc7652.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-1.3b8afbd84d.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-2.1d37fe0e8c.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-3.518f6d158c.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-4.de7464b68e.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-5.42978951cd.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-6.f3955239b8.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-7.b65bbf8f5f.webp",
+          "width": 192,
+          "height": 172
+        },
+        {
+          "file": "runtime/boxes-8.1e1c7a1bca.webp",
+          "width": 192,
+          "height": 153
+        },
+        {
+          "file": "runtime/boxes-9.4416b3a2d1.webp",
+          "width": 192,
+          "height": 65
+        },
+        {
+          "file": "runtime/boxes-10.b091034afb.webp",
+          "width": 192,
+          "height": 167
+        },
+        {
+          "file": "runtime/boxes-11.df7e5ac116.webp",
+          "width": 192,
+          "height": 189
+        }
+      ]
+    },
+    "ui": {
+      "file": "runtime/ui-atlas.58b7f9b175.webp",
+      "width": 528,
+      "height": 528,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 128,
+          "height": 62
+        },
+        {
+          "x": 134,
+          "y": 2,
+          "width": 128,
+          "height": 60
+        },
+        {
+          "x": 266,
+          "y": 2,
+          "width": 128,
+          "height": 124
+        },
+        {
+          "x": 398,
+          "y": 2,
+          "width": 128,
+          "height": 127
+        },
+        {
+          "x": 2,
+          "y": 134,
+          "width": 128,
+          "height": 125
+        },
+        {
+          "x": 134,
+          "y": 134,
+          "width": 128,
+          "height": 97
+        },
+        {
+          "x": 266,
+          "y": 134,
+          "width": 128,
+          "height": 104
+        },
+        {
+          "x": 398,
+          "y": 134,
+          "width": 128,
+          "height": 119
+        },
+        {
+          "x": 2,
+          "y": 266,
+          "width": 120,
+          "height": 128
+        },
+        {
+          "x": 134,
+          "y": 266,
+          "width": 128,
+          "height": 127
+        },
+        {
+          "x": 266,
+          "y": 266,
+          "width": 107,
+          "height": 128
+        },
+        {
+          "x": 398,
+          "y": 266,
+          "width": 97,
+          "height": 128
+        },
+        {
+          "x": 2,
+          "y": 398,
+          "width": 128,
+          "height": 127
+        },
+        {
+          "x": 134,
+          "y": 398,
+          "width": 128,
+          "height": 114
+        },
+        {
+          "x": 266,
+          "y": 398,
+          "width": 128,
+          "height": 125
+        },
+        {
+          "x": 398,
+          "y": 398,
+          "width": 128,
+          "height": 103
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/ui-0.18392d9412.webp",
+          "width": 128,
+          "height": 62
+        },
+        {
+          "file": "runtime/ui-1.d792406c86.webp",
+          "width": 128,
+          "height": 60
+        },
+        {
+          "file": "runtime/ui-2.9c726c2f25.webp",
+          "width": 128,
+          "height": 124
+        },
+        {
+          "file": "runtime/ui-3.de5dab96a2.webp",
+          "width": 128,
+          "height": 127
+        },
+        {
+          "file": "runtime/ui-4.631ab24eb2.webp",
+          "width": 128,
+          "height": 125
+        },
+        {
+          "file": "runtime/ui-5.e7f51b212f.webp",
+          "width": 128,
+          "height": 97
+        },
+        {
+          "file": "runtime/ui-6.1dbc24525d.webp",
+          "width": 128,
+          "height": 104
+        },
+        {
+          "file": "runtime/ui-7.eda60d903b.webp",
+          "width": 128,
+          "height": 119
+        },
+        {
+          "file": "runtime/ui-8.cf2419db4b.webp",
+          "width": 120,
+          "height": 128
+        },
+        {
+          "file": "runtime/ui-9.ed7bc81012.webp",
+          "width": 128,
+          "height": 127
+        },
+        {
+          "file": "runtime/ui-10.7ba4f10770.webp",
+          "width": 107,
+          "height": 128
+        },
+        {
+          "file": "runtime/ui-11.1117460f7e.webp",
+          "width": 97,
+          "height": 128
+        },
+        {
+          "file": "runtime/ui-12.0b1cd2d75a.webp",
+          "width": 128,
+          "height": 127
+        },
+        {
+          "file": "runtime/ui-13.94974d8414.webp",
+          "width": 128,
+          "height": 114
+        },
+        {
+          "file": "runtime/ui-14.fcb22ba7e1.webp",
+          "width": 128,
+          "height": 125
+        },
+        {
+          "file": "runtime/ui-15.fdbacc91d8.webp",
+          "width": 128,
+          "height": 103
+        }
+      ]
+    },
+    "fx": {
+      "file": "runtime/fx-atlas.2c51df469b.webp",
+      "width": 492,
+      "height": 328,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 151,
+          "height": 160
+        },
+        {
+          "x": 166,
+          "y": 2,
+          "width": 160,
+          "height": 154
+        },
+        {
+          "x": 330,
+          "y": 2,
+          "width": 160,
+          "height": 132
+        },
+        {
+          "x": 2,
+          "y": 166,
+          "width": 160,
+          "height": 134
+        },
+        {
+          "x": 166,
+          "y": 166,
+          "width": 122,
+          "height": 160
+        },
+        {
+          "x": 330,
+          "y": 166,
+          "width": 160,
+          "height": 149
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/fx-0.55dbc53879.webp",
+          "width": 151,
+          "height": 160
+        },
+        {
+          "file": "runtime/fx-1.8416318059.webp",
+          "width": 160,
+          "height": 154
+        },
+        {
+          "file": "runtime/fx-2.d07abb7f34.webp",
+          "width": 160,
+          "height": 132
+        },
+        {
+          "file": "runtime/fx-3.fe767d39d6.webp",
+          "width": 160,
+          "height": 134
+        },
+        {
+          "file": "runtime/fx-4.4a21db2ff3.webp",
+          "width": 122,
+          "height": 160
+        },
+        {
+          "file": "runtime/fx-5.52f6e8aacf.webp",
+          "width": 160,
+          "height": 149
+        }
+      ]
+    },
+    "heads": {
+      "file": "runtime/heads-atlas.77d3708163.webp",
+      "width": 400,
+      "height": 300,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 2,
+          "width": 96,
+          "height": 95
+        },
+        {
+          "x": 202,
+          "y": 2,
+          "width": 96,
+          "height": 95
+        },
+        {
+          "x": 302,
+          "y": 2,
+          "width": 96,
+          "height": 95
+        },
+        {
+          "x": 2,
+          "y": 102,
+          "width": 95,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 102,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 202,
+          "y": 102,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 302,
+          "y": 102,
+          "width": 96,
+          "height": 95
+        },
+        {
+          "x": 2,
+          "y": 202,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 202,
+          "width": 95,
+          "height": 96
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/heads-0.26a5870322.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/heads-1.d20a73d0df.webp",
+          "width": 96,
+          "height": 95
+        },
+        {
+          "file": "runtime/heads-2.e4218e639b.webp",
+          "width": 96,
+          "height": 95
+        },
+        {
+          "file": "runtime/heads-3.f6b11c5fb3.webp",
+          "width": 96,
+          "height": 95
+        },
+        {
+          "file": "runtime/heads-4.a7ea555857.webp",
+          "width": 95,
+          "height": 96
+        },
+        {
+          "file": "runtime/heads-5.1be5bc34e8.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/heads-6.8490f176db.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/heads-7.881a348f86.webp",
+          "width": 96,
+          "height": 95
+        },
+        {
+          "file": "runtime/heads-8.d9cc8162c6.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/heads-9.54bbd3d48f.webp",
+          "width": 95,
+          "height": 96
+        }
+      ]
+    },
+    "cases": {
+      "file": "runtime/cases-atlas.361268085d.webp",
+      "width": 784,
+      "height": 537,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 198,
+          "y": 2,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 394,
+          "y": 2,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 590,
+          "y": 2,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 2,
+          "y": 181,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 198,
+          "y": 181,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 394,
+          "y": 181,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 590,
+          "y": 181,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 2,
+          "y": 360,
+          "width": 192,
+          "height": 175
+        },
+        {
+          "x": 198,
+          "y": 360,
+          "width": 192,
+          "height": 175
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/cases-0.05bd9d687d.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-1.f17d34a1a0.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-2.6d69e84ae3.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-3.c6d04fc842.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-4.b334dfc74d.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-5.0442fef6e5.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-6.75902b4ba9.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-7.0189567d4a.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-8.d4659e0ba5.webp",
+          "width": 192,
+          "height": 175
+        },
+        {
+          "file": "runtime/cases-9.285b331a93.webp",
+          "width": 192,
+          "height": 175
+        }
+      ]
+    },
+    "plateExtra": {
+      "file": "runtime/plateExtra-atlas.fc62afcf50.webp",
+      "width": 1164,
+      "height": 776,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 384,
+          "height": 380
+        },
+        {
+          "x": 390,
+          "y": 2,
+          "width": 384,
+          "height": 372
+        },
+        {
+          "x": 778,
+          "y": 2,
+          "width": 323,
+          "height": 384
+        },
+        {
+          "x": 2,
+          "y": 390,
+          "width": 358,
+          "height": 384
+        },
+        {
+          "x": 390,
+          "y": 390,
+          "width": 384,
+          "height": 376
+        },
+        {
+          "x": 778,
+          "y": 390,
+          "width": 256,
+          "height": 384
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/plateExtra-0.2b5a75f613.webp",
+          "width": 384,
+          "height": 380
+        },
+        {
+          "file": "runtime/plateExtra-1.1374f8e5d3.webp",
+          "width": 384,
+          "height": 372
+        },
+        {
+          "file": "runtime/plateExtra-2.988f67f4d7.webp",
+          "width": 323,
+          "height": 384
+        },
+        {
+          "file": "runtime/plateExtra-3.92a3ad7bc0.webp",
+          "width": 358,
+          "height": 384
+        },
+        {
+          "file": "runtime/plateExtra-4.28181148a1.webp",
+          "width": 384,
+          "height": 376
+        },
+        {
+          "file": "runtime/plateExtra-5.5443638bbf.webp",
+          "width": 256,
+          "height": 384
+        }
+      ]
+    },
+    "panel": {
+      "file": "runtime/panel-atlas.e42dab5366.webp",
+      "width": 324,
+      "height": 324,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 320,
+          "height": 320
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/panel-0.f9e5fbd7d9.webp",
+          "width": 320,
+          "height": 320
+        }
+      ]
+    },
+    "button": {
+      "file": "runtime/button-atlas.712332914c.webp",
+      "width": 644,
+      "height": 134,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 640,
+          "height": 130
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/button-0.9b8bc17930.webp",
+          "width": 640,
+          "height": 130
+        }
+      ]
+    },
+    "plateA": {
+      "file": "runtime/plateA-atlas.a70b7731de.webp",
+      "width": 1164,
+      "height": 772,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 384,
+          "height": 171
+        },
+        {
+          "x": 390,
+          "y": 2,
+          "width": 382,
+          "height": 377
+        },
+        {
+          "x": 778,
+          "y": 2,
+          "width": 384,
+          "height": 338
+        },
+        {
+          "x": 2,
+          "y": 388,
+          "width": 384,
+          "height": 371
+        },
+        {
+          "x": 390,
+          "y": 388,
+          "width": 384,
+          "height": 382
+        },
+        {
+          "x": 778,
+          "y": 388,
+          "width": 384,
+          "height": 319
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/plateA-0.3d0d355407.webp",
+          "width": 384,
+          "height": 171
+        },
+        {
+          "file": "runtime/plateA-1.98f192bb9e.webp",
+          "width": 382,
+          "height": 377
+        },
+        {
+          "file": "runtime/plateA-2.3c7c2473f3.webp",
+          "width": 384,
+          "height": 338
+        },
+        {
+          "file": "runtime/plateA-3.c9f84c3fe8.webp",
+          "width": 384,
+          "height": 371
+        },
+        {
+          "file": "runtime/plateA-4.fb055a7ff5.webp",
+          "width": 384,
+          "height": 382
+        },
+        {
+          "file": "runtime/plateA-5.f46a98ee5f.webp",
+          "width": 384,
+          "height": 319
+        }
+      ]
+    },
+    "plateB": {
+      "file": "runtime/plateB-atlas.0c2c379a72.webp",
+      "width": 1164,
+      "height": 726,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 384,
+          "height": 284
+        },
+        {
+          "x": 390,
+          "y": 2,
+          "width": 384,
+          "height": 241
+        },
+        {
+          "x": 778,
+          "y": 2,
+          "width": 384,
+          "height": 359
+        },
+        {
+          "x": 2,
+          "y": 365,
+          "width": 384,
+          "height": 337
+        },
+        {
+          "x": 390,
+          "y": 365,
+          "width": 359,
+          "height": 353
+        },
+        {
+          "x": 778,
+          "y": 365,
+          "width": 384,
+          "height": 287
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/plateB-0.11f6cd5ee3.webp",
+          "width": 384,
+          "height": 284
+        },
+        {
+          "file": "runtime/plateB-1.4413d45764.webp",
+          "width": 384,
+          "height": 241
+        },
+        {
+          "file": "runtime/plateB-2.2b259dab80.webp",
+          "width": 384,
+          "height": 359
+        },
+        {
+          "file": "runtime/plateB-3.731857993b.webp",
+          "width": 384,
+          "height": 337
+        },
+        {
+          "file": "runtime/plateB-4.67c213a343.webp",
+          "width": 359,
+          "height": 353
+        },
+        {
+          "file": "runtime/plateB-5.4b3e34fcf9.webp",
+          "width": 384,
+          "height": 287
+        }
+      ]
+    },
+    "plateC": {
+      "file": "runtime/plateC-atlas.1c082a3b3b.webp",
+      "width": 1164,
+      "height": 776,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 384,
+          "height": 375
+        },
+        {
+          "x": 390,
+          "y": 2,
+          "width": 384,
+          "height": 370
+        },
+        {
+          "x": 778,
+          "y": 2,
+          "width": 313,
+          "height": 384
+        },
+        {
+          "x": 2,
+          "y": 390,
+          "width": 359,
+          "height": 384
+        },
+        {
+          "x": 390,
+          "y": 390,
+          "width": 358,
+          "height": 352
+        },
+        {
+          "x": 778,
+          "y": 390,
+          "width": 384,
+          "height": 376
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/plateC-0.55b1cdd384.webp",
+          "width": 384,
+          "height": 375
+        },
+        {
+          "file": "runtime/plateC-1.012e9db928.webp",
+          "width": 384,
+          "height": 370
+        },
+        {
+          "file": "runtime/plateC-2.47aefab6f7.webp",
+          "width": 313,
+          "height": 384
+        },
+        {
+          "file": "runtime/plateC-3.ba947c559a.webp",
+          "width": 359,
+          "height": 384
+        },
+        {
+          "file": "runtime/plateC-4.637bc32017.webp",
+          "width": 358,
+          "height": 352
+        },
+        {
+          "file": "runtime/plateC-5.4778e52e6c.webp",
+          "width": 384,
+          "height": 376
+        }
+      ]
+    },
+    "assistHeads": {
+      "file": "runtime/assistHeads-atlas.7b5f91cef1.webp",
+      "width": 400,
+      "height": 300,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 95,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 2,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 202,
+          "y": 2,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 302,
+          "y": 2,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 2,
+          "y": 102,
+          "width": 95,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 102,
+          "width": 95,
+          "height": 96
+        },
+        {
+          "x": 202,
+          "y": 102,
+          "width": 95,
+          "height": 96
+        },
+        {
+          "x": 302,
+          "y": 102,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 2,
+          "y": 202,
+          "width": 96,
+          "height": 96
+        },
+        {
+          "x": 102,
+          "y": 202,
+          "width": 95,
+          "height": 96
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/assistHeads-0.3e6becd702.webp",
+          "width": 95,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-1.e2355e77d6.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-2.b60a2df26a.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-3.cf8335d36d.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-4.b4b91d87f4.webp",
+          "width": 95,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-5.c4dee21f38.webp",
+          "width": 95,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-6.035055cc8e.webp",
+          "width": 95,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-7.607932d713.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-8.953ec96296.webp",
+          "width": 96,
+          "height": 96
+        },
+        {
+          "file": "runtime/assistHeads-9.d3e12d3a79.webp",
+          "width": 95,
+          "height": 96
+        }
+      ]
+    },
+    "paintPeg": {
+      "file": "runtime/paintPeg-atlas.543bc9af67.webp",
+      "width": 132,
+      "height": 130,
+      "frames": [
+        {
+          "x": 2,
+          "y": 2,
+          "width": 128,
+          "height": 126
+        }
+      ],
+      "sprites": [
+        {
+          "file": "runtime/paintPeg-0.6203d3a923.webp",
+          "width": 128,
+          "height": 126
+        }
+      ]
+    }
+  },
+  "raw": {
+    "backdrop.png": "runtime/backdrop.f2f74c12ed.webp",
+    "logo.png": "runtime/logo.57a8a59d36.webp",
+    "panel-v2.png": "runtime/panel-v2.b84b470168.webp",
+    "album-1.png": "runtime/album-1.b63fd5128b.webp",
+    "album-1.png:thumb": "runtime/album-1-thumb.4a031f7d08.webp",
+    "album-1.png:hd": "runtime/album-1-hd.f915305a77.webp",
+    "album-2.png": "runtime/album-2.5ccf12169f.webp",
+    "album-2.png:thumb": "runtime/album-2-thumb.4c34a6697f.webp",
+    "album-2.png:hd": "runtime/album-2-hd.6c70aba647.webp",
+    "album-3.png": "runtime/album-3.a572d8528c.webp",
+    "album-3.png:thumb": "runtime/album-3-thumb.a2f02ca8ca.webp",
+    "album-3.png:hd": "runtime/album-3-hd.78971720a6.webp",
+    "album-4.png": "runtime/album-4.14f19a4e3c.webp",
+    "album-4.png:thumb": "runtime/album-4-thumb.aeee8d4212.webp",
+    "album-4.png:hd": "runtime/album-4-hd.f951fab2de.webp",
+    "album-5.png": "runtime/album-5.134684f30e.webp",
+    "album-5.png:thumb": "runtime/album-5-thumb.9567cca1fc.webp",
+    "album-5.png:hd": "runtime/album-5-hd.5616439f8d.webp",
+    "album-6.png": "runtime/album-6.da1c656257.webp",
+    "album-6.png:thumb": "runtime/album-6-thumb.1597be33df.webp",
+    "album-6.png:hd": "runtime/album-6-hd.39cce9c783.webp"
+  },
+  "hero": {
+    "doro": "runtime/doro-hero.fa6c2e18d2.webp"
+  },
+  "panelSlice": 18.373205741626794
+}

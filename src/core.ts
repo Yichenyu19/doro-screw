@@ -356,7 +356,7 @@ export class GameEngine {
     const events: GameEvent[] = [];
     const reject = (reason: string): ActionResult => ({ ok: false, events: [], reason });
     if (action.type === 'pick') {
-      if (!this.canPick(action.screwId)) return reject(this.state.phase === 'stuck' ? '先让 Doro 帮你腾出位置' : '这颗螺丝还被玻璃挡着');
+      if (!this.canPick(action.screwId)) return reject(this.state.phase === 'stuck' ? '孔满了。' : '这颗还拆不了。');
       const screw = this.state.screws.find(item => item.id === action.screwId)!;
       const from = this.position(screw);
       events.push({ type: 'picked', screwId: screw.id, from });

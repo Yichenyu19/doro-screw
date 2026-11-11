@@ -877,3 +877,22 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .color-sign-wave::before{width:8px;height:4px;border-top:2px solid currentColor;border-radius:50% 50% 0 0;top:4px;left:2px;}
 html.color-labels .box-slot>.color-sign,html.color-labels .buffer-slot .color-sign{display:none;}
 .guide-match .box-active{box-shadow:0 0 0 2px #e07a3a,0 0 0 6px #e07a3a33;border-radius:8px;}
+/* 线 E：成绩星标、暂存点、称号章和成绩卡，沿用现有描边与奶油纸色。 */
+.clear-marks{display:inline-flex;gap:3px;vertical-align:middle;}
+.clear-mark{width:9px;height:9px;border:1.5px solid #9c6b7c;border-radius:50%;background:#fff9ec;display:inline-block;}
+.clear-mark.on{background:#70424f;border-color:#70424f;}
+.clear-mark.on.gold{background:#c9a46a;border-color:#8a6a2b;}
+.level-tile .clear-marks{margin-top:4px;}
+.buffer-dots{display:inline-flex;gap:5px;align-items:center;}
+.buffer-dot{width:12px;height:12px;border:1.5px solid #9c6b7c;border-radius:3px;background:#fff9ec;}
+.buffer-dot.on{background:#eb8da5;}
+.quiet-rating{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0 10px;font-size:13px;font-weight:800;}
+.rating-moves small{margin-left:4px;font-size:10px;color:#8a6a2b;}
+.title-stamps{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:8px 0 10px;padding:0;list-style:none;}
+.title-stamps li{min-height:28px;padding:3px 8px;border:1.5px solid #c9a46a;border-radius:4px;font-size:11px;font-weight:800;color:#70424f;background:#fff9ec;}
+.album-encore-label{grid-column:1/-1;margin:10px 0 0;font-size:11px;font-weight:800;letter-spacing:.08em;color:#9c6b7c;}
+.album-card.album-encore{opacity:.92;}
+.album-card.album-encore.album-in-progress{opacity:.78;}
+.home-daily.is-done,.daily-practice.is-done{background:#fff9ec;}
+.share-preview{display:block;width:100%;max-height:52dvh;object-fit:contain;margin:8px auto 12px;border:2px solid #9c6b7c;border-radius:10px;background:#fff9ec;}
+#share-card #current-code,.dialog#share-card input#current-code{font-size:12px;letter-spacing:.02em;}

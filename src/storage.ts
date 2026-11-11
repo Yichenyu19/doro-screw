@@ -1,66 +1,23 @@
 import {assertConservation,makeAttemptId,occupiedBuffer} from './core';
 import {assistCount,clearRank,freshStats,newRunId,RANK_ORDER,CONTENT_REVISION} from './run';
 import {CAMPAIGN_COUNT,remapR2Completed,remapR2Unlocked,remapR3Completed,remapR3Unlocked} from './r2-catalog';
-import type {BestRecord,GameState,RunCheckpoint,RunStats,SaveData,Settings} from './types';
+import type {BestRecord,DailyMark,GameState,RunCheckpoint,RunStats,SaveData,Settings} from './types';
 import {readJournal,unpackRun,writeJournal,recoveryText as exportJournal,readPending,archiveRecovery,flushJournal,getSaveStatus} from './journal';
+import {ALBUM_REVISION,ARTWORKS,campaignMaterialGrant as albumGrant,migrateAlbumLayout} from './album';
+import {knownTitles,noteVictoryMeta,syncTitles} from './meta';
 
 export const SAVE_KEY='doro-screw-reborn:v4:r2';
 export const R1_KEY='doro-screw-reborn:v4';
 export const V3_KEY='doro-screw-reborn:v3';
 export const LEGACY_KEY='doro-screw-reborn:v2';
 export const V1_KEY='doro-screw-reborn:v1';
-export const ARTWORKS=[
-  {id:1,title:'睡到螺丝松',columns:25,rows:24},{id:2,title:'今天也摸鱼',columns:27,rows:26},
-  {id:3,title:'草莓补给站',columns:28,rows:28},{id:4,title:'螺丝小宇宙',columns:30,rows:29},
-  {id:5,title:'花田休息日',columns:32,rows:30},{id:6,title:'今日螺丝王',columns:34,rows:32},
-] as const;
-export const CAMPAIGN_MATERIAL_GRANTS=[90,208,110,115,120,125,125,127] as const;
-export const ALBUM_TOTAL_CELLS=ARTWORKS.reduce((sum,art)=>sum+art.columns*art.rows,0);
-export const ARTWORK_STAGE_NAMES=['核心轮廓','向外成形','画面展开','最后收边'] as const;
+export {
+  ALBUM_REVISION,ALBUM_VOLUME_COUNT,ALBUM_VOLUME_CELLS,ALBUM_TOTAL_CELLS,ARTWORKS,ARTWORK_STAGE_NAMES,
+  CAMPAIGN_MATERIAL_GRANTS,LEGACY_ALBUM_CELLS,projectAlbumFill,describeAlbumGoal,campaignAlbumSchedule,
+  migrateAlbumLayout,volumeCompleted,filledArtworkCount,artworkCells,
+} from './album';
 export function campaignMaterialGrant(levelId:number,revision:number,pinCount:number):number{
-  if(revision===CONTENT_REVISION&&levelId>=1&&levelId<=CAMPAIGN_MATERIAL_GRANTS.length)return CAMPAIGN_MATERIAL_GRANTS[levelId-1];
-  return pinCount;
-}
-export function projectAlbumFill(progress:number[],balance:number):{progress:number[];completed:number[];spent:number}{
-  const next=ARTWORKS.map((art,index)=>Math.min(art.columns*art.rows,progress[index]??0));
-  let left=Math.max(0,balance),spent=0;
-  for(let index=0;index<ARTWORKS.length&&left>0;index++){
-    const total=ARTWORKS[index].columns*ARTWORKS[index].rows,add=Math.min(left,total-next[index]);
-    next[index]+=add;left-=add;spent+=add;
-  }
-  return{progress:next,completed:ARTWORKS.filter((art,index)=>next[index]>=art.columns*art.rows).map(art=>art.id),spent};
-}
-export function describeAlbumGoal(progress:number[],balance:number):{
-  index:number;title:string;filled:number;total:number;percent:number;stageName:string;
-  remainStage:number;remainArt:number;completedCount:number;nextTitle:string|null;summary:string;
-}{
-  const projected=projectAlbumFill(progress,balance);
-  const index=projected.progress.findIndex((filled,i)=>filled<ARTWORKS[i].columns*ARTWORKS[i].rows);
-  if(index<0){
-    const last=ARTWORKS[ARTWORKS.length-1];
-    return{index:-1,title:last.title,filled:last.columns*last.rows,total:last.columns*last.rows,percent:100,stageName:'全部完成',remainStage:0,remainArt:0,completedCount:ARTWORKS.length,nextTitle:null,summary:'六幅画都收齐了。剩下的材料仍留着，可以慢慢重看。'};
-  }
-  const art=ARTWORKS[index],total=art.columns*art.rows,filled=projected.progress[index];
-  const percent=Math.round(filled/total*100);
-  const stageIndex=Math.min(3,Math.floor(filled/total*4));
-  const remainStage=Math.max(0,Math.ceil((stageIndex+1)*total/4)-filled);
-  const remainArt=total-filled,completedCount=projected.completed.length;
-  const nextTitle=index+1<ARTWORKS.length?ARTWORKS[index+1].title:null;
-  const summary=filled===0?`下一幅是《${art.title}》，还差材料把它填出来。`:
-    filled<total/4?`《${art.title}》已有 ${filled} / ${total} 颗，再填 ${remainStage} 颗就能看出核心轮廓。`:
-    filled<total?`《${art.title}》已有 ${filled} / ${total} 颗，正在${ARTWORK_STAGE_NAMES[stageIndex]}。再填 ${remainArt} 颗就完成这幅${nextTitle?'，下一幅《'+nextTitle+'》已经在后面等着':''}。`:
-    `《${art.title}》已经完成。`;
-  return{index,title:art.title,filled,total,percent,stageName:ARTWORK_STAGE_NAMES[stageIndex],remainStage,remainArt,completedCount,nextTitle,summary};
-}
-export function campaignAlbumSchedule():{levelId:number;grant:number;cumulative:number;filled:number[];completed:number[]}[]{
-  let cumulative=0;const filled=ARTWORKS.map(()=>0),rows=[];
-  for(let levelId=1;levelId<=CAMPAIGN_MATERIAL_GRANTS.length;levelId++){
-    const grant=CAMPAIGN_MATERIAL_GRANTS[levelId-1];cumulative+=grant;
-    const projected=projectAlbumFill(filled,grant);
-    for(let i=0;i<filled.length;i++)filled[i]=projected.progress[i];
-    rows.push({levelId,grant,cumulative,filled:[...filled],completed:projected.completed});
-  }
-  return rows;
+  return albumGrant(levelId,revision,pinCount,CONTENT_REVISION);
 }
 export interface ProgressSave extends SaveData {
   materialBalance:number;artworkProgress:number[];rewardedAttempts:string[];completedRuns:string[];
@@ -68,6 +25,7 @@ export interface ProgressSave extends SaveData {
   records:Record<string,BestRecord>;endlessNextId:number;tutorialSeen:string[];totalScrews:number;
   starterSticker:boolean;randomCounter:number;
   contentRevision:number;r1Campaign:{completed:number[];unlocked:number};
+  albumRevision:number;titles:string[];dailyMarks:Record<string,DailyMark>;
 }
 export const DEFAULT_SETTINGS:Settings={sound:true,reducedMotion:false,colorLabels:false};
 let recoveryText:string|null=null;
@@ -80,15 +38,21 @@ const ids=(value:unknown,max=30):number[]=>Array.isArray(value)?[...new Set(valu
 const strings=(value:unknown):string[]=>Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'):[];
 export function freshSave():ProgressSave {
   const reducedMotion=typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  return{version:4,contentRevision:CONTENT_REVISION,r1Campaign:{completed:[],unlocked:1},current:null,completed:[],unlocked:1,album:[],settings:{...DEFAULT_SETTINGS,reducedMotion:!!reducedMotion},updatedAt:Date.now(),materialBalance:0,artworkProgress:ARTWORKS.map(()=>0),rewardedAttempts:[],completedRuns:[],attemptCounter:0,attempts:{},legacyCompleted:[],currentAttempt:0,records:{},endlessNextId:31,tutorialSeen:[],totalScrews:0,starterSticker:false,randomCounter:0};
+  return{version:4,contentRevision:CONTENT_REVISION,r1Campaign:{completed:[],unlocked:1},current:null,completed:[],unlocked:1,album:[],settings:{...DEFAULT_SETTINGS,reducedMotion:!!reducedMotion},updatedAt:Date.now(),materialBalance:0,artworkProgress:ARTWORKS.map(()=>0),rewardedAttempts:[],completedRuns:[],attemptCounter:0,attempts:{},legacyCompleted:[],currentAttempt:0,records:{},endlessNextId:31,tutorialSeen:[],totalScrews:0,starterSticker:false,randomCounter:0,albumRevision:ALBUM_REVISION,titles:[],dailyMarks:{}};
 }
 function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
   data.completed=ids(stored.completed);data.legacyCompleted=ids(stored.legacyCompleted);
   data.unlocked=Math.min(31,Math.max(1,integer(stored.unlocked)?stored.unlocked:1,...data.completed.map(id=>id+1),...data.legacyCompleted.map(id=>id+1)));
   for(const key of ['sound','reducedMotion','colorLabels'] as const)if(typeof stored.settings?.[key]==='boolean')data.settings[key]=stored.settings[key]!;
   data.materialBalance=integer(stored.materialBalance)?stored.materialBalance:0;
-  data.artworkProgress=ARTWORKS.map((art,index)=>Math.min(art.columns*art.rows,integer(stored.artworkProgress?.[index])?stored.artworkProgress![index]:0));
+  const album=migrateAlbumLayout(stored.artworkProgress,stored.albumRevision);
+  data.artworkProgress=album.progress;data.albumRevision=album.revision;
   data.album=ARTWORKS.filter((art,index)=>data.artworkProgress[index]>=art.columns*art.rows).map(art=>art.id);
+  data.titles=knownTitles(stored.titles);
+  data.dailyMarks={};
+  if(stored.dailyMarks&&typeof stored.dailyMarks==='object')for(const [date,mark] of Object.entries(stored.dailyMarks)){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&mark&&['complete','independent','clean'].includes(mark.rank)&&integer(mark.theme)&&integer(mark.attempt))data.dailyMarks[date]={rank:mark.rank,theme:mark.theme,attempt:mark.attempt,updatedAt:integer(mark.updatedAt)?mark.updatedAt:0};
+  }
   data.rewardedAttempts=strings(stored.rewardedAttempts).slice(-10000);data.completedRuns=strings(stored.completedRuns).slice(-10000);
   data.attemptCounter=integer(stored.attemptCounter)?stored.attemptCounter:0;
   data.currentAttempt=integer(stored.currentAttempt)?stored.currentAttempt:0;
@@ -99,8 +63,16 @@ function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
   data.starterSticker=stored.starterSticker===true;data.randomCounter=integer(stored.randomCounter)?stored.randomCounter:0;
   if(stored.r1Campaign)data.r1Campaign={completed:ids(stored.r1Campaign.completed),unlocked:Math.min(31,Math.max(1,integer(stored.r1Campaign.unlocked)?stored.r1Campaign.unlocked:1))};
   if(stored.records&&typeof stored.records==='object')for(const [key,record]of Object.entries(stored.records)){
-    if(record&&key===record.puzzleId&&['complete','independent','clean'].includes(record.rank)&&integer(record.levelId)&&integer(record.seed)&&Number.isFinite(record.elapsedMs)&&record.elapsedMs>=0&&integer(record.clears))data.records[key]=record;
+    if(record&&key===record.puzzleId&&['complete','independent','clean'].includes(record.rank)&&integer(record.levelId)&&integer(record.seed)&&Number.isFinite(record.elapsedMs)&&record.elapsedMs>=0&&integer(record.clears)){
+      const next={...record};
+      if(!integer(next.moves))delete next.moves;
+      if(!integer(next.bestMoves))delete next.bestMoves;
+      if(!integer(next.peakBuffer))delete next.peakBuffer;
+      if(!integer(next.capacity))delete next.capacity;
+      data.records[key]=next;
+    }
   }
+  syncTitles(data);
 }
 export function revisionWarning(storedRevision:unknown):string|null {
   if(storedRevision===CONTENT_REVISION)return null;
@@ -166,7 +138,7 @@ export function loadSave():{data:ProgressSave;warning:string|null} {
       return{data,warning:data.current?'旧局已保留，继续完成它；下一局会使用新版关卡。':'旧版作品、材料和通关进度已保留。'};
     }
     const first=localStorage.getItem(V1_KEY);
-    if(first){const old=JSON.parse(first);data.legacyCompleted=ids(old.completed);data.unlocked=Math.min(9,Math.max(1,...data.legacyCompleted.map(id=>id+1)));for(const key of ['sound','reducedMotion','colorLabels'] as const)if(typeof old.settings?.[key]==='boolean')data.settings[key]=old.settings[key];for(const id of ids(old.album,6)){const art=ARTWORKS[id-1];data.artworkProgress[id-1]=art.columns*art.rows;}data.album=ids(old.album,6);return{data,warning:'旧版已得到的作品和关卡解锁仍然保留。'};}
+    if(first){const old=JSON.parse(first);data.legacyCompleted=ids(old.completed);data.unlocked=Math.min(9,Math.max(1,...data.legacyCompleted.map(id=>id+1)));for(const key of ['sound','reducedMotion','colorLabels'] as const)if(typeof old.settings?.[key]==='boolean')data.settings[key]=old.settings[key];for(const id of ids(old.album,6)){const art=ARTWORKS[id-1];data.artworkProgress[id-1]=art.columns*art.rows;}data.album=ids(old.album,6);syncTitles(data);return{data,warning:'旧版已得到的作品和关卡解锁仍然保留。'};}
     return{data,warning:null};
   }catch{recoveryText=text;return{data,warning:'这份盘面没有完整读取，原记录仍保留着。'};}
 }
@@ -183,9 +155,11 @@ export function awardVictory(data:ProgressSave,state:GameState,attempt=0):number
   if(state.phase!=='won'||data.completedRuns.includes(state.runId))return 0;
   data.completedRuns.push(state.runId);
   const rank=clearRank(state.stats),old=data.records[state.attemptId];
-  const record:BestRecord={puzzleId:state.attemptId,contentVersion:state.contentVersion,levelId:state.levelId,attempt,seed:state.seed,rank,elapsedMs:state.elapsedMs,undos:state.stats.undos,hintsShown:state.stats.hintsShown,assists:assistCount(state.stats),clears:(old?.clears??0)+1,updatedAt:Date.now(),mode:state.contentVersion==='v4'?state.mode??'campaign':'legacy',contentRevision:state.contentRevision};
-  const better=!old||RANK_ORDER[rank]>RANK_ORDER[old.rank]||(rank===old.rank&&(record.elapsedMs<old.elapsedMs||(record.elapsedMs===old.elapsedMs&&record.undos<old.undos)));
-  data.records[state.attemptId]=better?record:{...old,clears:record.clears,updatedAt:record.updatedAt};
+  const moves=state.moves,peakBuffer=Math.max(0,state.stats.peakBuffer),capacity=Math.max(peakBuffer,state.capacity);
+  const bestMoves=Math.min(moves,old?.bestMoves??old?.moves??moves);
+  const record:BestRecord={puzzleId:state.attemptId,contentVersion:state.contentVersion,levelId:state.levelId,attempt,seed:state.seed,rank,elapsedMs:state.elapsedMs,undos:state.stats.undos,hintsShown:state.stats.hintsShown,assists:assistCount(state.stats),clears:(old?.clears??0)+1,updatedAt:Date.now(),mode:state.contentVersion==='v4'?state.mode??'campaign':'legacy',contentRevision:state.contentRevision,moves,bestMoves,peakBuffer,capacity};
+  const better=!old||RANK_ORDER[rank]>RANK_ORDER[old.rank]||(rank===old.rank&&(record.elapsedMs<old.elapsedMs||(record.elapsedMs===old.elapsedMs&&(record.undos<old.undos||(record.undos===old.undos&&moves<(old.moves??moves))))));
+  data.records[state.attemptId]=better?record:{...old,clears:record.clears,updatedAt:record.updatedAt,bestMoves};
   const v4campaign=state.contentVersion==='v4'&&(state.mode??'campaign')==='campaign';
   const campaign=v4campaign&&((state.contentRevision??1)===CONTENT_REVISION||(state.contentRevision??1)===2);
   const currentCampaign=v4campaign&&(state.contentRevision??1)===CONTENT_REVISION;
@@ -203,7 +177,7 @@ export function awardVictory(data:ProgressSave,state:GameState,attempt=0):number
   const eligible=new Set(state.rewardableIds??state.screws.map(s=>s.id));
   const newCollected=state.screws.filter(s=>eligible.has(s.id)&&s.place==='done').length;
   const earned=firstClear?(currentCampaign?campaignMaterialGrant(state.levelId,state.contentRevision??1,state.screws.length):state.screws.length):challenge?newCollected:0;
-  data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;return earned;
+  data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;noteVictoryMeta(data,state);return earned;
 }
 export async function importRecovery(text:string,previous:ProgressSave):Promise<{data:ProgressSave;run:RunCheckpoint|null}> {
   if(text.length>35_000_000)throw Error('恢复文件过大，请使用游戏导出的 JSON 文件');

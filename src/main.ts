@@ -5,12 +5,14 @@ import {observeVisible} from './visible-analysis';
 import {tutorialEvidence,teachingCue,teachingFlags,teachingStageKey} from './teaching';
 import { GameAudio } from './audio';
 import { assetUrl, sprite, PANEL_SLICE, preloadFrames } from './art';
-import {R2_TITLES,CAMPAIGN_TITLES,CAMPAIGN_COUNT,CAMPAIGN_TOTAL_PINS,dailyPractice,practiceCampaignId} from './r2-catalog';
+import {R2_TITLES,CAMPAIGN_TITLES,CAMPAIGN_COUNT,dailyPractice,practiceCampaignId} from './r2-catalog';
 import { GameServices } from './worker-client';
-import { assistCount, challengeCode, clearRank, parseChallengeCode, RANK_NAMES, CONTENT_REVISION } from './run';
+import { assistCount, challengeCode, clearRank, readChallengeCode, RANK_NAMES, CONTENT_REVISION } from './run';
 import type { ContentVersion,PlayMode } from './types';
 import type { GameView } from './render';
-import { loadSaveAsync, persistSave, awardVictory, ARTWORKS,setCurrentRun,currentRun,exportRecovery,importRecovery,describeAlbumGoal } from './storage';
+import { loadSaveAsync, persistSave, awardVictory, ARTWORKS,ALBUM_VOLUME_COUNT,setCurrentRun,currentRun,exportRecovery,importRecovery,describeAlbumGoal,volumeCompleted } from './storage';
+import {campaignBest,encoreUnlocked,quietRating,rankMarks,titleName} from './meta';
+import {buildShareSpec,createShareCanvas,shareOrDownloadCard} from './share-card';
 import {onSaveStatus,getSaveStatus,flushJournal,noteUnsaved} from './journal';
 import { PresentationDirector } from './presentation';
 import {renderTrays} from './hud-trays';
@@ -123,6 +125,20 @@ onSaveStatus((status)=>{
   if(status==='saved'||status==='local')lastSaveWarning=false;
 });
 
+
+function markRow(rank:ReturnType<typeof rankMarks>,label:string):string{
+  const dot=(on:boolean,gold=false)=>`<i class="clear-mark${on?' on':''}${gold?' gold':''}"></i>`;
+  return `<span class="clear-marks" aria-label="${escapeText(label)}">${dot(rank.complete)}${dot(rank.independent)}${dot(rank.clean,true)}</span>`;
+}
+function bufferDots(peak:number,capacity:number):string{
+  return `<span class="buffer-dots" aria-hidden="true">${Array.from({length:Math.max(0,capacity)},(_,i)=>`<i class="buffer-dot${i<peak?' on':''}"></i>`).join('')}</span>`;
+}
+function stampRow(ids:string[]):string{
+  if(!ids.length)return'';
+  return `<ul class="title-stamps">${ids.map(id=>`<li>${escapeText(titleName(id))}</li>`).join('')}</ul>`;
+}
+function dailyMark(date:string){return save.dailyMarks[date];}
+
 function showHome():void {
   saveNow();
   generation++;services.cancelHint();hintSequence++;pendingLaunch=null;clearTeachingTimers();
@@ -149,11 +165,11 @@ function showHome():void {
       <div class="home-secondary">${artButton('levels','关卡地图',{secondary:true,icon:3})}${artButton('random-menu','主题挑战',{secondary:true,icon:12})}${artButton('artwork','螺丝画册',{secondary:true,icon:15})}${artButton('records','我的记录',{secondary:true,icon:7})}</div>
     </section>
     <section class="home-share" aria-label="每日挑战和挑战码">
-      <button type="button" class="home-daily" data-action="${dailyReady?'daily-start':'random-menu'}">
-        <span class="eyebrow">今日挑战</span>
-        <strong>今天大家拆同一局</strong>
-        <span>${R2_TITLES[daily.theme-1].name} · ${daily.date} UTC</span>
-        <small>${dailyReady?'点这里打开':'完成第 '+practiceCampaignId(daily.theme)+' 关后可玩'}</small>
+      <button type="button" class="home-daily${dailyMark(daily.date)?' is-done':''}" data-action="${dailyReady?'daily-start':'random-menu'}">
+        <span class="eyebrow">今日挑战${dailyMark(daily.date)?' · '+RANK_NAMES[dailyMark(daily.date)!.rank]:''}</span>
+        <strong>${R2_TITLES[daily.theme-1].name}</strong>
+        <span>${daily.date} UTC</span>
+        <small>${dailyMark(daily.date)?'还可再拆同一局':dailyReady?'今天大家拆同一局':'完成第 '+practiceCampaignId(daily.theme)+' 关后可玩'}</small>
       </button>
       <button type="button" class="home-code text-tool" data-action="challenge">有挑战码？贴进来一起拆</button>
     </section>
@@ -386,17 +402,17 @@ async function requestHint():Promise<void> {
 function showChallenge():void {
   const code=level?challengeCode(level.id,level.attempt??0,level.contentVersion,level.mode,level.contentRevision):'',record=engine?save.records[engine.state.attemptId]:null;
   const goal=engine?.state.goal??'complete';
-  openModal('challenge',`<h2>把这局留给下次。</h2>${code?'<p>同一个挑战码，总是同一个初始盘面。</p><input id="current-code" aria-label="当前挑战码" readonly value="'+code+'">'+artButton('copy-code','复制挑战码',{secondary:true}):''}${engine?.state.phase==='playing'?'<p class="code-label">给自己选个目标，随时可改</p><div class="record-tabs">'+(['complete','independent','clean'] as const).map(rank=>`<button data-action="set-goal" data-goal="${rank}" aria-pressed="${goal===rank}">${rank==='complete'?'轻松完成':RANK_NAMES[rank]}</button>`).join('')+'</div>':''}${record?'<p class="record-best">最佳：'+RANK_NAMES[record.rank]+' · '+Math.round(record.elapsedMs/1000)+' 秒 · 完成 '+record.clears+' 次</p>':''}${artButton('records','查看全部历史记录',{secondary:true})}<label class="code-label" for="challenge-input">输入挑战码</label><input id="challenge-input" autocomplete="off" spellcheck="false" placeholder="D4-…（兼容 D2 / D3）"><p id="code-error" class="small-note" role="status"></p>${artButton('import-code','打开这个局面')}<p class="small-note">独立解出：未看具体目标、未用强辅助，允许撤回。零回退再要求从未撤回。改目标不会抹去已经使用的帮助。</p>`);
+  openModal('challenge',`<h2>把这局留给下次。</h2>${code?'<input id="current-code" aria-label="当前挑战码" readonly value="'+code+'"><div class="dialog-button-grid">'+artButton('copy-code','复制挑战码',{secondary:true})+(engine?.state.phase==='won'?artButton('share-card','收下成绩卡',{secondary:true}):'')+'</div>':''}${engine?.state.phase==='playing'?'<p class="code-label">给自己选个目标，随时可改</p><div class="record-tabs">'+(['complete','independent','clean'] as const).map(rank=>`<button data-action="set-goal" data-goal="${rank}" aria-pressed="${goal===rank}">${rank==='complete'?'轻松完成':RANK_NAMES[rank]}</button>`).join('')+'</div>':''}${record?'<p class="record-best">最佳：'+RANK_NAMES[record.rank]+(record.moves!=null?' · '+record.moves+' 步':'')+' · '+Math.round(record.elapsedMs/1000)+' 秒</p>':''}${artButton('records','查看全部历史记录',{secondary:true})}<label class="code-label" for="challenge-input">输入挑战码</label><input id="challenge-input" autocomplete="off" spellcheck="false" placeholder="D4-…（兼容 D2 / D3）"><p id="code-error" class="small-note" role="status"></p>${artButton('import-code','打开这个局面')}`);
 }
 
 function showRecords():void {
   const all=Object.values(save.records).filter(record=>recordFilter==='legacy'?record.contentVersion!=='v4'||(record.contentRevision??1)<2:recordFilter==='campaign'?record.contentVersion==='v4'&&(record.contentRevision??1)>=2&&(record.mode??'campaign')==='campaign':record.contentVersion==='v4'&&(record.contentRevision??1)>=2&&(record.mode==='rescue'||record.mode==='mastery')).sort((a,b)=>b.updatedAt-a.updatedAt);
   recordPage=Math.min(recordPage,Math.max(0,Math.ceil(all.length/20)-1));const rows=all.slice(recordPage*20,recordPage*20+20);
-  openModal('records',`<h2>拆过的，都记着。</h2><div class="record-tabs">${(['campaign','random','legacy'] as const).map(filter=>`<button data-action="record-filter" data-filter="${filter}" aria-pressed="${recordFilter===filter}">${filter==='campaign'?'主线':filter==='random'?'残局 / 精修':'旧版记录'}</button>`).join('')}</div><p class="small-note">共 ${all.length} 个盘面 · 每个盘面保留最佳成绩和完成次数</p><div class="record-list">${rows.length?rows.map(record=>`<article class="record-row"><div><strong>${record.contentVersion!=='v4'?record.contentVersion.toUpperCase()+' · ':record.contentRevision!==CONTENT_REVISION&&(record.contentRevision??1)>=2?'修订 '+record.contentRevision+' · ':record.mode==='rescue'?'残局 · ':record.mode==='mastery'?'精修 · ':''}${record.levelId>30?'无尽 '+(record.levelId-30):'第 '+record.levelId+' 关'}</strong><span>${RANK_NAMES[record.rank]} · ${Math.round(record.elapsedMs/1000)} 秒</span><small>撤回 ${record.undos} · 提示 ${record.hintsShown} · 辅助 ${record.assists} · 完成 ${record.clears} 次</small></div><button data-action="record-replay" data-record="${escapeText(record.puzzleId)}">重玩同局</button></article>`).join(''):'<div class="record-empty">'+doro(0)+'<p>这里还没有记录。完成一局，成绩就会留在这里。</p></div>'}</div>${all.length>20?'<div class="record-pager"><button data-action="record-page" data-page="'+(recordPage-1)+'" '+(recordPage===0?'disabled':'')+'>上一页</button><span>'+(recordPage+1)+' / '+Math.ceil(all.length/20)+'</span><button data-action="record-page" data-page="'+(recordPage+1)+'" '+((recordPage+1)*20>=all.length?'disabled':'')+'>下一页</button></div>':''}${artButton('close-modal','返回',{secondary:true})}`,{wide:true});
+  openModal('records',`<h2>拆过的，都记着。</h2>${stampRow(save.titles)}<div class="record-tabs">${(['campaign','random','legacy'] as const).map(filter=>`<button data-action="record-filter" data-filter="${filter}" aria-pressed="${recordFilter===filter}">${filter==='campaign'?'主线':filter==='random'?'残局 / 精修':'旧版记录'}</button>`).join('')}</div><div class="record-list">${rows.length?rows.map(record=>`<article class="record-row"><div><strong>${record.contentVersion!=='v4'?record.contentVersion.toUpperCase()+' · ':record.contentRevision!==CONTENT_REVISION&&(record.contentRevision??1)>=2?'修订 '+record.contentRevision+' · ':record.mode==='rescue'?'残局 · ':record.mode==='mastery'?'精修 · ':''}${record.levelId>30?'无尽 '+(record.levelId-30):'第 '+record.levelId+' 关'}</strong><span>${markRow(rankMarks(record.rank),RANK_NAMES[record.rank])} ${RANK_NAMES[record.rank]}${record.moves!=null?' · '+record.moves+' 步':''} · ${Math.round(record.elapsedMs/1000)} 秒</span><small>${record.assists?'辅助 '+record.assists+' · ':''}完成 ${record.clears} 次</small></div><button data-action="record-replay" data-record="${escapeText(record.puzzleId)}">重玩同局</button></article>`).join(''):'<div class="record-empty">'+doro(0)+'<p>这里还没有记录。完成一局，成绩就会留在这里。</p></div>'}</div>${all.length>20?'<div class="record-pager"><button data-action="record-page" data-page="'+(recordPage-1)+'" '+(recordPage===0?'disabled':'')+'>上一页</button><span>'+(recordPage+1)+' / '+Math.ceil(all.length/20)+'</span><button data-action="record-page" data-page="'+(recordPage+1)+'" '+((recordPage+1)*20>=all.length?'disabled':'')+'>下一页</button></div>':''}${artButton('close-modal','返回',{secondary:true})}`,{wide:true});
 }
 function showRandomMenu():void {
   const unlocked=randomUnlocked(),daily=dailyPractice(),dailyReady=themeUnlocked(daily.theme);
-  openModal('random-menu',`<h2>再拆一局新的。</h2><p>从见过的主题里选。打完按本局新拆的螺丝发材料。</p>${unlocked?`<label class="code-label" for="random-level">选择主题</label><select id="random-level">${R2_TITLES.filter(item=>item.id>=2).map(item=>`<option value="${item.id}" ${themeUnlocked(item.id)?'':'disabled'}>${item.id}. ${item.name}${themeUnlocked(item.id)?'':' · 完成这一关后开放'}</option>`).join('')}</select><div class="practice-options"><article><h3>残局解围</h3><p>已有暂存和半盒，从中途接回来。<br>本局新拆约 30–60 颗。</p>${artButton('practice-start','解开这个残局',{icon:12,attrs:'data-play-mode="rescue"'})}</article><article><h3>主题精修</h3><p>从头拆一盘，比较新的供给关系。<br>每局约 60–120 颗，六种编排。</p>${artButton('practice-start','来一局主题精修',{secondary:true,attrs:'data-play-mode="mastery"'})}</article></div>`:'<p class="unlock-note">完成第二关，残局解围和主题精修一起开放。</p>'}<section class="daily-practice"><span class="eyebrow">每日共享 · ${daily.date} UTC</span><h3>${R2_TITLES[daily.theme-1].name}</h3><p>今天大家拆同一局。挑战码可以以后再打开。</p>${dailyReady?artButton('daily-start','打开今日精修',{secondary:true}):`<p class="small-note">完成主线第 ${practiceCampaignId(daily.theme)} 关后可玩，其他已学主题随时可选。</p>`}</section><p class="small-note">每局只结算一次。残局预置库存不发材料。</p>${artButton('challenge','输入挑战码',{secondary:true})}${artButton('records','挑战记录',{secondary:true})}`);
+  openModal('random-menu',`<h2>再拆一局新的。</h2><p>从见过的主题里选。打完按本局新拆的螺丝发材料。</p>${unlocked?`<label class="code-label" for="random-level">选择主题</label><select id="random-level">${R2_TITLES.filter(item=>item.id>=2).map(item=>`<option value="${item.id}" ${themeUnlocked(item.id)?'':'disabled'}>${item.id}. ${item.name}${themeUnlocked(item.id)?'':' · 完成这一关后开放'}</option>`).join('')}</select><div class="practice-options"><article><h3>残局解围</h3><p>已有暂存和半盒，从中途接回来。<br>本局新拆约 30–60 颗。</p>${artButton('practice-start','解开这个残局',{icon:12,attrs:'data-play-mode="rescue"'})}</article><article><h3>主题精修</h3><p>从头拆一盘，比较新的供给关系。<br>每局约 60–120 颗，六种编排。</p>${artButton('practice-start','来一局主题精修',{secondary:true,attrs:'data-play-mode="mastery"'})}</article></div>`:'<p class="unlock-note">完成第二关，残局解围和主题精修一起开放。</p>'}<section class="daily-practice${dailyMark(daily.date)?' is-done':''}"><span class="eyebrow">每日共享 · ${daily.date} UTC${dailyMark(daily.date)?' · '+RANK_NAMES[dailyMark(daily.date)!.rank]:''}</span><h3>${R2_TITLES[daily.theme-1].name}</h3>${dailyReady?artButton('daily-start',dailyMark(daily.date)?'再拆今日同一局':'打开今日精修',{secondary:true}):`<p class="small-note">完成主线第 ${practiceCampaignId(daily.theme)} 关后可玩。</p>`}</section><p class="small-note">每局只结算一次。残局预置库存不发材料。</p>${artButton('challenge','输入挑战码',{secondary:true})}${artButton('records','挑战记录',{secondary:true})}`);
 }
 function startPractice(id:number,playMode:'rescue'|'mastery',attempt?:number):void {if(!themeUnlocked(id)){showRandomMenu();return;}const nextAttempt=attempt??save.randomCounter++;confirmLaunch(()=>{void startLevel(id,undefined,nextAttempt,'v4',playMode,CONTENT_REVISION);});}
 function startRandom(id:number):void{startPractice(Math.max(2,Math.min(8,id)),'mastery');}
@@ -429,18 +445,27 @@ function showSettings():void {
 
 function showLevels():void {
   const allowAll=import.meta.env.DEV||import.meta.env.MODE==='verification';
-  openModal('levels',`<h2>主线八关。</h2><p class="small-note">已通关 ${save.completed.length} / ${CAMPAIGN_COUNT} · 作品 ${save.album.length} / 6</p><div class="level-grid">${CAMPAIGN_TITLES.map(item=>{
+  const volumeDone=volumeCompleted(save.artworkProgress);
+  openModal('levels',`<h2>主线八关。</h2><p class="small-note">已通关 ${save.completed.length} / ${CAMPAIGN_COUNT}${volumeDone?' · 这一卷已收齐':''}</p><div class="level-grid">${CAMPAIGN_TITLES.map(item=>{
     const unlocked=allowAll||item.id<=save.unlocked;
-    return `<button class="level-tile ${save.completed.includes(item.id)?'level-complete':''}" data-action="level" data-level="${item.id}" ${unlocked?'':'disabled'} aria-label="第 ${item.id} 关 ${escapeText(item.name)}${save.completed.includes(item.id)?'，已完成':''}">${icon(3,'level-tile-art')}<strong>${String(item.id).padStart(2,'0')}</strong><b>${item.name}</b><span>${save.completed.includes(item.id)?'完成':unlocked?item.total+' 颗':'未到达'}</span></button>`;
-  }).join('')}</div>${artButton('random-menu','残局与主题精修',{secondary:true})}<p class="small-note">主线首通共 ${CAMPAIGN_TOTAL_PINS.toLocaleString("zh-CN")} 份材料。六幅画册共需 5,004 份，可通过喜欢的挑战逐步收集。</p>`,{wide:true});
+    const best=campaignBest(save,item.id);
+    const marks=rankMarks(best?.rank);
+    const status=save.completed.includes(item.id)?markRow(marks,RANK_NAMES[best!.rank]):unlocked?item.total+' 颗':'未到达';
+    return `<button class="level-tile ${save.completed.includes(item.id)?'level-complete':''}" data-action="level" data-level="${item.id}" ${unlocked?'':'disabled'} aria-label="第 ${item.id} 关 ${escapeText(item.name)}${best?'，'+RANK_NAMES[best.rank]:''}">${icon(3,'level-tile-art')}<strong>${String(item.id).padStart(2,'0')}</strong><b>${item.name}</b><span>${status}</span></button>`;
+  }).join('')}</div>${artButton('random-menu','残局与主题精修',{secondary:true})}`,{wide:true});
 }
 
 function showAlbum():void {
   audio.play('album');
-  const nextArt=ARTWORKS.findIndex((art,index)=>save.artworkProgress[index]<art.columns*art.rows);
-  openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong><small>完成第一关得到的小纪念。<br>与你填出的六幅画分别保存。</small></div></div>':''}<p class="small-note">${save.album.length===6?'六幅都齐了。还剩 '+save.materialBalance+' 颗材料，可以精修成绩，或开一局主题挑战。':'还有 '+save.materialBalance+' 颗材料。先填一小片，再把整幅画完成。'}</p><div class="album-grid">${ARTWORKS.map((art,index)=>{
+  const showEncore=encoreUnlocked(save.artworkProgress);
+  const visible=ARTWORKS.filter((_,index)=>index<ALBUM_VOLUME_COUNT||showEncore);
+  const nextArt=visible.findIndex((art,index)=>save.artworkProgress[index]<art.columns*art.rows);
+  const volumeDone=volumeCompleted(save.artworkProgress);
+  const note=save.album.length===ARTWORKS.length?'画都收齐了。':volumeDone?'这一卷收齐了。':save.materialBalance?'还存着 '+save.materialBalance+' 颗。':'先拆出材料，再把画填上。';
+  openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong><small>完成第一关得到的小纪念。</small></div></div>':''}${stampRow(save.titles)}<p class="small-note">${note}</p><div class="album-grid">${visible.map((art,index)=>{
     const unlocked=save.album.includes(art.id),amount=save.artworkProgress[index],total=art.columns*art.rows;
-    return `<button class="album-card ${unlocked?'':'album-in-progress'}" data-action="album-card" data-album="${art.id}" ${unlocked||index===nextArt?'':'disabled'}>${unlocked?`<img src="${assetUrl(`album-${art.id}.png`,'thumb')}" alt="${art.title}" loading="lazy">`:doro(index%6,'locked-doro')}<strong>${art.title}</strong><span>${unlocked?'已经收好':index===nextArt?`${amount} / ${total} 颗`:'下一幅等着你'}</span></button>`;
+    const encoreHead=index===ALBUM_VOLUME_COUNT?'<p class="album-encore-label">后来</p>':'';
+    return `${encoreHead}<button class="album-card ${unlocked?'':'album-in-progress'}${index>=ALBUM_VOLUME_COUNT?' album-encore':''}" data-action="album-card" data-album="${art.id}" ${unlocked||index===nextArt?'':'disabled'}>${unlocked?`<img src="${assetUrl(`album-${art.id}.png`,'thumb')}" alt="${art.title}" loading="lazy">`:doro(index%6,'locked-doro')}<strong>${art.title}</strong><span>${unlocked?'已经收好':index===nextArt?`${amount} / ${total}`:'下一幅'}</span></button>`;
   }).join('')}</div>`,{wide:true});
 }
 
@@ -456,17 +481,52 @@ function showArtwork(preferred?:number):void {
   artwork=new ScrewArtwork(container,save,index,update,()=>{audio.play('win');update();persistSave(save);});update();
 }
 
+
+async function showShareCard():Promise<void>{
+  if(!engine||!level){toast('先完成或打开一局，再收下成绩卡。');return;}
+  const rating=quietRating(engine.state,save.records[engine.state.attemptId]);
+  const spec=buildShareSpec(level,engine.state,rating,save.titles.map(titleName));
+  try{
+    const logo=new Image();
+    logo.crossOrigin='anonymous';
+    const src=assetUrl('logo.png');
+    const ready=new Promise<HTMLImageElement|null>(resolve=>{
+      const timer=window.setTimeout(()=>resolve(null),1200);
+      logo.onload=()=>{window.clearTimeout(timer);resolve(logo);};
+      logo.onerror=()=>{window.clearTimeout(timer);resolve(null);};
+    });
+    logo.src=src;
+    const canvas=createShareCanvas(spec,await ready);
+    const url=canvas.toDataURL('image/png');
+    if(modal&&modal!=='share-card')modalHistory.push(modal);
+    openModal('share-card',`<h2>成绩卡</h2><img class="share-preview" alt="本局成绩卡" src="${url}"><input id="current-code" aria-label="当前挑战码" readonly value="${spec.code}"><div class="dialog-button-grid">${artButton('download-share','保存图片')}${artButton('copy-code','复制挑战码',{secondary:true})}</div>${artButton('close-modal','返回',{secondary:true})}`);
+    const preview=document.querySelector<HTMLImageElement>('.share-preview');
+    if(preview)preview.dataset.ready='1';
+    (window as unknown as {__doroShareCanvas?:HTMLCanvasElement}).__doroShareCanvas=canvas;
+  }catch(error){toast(error instanceof Error?error.message:'成绩卡没有生成。');}
+}
+
 function showRescue():void {react(3);showTools(true);}
 
 function showWin(celebrate=true):void {
-  if(!engine||!level)return;const additional=awardVictory(save,engine.state,level.attempt??0);if(additional)earnedThisRound=additional;persistSave(save);if(celebrate)audio.play(level.mode==='campaign'&&level.id===2?'wall':'win');const stats=engine.state.stats,rank=RANK_NAMES[clearRank(stats)],seconds=Math.max(1,Math.round(stats.elapsedMs/1000)),time=seconds>=60?`${Math.floor(seconds/60)} 分 ${seconds%60} 秒`:`${seconds} 秒`,allArt=save.album.length===6;
+  if(!engine||!level)return;
+  const previous=save.records[engine.state.attemptId];
+  const beforeTitles=save.titles.slice();
+  const rating=quietRating(engine.state,previous);
+  const additional=awardVictory(save,engine.state,level.attempt??0);if(additional)earnedThisRound=additional;persistSave(save);if(celebrate)audio.play(level.mode==='campaign'&&level.id===2?'wall':'win');
+  const stats=engine.state.stats,rankId=clearRank(stats),rank=RANK_NAMES[rankId],seconds=Math.max(1,Math.round(stats.elapsedMs/1000)),time=seconds>=60?`${Math.floor(seconds/60)} 分 ${seconds%60} 秒`:`${seconds} 秒`;
   const starter=level.contentVersion==='v4'&&(level.contentRevision??1)>=2&&level.mode==='campaign'&&level.id===1;
-  const challenge=level.mode==='rescue'||level.mode==='mastery',legacy=level.contentVersion!=='v4'||(level.contentRevision??1)<2,finished=!legacy&&!challenge&&level.id===CAMPAIGN_COUNT,canPaint=!allArt&&save.materialBalance>0;
-  const nextText=challenge?'再来一局新编排':legacy?'回到主线':finished?'看看主题挑战':'继续下一关',count=engine.state.rewardableIds?.length??engine.state.screws.length;
+  const challenge=level.mode==='rescue'||level.mode==='mastery',legacy=level.contentVersion!=='v4'||(level.contentRevision??1)<2,finished=!legacy&&!challenge&&level.id===CAMPAIGN_COUNT;
   const goal=describeAlbumGoal(save.artworkProgress,save.materialBalance);
-  const nextGoal=`<section class="next-goal"><span class="eyebrow">下一目标</span><strong>${goal.completedCount>=6?'画册已经收齐':goal.title}</strong><p>${earnedThisRound?'这局收好 '+earnedThisRound+' 颗材料。':''}${goal.summary}</p>${goal.index>=0?`<p class="next-goal-meter">${goal.filled} / ${goal.total} · ${goal.stageName}</p>`:''}</section>`;
+  const canPaint=save.materialBalance>0&&goal.completedCount<ARTWORKS.length;
+  const nextText=challenge?'再来一局新编排':legacy?'回到主线':finished?'看看主题挑战':'继续下一关',count=engine.state.rewardableIds?.length??engine.state.screws.length;
+  const newStamps=save.titles.filter(id=>!beforeTitles.includes(id));
+  const goalTitle=goal.volumeComplete&&goal.completedCount<=ALBUM_VOLUME_COUNT?'这一卷收齐了':goal.title;
+  const showEncoreMeter=goal.volumeComplete?goal.index>=ALBUM_VOLUME_COUNT&&goal.filled>=goal.total/4:goal.index>=0;
+  const nextGoal=`<section class="next-goal"><span class="eyebrow">${goal.volumeComplete?'画册':'下一幅'}</span><strong>${goalTitle}</strong><p>${earnedThisRound?'这局收好 '+earnedThisRound+' 颗。':''}${goal.summary}</p>${showEncoreMeter&&goal.index>=0?`<p class="next-goal-meter">${goal.filled} / ${goal.total}${goal.volumeComplete?'': ' · '+goal.stageName}</p>`:''}</section>`;
+  const quiet=`<div class="quiet-rating" aria-label="${rating.moves} 步，暂存最高 ${rating.peakBuffer} / ${rating.capacity}"><span class="rating-moves">${rating.moves} 步${rating.improvedMoves?'<small>新</small>':''}</span>${bufferDots(rating.peakBuffer,rating.capacity)}</div>`;
   modalHistory=[];
-  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册 · 与作画材料分别保存</p>':''}${finished?'<p>主线收好了。画册和挑战可以慢慢玩。</p>':''}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}<br>撤回 ${stats.undos} · 小抄 ${stats.hintsShown} · 辅助 ${assistCount(stats)}</p>${nextGoal}<p class="small-note">${earnedThisRound?'':challenge?'本次运行的材料已经结算，成绩已保留。':legacy?'旧版成绩与材料记录已保留。':'这关的首通材料已经领过，本次成绩已记录。'}${allArt?' 六幅画都齐了。':''}</p>${finished?artButton('home','收下这次毕业',{icon:12}):canPaint?artButton('artwork','先填进画册，看看下一目标',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('next',nextText,{secondary:true})}${artButton('challenge','挑战码与最佳记录',{secondary:true})}</div>${finished?artButton('artwork','慢慢完成螺丝画册',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
+  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册</p>':''}${finished?'<p>主线收好了。</p>':''}${stampRow(newStamps)}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}</p>${quiet}${markRow(rankMarks(rankId),rank)}${nextGoal}${finished?artButton('artwork','去画册收下这一卷',{icon:15}):canPaint?artButton('artwork','先填进画册',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('share-card','收下成绩卡',{secondary:true})}${artButton('challenge','挑战码',{secondary:true})}</div>${finished?artButton('home','回到首页',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
 }
 
 function rewindToLastSolvable():void {
@@ -547,13 +607,15 @@ function dispatchButton(button:HTMLElement):void {
   if(action==='hint-arrow'){void requestHint();return;}
   if(action==='challenge'){showChallenge();return;}
   if(action==='copy-code'){const input=document.querySelector<HTMLInputElement>('#current-code');if(input){void navigator.clipboard?.writeText(input.value).then(()=>toast('挑战码已复制')).catch(()=>{input.select();toast('长按选中这段挑战码即可复制。');});}return;}
-  if(action==='import-code'){const input=document.querySelector<HTMLInputElement>('#challenge-input'),parsed=parseChallengeCode(input?.value??'');const error=document.querySelector('#code-error');if(!parsed){if(error)error.textContent='挑战码不完整或内容修订版暂不支持，请核对后再试。';return;}if(parsed.contentVersion==='v4'&&((parsed.mode==='random'&&!randomUnlocked())||(parsed.mode==='endless'&&!endlessUnlocked()))){if(error)error.textContent=parsed.mode==='random'?'完成第二关后可打开随机挑战。':'完成三十关后可打开无尽挑战。';return;}if((parsed.contentRevision??1)>=2&&(parsed.mode==='rescue'||parsed.mode==='mastery')&&!themeUnlocked(parsed.levelId)){if(error)error.textContent='完成主线第 '+practiceCampaignId(parsed.levelId)+' 关后即可打开这个主题。';return;}confirmLaunch(()=>{void startLevel(parsed.levelId,undefined,parsed.attempt,parsed.contentVersion,parsed.mode,parsed.contentRevision??1);});return;}
+  if(action==='import-code'){const input=document.querySelector<HTMLInputElement>('#challenge-input'),read=readChallengeCode(input?.value??'');const error=document.querySelector('#code-error');if(!read.ok){if(error)error.textContent=read.reason;return;}const parsed=read.value;if(parsed.contentVersion==='v4'&&((parsed.mode==='random'&&!randomUnlocked())||(parsed.mode==='endless'&&!endlessUnlocked()))){if(error)error.textContent=parsed.mode==='random'?'完成第二关后可打开随机挑战。':'完成三十关后可打开无尽挑战。';return;}if((parsed.contentRevision??1)>=2&&(parsed.mode==='rescue'||parsed.mode==='mastery')&&!themeUnlocked(parsed.levelId)){if(error)error.textContent='完成主线第 '+practiceCampaignId(parsed.levelId)+' 关后即可打开这个主题。';return;}confirmLaunch(()=>{void startLevel(parsed.levelId,undefined,parsed.attempt,parsed.contentVersion,parsed.mode,parsed.contentRevision??1);});return;}
+  if(action==='share-card'){void showShareCard();return;}
+  if(action==='download-share'){const canvas=(window as unknown as {__doroShareCanvas?:HTMLCanvasElement}).__doroShareCanvas;if(!canvas){void showShareCard();return;}void shareOrDownloadCard(canvas).then(way=>toast(way==='shared'?'已交给系统分享。':'成绩卡已保存。')).catch(()=>toast('成绩卡没有保存，可长按图片另存。'));return;}
   if (action==='home') {showHome();return;}
   if (action==='levels') {showLevels();return;}
   if (action==='album') {showAlbum();return;}
   if (action==='artwork') {showArtwork();return;}
   if (action==='art-next') {if(engine?.state.phase==='playing'||engine?.state.phase==='stuck')closeModal();else if(engine?.state.phase==='won')launchNext();else void startLevel(nextCampaignLevel());return;}
-  if (action==='art-claim') {if(save.album.length===6)showAlbum();else showArtwork();return;}
+  if (action==='art-claim') {if(save.artworkProgress.every((filled,index)=>index>=ARTWORKS.length||filled>=ARTWORKS[index].columns*ARTWORKS[index].rows))showAlbum();else showArtwork();return;}
   if(action==='art-fill'){artwork?.fillAll();return;}
   if(action==='art-hd'){const image=document.querySelector<HTMLImageElement>('.artwork-hd'),canvas=document.querySelector<HTMLElement>('.artwork-stage canvas');if(image&&canvas&&save.album.includes(artworkIndex+1)){artHighDefinition=!artHighDefinition;if(artHighDefinition&&!image.src)image.src=assetUrl('album-'+(artworkIndex+1)+'.png','hd');image.hidden=!artHighDefinition;canvas.hidden=artHighDefinition;button.textContent=artHighDefinition?'看看螺丝点阵':'欣赏高清原图';}return;}
   if (action==='art-retry') {artwork?.reload();return;}
@@ -657,7 +719,7 @@ showHome();
 if(loaded.warning)toast(loaded.warning,5500);
 
 if(import.meta.env.DEV||import.meta.env.MODE==='verification'||new URLSearchParams(location.search).has('check')) {
-  Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,pick,get save(){return save;},get artwork(){return artwork;}},configurable:true});
+  Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,pick,showHome,showAlbum,showLevels,showRecords,showWin,showShareCard,showRandomMenu,showChallenge,get save(){return save;},get artwork(){return artwork;}},configurable:true});
 }
 
 

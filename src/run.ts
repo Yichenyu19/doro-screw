@@ -11,14 +11,35 @@ let serial=0;
 export function newRunId():string{return typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function'?crypto.randomUUID():`${Date.now().toString(36)}-${(++serial).toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function checksum(text:string){let hash=2166136261;for(const char of text){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}return(hash>>>0).toString(36).toUpperCase().slice(-5);}
 export function challengeCode(levelId:number,attempt:number,version:ContentVersion='v4',mode:PlayMode=levelId>30?'endless':'campaign',revision=CONTENT_REVISION):string{const body=version==='v4'?`D4-${revision.toString(36).toUpperCase()}-${mode==='random'?'R':mode==='endless'?'E':mode==='rescue'?'S':mode==='mastery'?'M':'C'}-${levelId.toString(36).toUpperCase()}-${(mode==='campaign'?0:attempt).toString(36).toUpperCase()}`:`D${version==='v2'?2:3}-${levelId.toString(36).toUpperCase()}-${attempt.toString(36).toUpperCase()}`;return`${body}-${checksum(body)}`;}
-export function parseChallengeCode(input:string):{levelId:number;attempt:number;contentVersion:ContentVersion;mode?:PlayMode;contentRevision?:number}|null {
-  const modern=/^(D4)-([0-9A-Z]{1,3})-([CREMS])-([0-9A-Z]{1,4})-([0-9A-Z]{1,6})-([0-9A-Z]{1,5})$/.exec(input.trim().toUpperCase());
-  if(modern){const body=modern.slice(1,6).join('-'),revision=parseInt(modern[2],36),levelId=parseInt(modern[4],36),attempt=parseInt(modern[5],36),mode:PlayMode=modern[3]==='R'?'random':modern[3]==='E'?'endless':modern[3]==='S'?'rescue':modern[3]==='M'?'mastery':'campaign';
+export type ChallengeParse={levelId:number;attempt:number;contentVersion:ContentVersion;mode?:PlayMode;contentRevision?:number};
+export function normalizeChallengeInput(input:string):string{
+  return input.trim().toUpperCase().replace(/[\s\u200b\u00a0]/g,'');
+}
+export function readChallengeCode(input:string):{ok:true;value:ChallengeParse}|{ok:false;reason:string}{
+  const code=normalizeChallengeInput(input);
+  if(!code)return{ok:false,reason:'先把挑战码贴进来。'};
+  const modern=/^(D4)-([0-9A-Z]{1,3})-([CREMS])-([0-9A-Z]{1,4})-([0-9A-Z]{1,6})-([0-9A-Z]{1,5})$/.exec(code);
+  if(modern){
+    const body=modern.slice(1,6).join('-'),revision=parseInt(modern[2],36),levelId=parseInt(modern[4],36),attempt=parseInt(modern[5],36),mode:PlayMode=modern[3]==='R'?'random':modern[3]==='E'?'endless':modern[3]==='S'?'rescue':modern[3]==='M'?'mastery':'campaign';
+    if(checksum(body)!==modern[6])return{ok:false,reason:'挑战码不完整或抄写有误。'};
     const supported=revision===1?(['campaign','random','endless'].includes(mode)&&(mode==='endless'?levelId>30:levelId<=30)):revision===2||revision>=4?(['campaign','rescue','mastery'].includes(mode)&&levelId<=8&&(mode==='campaign'||levelId>=2)):revision===3?(['campaign','rescue','mastery'].includes(mode)&&(mode==='campaign'?levelId<=10:levelId>=2&&levelId<=8)):false;
-    if(checksum(body)!==modern[6]||!supported||levelId<1||levelId>1000000||attempt>1000000||(mode==='campaign'&&attempt!==0))return null;return{levelId,attempt,mode,contentRevision:revision,contentVersion:'v4'};}
-  const code=input.trim().toUpperCase();const match=/^(D[23])-([0-9A-Z]{1,4})-([0-9A-Z]{1,4})-([0-9A-Z]{1,5})$/.exec(code);
-  if(!match)return null;const body=match.slice(1,4).join('-');if(checksum(body)!==match[4])return null;
-  const levelId=parseInt(match[2],36),attempt=parseInt(match[3],36);
-  return levelId>=1&&levelId<=1000000&&attempt<=1000000?{levelId,attempt,contentVersion:match[1]==='D2'?'v2':'v3'}:null;
+    if(!Number.isFinite(revision)||revision<1)return{ok:false,reason:'这个内容修订版暂时打不开。'};
+    if(!supported||levelId<1||levelId>1000000||attempt>1000000||(mode==='campaign'&&attempt!==0))return{ok:false,reason:supported===false&&!(revision===1||revision===2||revision===3||revision>=4)?'这个内容修订版暂时打不开。':'这份挑战码对应的盘面打不开。'};
+    return{ok:true,value:{levelId,attempt,mode,contentRevision:revision,contentVersion:'v4'}};
+  }
+  const match=/^(D[23])-([0-9A-Z]{1,4})-([0-9A-Z]{1,4})-([0-9A-Z]{1,5})$/.exec(code);
+  if(match){
+    const body=match.slice(1,4).join('-');
+    if(checksum(body)!==match[4])return{ok:false,reason:'挑战码不完整或抄写有误。'};
+    const levelId=parseInt(match[2],36),attempt=parseInt(match[3],36);
+    if(!(levelId>=1&&levelId<=1000000&&attempt<=1000000))return{ok:false,reason:'这份挑战码对应的盘面打不开。'};
+    return{ok:true,value:{levelId,attempt,contentVersion:match[1]==='D2'?'v2':'v3'}};
+  }
+  if(/^D[2-9A-Z]/.test(code))return{ok:false,reason:'挑战码不完整或抄写有误。'};
+  return{ok:false,reason:'这不是可识别的挑战码。'};
+}
+export function parseChallengeCode(input:string):ChallengeParse|null{
+  const result=readChallengeCode(input);
+  return result.ok?result.value:null;
 }
 

@@ -1,5 +1,65 @@
-type SoundName='pick'|'arrive'|'box'|'loosen'|'fall'|'chain'|'win'|'tool'|'blocked';
-const NOTES:Record<SoundName,number[]>={pick:[840,1220],arrive:[1180],loosen:[380,290],fall:[150,100],chain:[660,880,1320,1760],box:[620,830,1240],win:[523,659,784,1047,1319],tool:[430,860],blocked:[230,180]};
+export type SoundName='pick'|'arrive'|'box'|'refill'|'loosen'|'fall'|'reveal'|'chain'|'win'|'tool'|'blocked';
+export interface SynthVoice {
+  osc?:OscillatorType;
+  noise?:'white'|'brown';
+  freq?:number;
+  freqEnd?:number;
+  start:number;
+  dur:number;
+  gain:number;
+  attack:number;
+  filter?:BiquadFilterType;
+  filterFreq?:number;
+  filterQ?:number;
+}
+/** 同一家族：金属短击管螺丝，木质/玻璃管盒与板，气流管露出与回流。数值是合成参数，不是听感保证。 */
+export const SYNTH_RECIPES:Record<SoundName,SynthVoice[]>={
+  pick:[{osc:'triangle',freq:780,freqEnd:920,start:0,dur:.055,gain:.055,attack:.004},{osc:'sine',freq:2100,freqEnd:1600,start:.002,dur:.03,gain:.035,attack:.001},{noise:'white',start:0,dur:.022,gain:.02,attack:.001,filter:'highpass',filterFreq:2500,filterQ:.7}],
+  arrive:[{osc:'sine',freq:210,freqEnd:140,start:0,dur:.09,gain:.07,attack:.006},{osc:'triangle',freq:640,freqEnd:480,start:.008,dur:.07,gain:.035,attack:.004},{noise:'brown',start:0,dur:.05,gain:.03,attack:.002,filter:'lowpass',filterFreq:900,filterQ:.6}],
+  box:[{osc:'triangle',freq:520,freqEnd:430,start:0,dur:.11,gain:.08,attack:.005},{osc:'sine',freq:980,start:.02,dur:.1,gain:.05,attack:.006},{osc:'sine',freq:1470,start:.04,dur:.12,gain:.03,attack:.008},{noise:'white',start:0,dur:.04,gain:.025,attack:.002,filter:'bandpass',filterFreq:1200,filterQ:1.2}],
+  refill:[{osc:'sine',freq:660,freqEnd:880,start:0,dur:.12,gain:.06,attack:.008},{osc:'triangle',freq:880,freqEnd:1175,start:.055,dur:.13,gain:.05,attack:.01},{noise:'white',start:.02,dur:.08,gain:.018,attack:.01,filter:'highpass',filterFreq:1800,filterQ:.8}],
+  loosen:[{osc:'triangle',freq:340,freqEnd:190,start:0,dur:.2,gain:.04,attack:.02},{osc:'square',freq:190,freqEnd:120,start:.03,dur:.16,gain:.012,attack:.03},{noise:'brown',start:0,dur:.18,gain:.035,attack:.015,filter:'lowpass',filterFreq:700,filterQ:.8}],
+  fall:[{osc:'sine',freq:92,freqEnd:48,start:0,dur:.28,gain:.14,attack:.003},{osc:'triangle',freq:220,freqEnd:90,start:.008,dur:.16,gain:.06,attack:.004},{noise:'white',start:0,dur:.12,gain:.08,attack:.001,filter:'lowpass',filterFreq:1600,filterQ:.5},{noise:'brown',start:.02,dur:.22,gain:.05,attack:.008,filter:'lowpass',filterFreq:400,filterQ:.6}],
+  reveal:[{osc:'sine',freq:1240,freqEnd:1860,start:0,dur:.2,gain:.04,attack:.02},{osc:'triangle',freq:1860,freqEnd:2480,start:.05,dur:.18,gain:.025,attack:.03},{noise:'white',start:0,dur:.22,gain:.03,attack:.02,filter:'bandpass',filterFreq:3200,filterQ:1.4}],
+  chain:[{osc:'triangle',freq:660,start:0,dur:.08,gain:.06,attack:.006},{osc:'triangle',freq:880,start:.06,dur:.08,gain:.06,attack:.006},{osc:'sine',freq:1320,start:.12,dur:.1,gain:.05,attack:.006},{osc:'sine',freq:1760,start:.18,dur:.12,gain:.04,attack:.008}],
+  win:[{osc:'triangle',freq:523,start:0,dur:.16,gain:.07,attack:.01},{osc:'triangle',freq:659,start:.09,dur:.16,gain:.07,attack:.01},{osc:'sine',freq:784,start:.18,dur:.18,gain:.07,attack:.01},{osc:'sine',freq:1047,start:.27,dur:.2,gain:.06,attack:.012},{osc:'sine',freq:1319,start:.36,dur:.24,gain:.05,attack:.014}],
+  tool:[{osc:'triangle',freq:430,start:0,dur:.08,gain:.05,attack:.005},{osc:'sine',freq:860,start:.04,dur:.1,gain:.04,attack:.006},{noise:'white',start:0,dur:.04,gain:.015,attack:.002,filter:'bandpass',filterFreq:2000,filterQ:1}],
+  blocked:[{osc:'sine',freq:180,freqEnd:120,start:0,dur:.12,gain:.05,attack:.003},{noise:'brown',start:0,dur:.08,gain:.025,attack:.002,filter:'lowpass',filterFreq:300,filterQ:.7}],
+};
+const COALESCE:Partial<Record<SoundName,number>>={refill:.06,reveal:.08,fall:.08,box:.05,chain:.08,win:.2};
+
+function noiseBuffer(context:BaseAudioContext,kind:'white'|'brown',seconds=.35):AudioBuffer{
+  const length=Math.max(1,Math.ceil(context.sampleRate*seconds)),buffer=context.createBuffer(1,length,context.sampleRate),data=buffer.getChannelData(0);
+  let last=0;
+  for(let i=0;i<length;i++){const white=Math.random()*2-1;last=kind==='brown'?(last+0.02*white)/1.02:white;data[i]=last;}
+  return buffer;
+}
+
+export function scheduleRecipe(context:BaseAudioContext,destination:AudioNode,recipe:SynthVoice[],when=0):void{
+  const noiseCache=new Map<string,AudioBuffer>();
+  for(const voice of recipe){
+    const start=when+voice.start,end=start+voice.dur,gain=context.createGain();
+    gain.gain.setValueAtTime(0,start);
+    gain.gain.linearRampToValueAtTime(voice.gain,start+Math.max(.001,Math.min(voice.attack,voice.dur/3)));
+    gain.gain.exponentialRampToValueAtTime(.001,end);
+    let node:AudioNode;
+    if(voice.noise){
+      const key=voice.noise,buffer=noiseCache.get(key)??noiseBuffer(context,voice.noise);
+      noiseCache.set(key,buffer);
+      const source=context.createBufferSource();source.buffer=buffer;source.loop=true;node=source;source.start(start);source.stop(end+.01);
+    }else{
+      const oscillator=context.createOscillator();oscillator.type=voice.osc??'sine';
+      const freq=Math.max(20,voice.freq??440);oscillator.frequency.setValueAtTime(freq,start);
+      if(voice.freqEnd)oscillator.frequency.exponentialRampToValueAtTime(Math.max(20,voice.freqEnd),end);
+      node=oscillator;oscillator.start(start);oscillator.stop(end+.01);
+    }
+    if(voice.filter){
+      const filter=context.createBiquadFilter();filter.type=voice.filter;filter.frequency.setValueAtTime(voice.filterFreq??1200,start);filter.Q.setValueAtTime(voice.filterQ??1,start);
+      node.connect(filter);filter.connect(gain);
+    }else node.connect(gain);
+    gain.connect(destination);
+  }
+}
 
 /** 短音效在第一次用户手势后启用；音频失败不影响任何游戏动作。 */
 export class GameAudio {
@@ -8,6 +68,7 @@ export class GameAudio {
   private voices=new Set<AudioScheduledSourceNode>();
   private buffers=new Map<SoundName,AudioBuffer>();
   private preparing=false;
+  private lastPlayed=new Map<SoundName,number>();
 
   constructor(enabled:boolean) { this.enabled=enabled; }
 
@@ -21,14 +82,12 @@ export class GameAudio {
   }
   private async prepare():Promise<void>{
     if(typeof OfflineAudioContext==='undefined'||!this.context)return;
-    for(const name of Object.keys(NOTES) as SoundName[]){
-      try{const rate=this.context.sampleRate,duration=(NOTES[name].length-1)*(name==='win'?.095:.045)+.16,offline=new OfflineAudioContext(1,Math.ceil(rate*duration),rate);
-        NOTES[name].forEach((frequency,index)=>{
-          const oscillator=offline.createOscillator(),gain=offline.createGain(),start=index*(name==='win'?.095:.045);oscillator.type=name==='blocked'?'sine':'triangle';
-          oscillator.frequency.setValueAtTime(frequency,start);oscillator.frequency.exponentialRampToValueAtTime(frequency*1.035,start+.075);
-          gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(name==='win'?.07:.045,start+.006);gain.gain.exponentialRampToValueAtTime(.001,start+.13);
-          oscillator.connect(gain);gain.connect(offline.destination);oscillator.start(start);oscillator.stop(start+.15);
-        });this.buffers.set(name,await offline.startRendering());
+    for(const name of Object.keys(SYNTH_RECIPES) as SoundName[]){
+      try{
+        const recipe=SYNTH_RECIPES[name],duration=recipe.reduce((max,voice)=>Math.max(max,voice.start+voice.dur),0)+.04;
+        const offline=new OfflineAudioContext(1,Math.ceil(this.context.sampleRate*duration),this.context.sampleRate);
+        scheduleRecipe(offline,offline.destination,recipe,0);
+        this.buffers.set(name,await offline.startRendering());
       }catch{ /* 离线音频不可用时沿用即时合成。 */ }
     }
   }
@@ -50,26 +109,12 @@ export class GameAudio {
     this.unlock();
     const context=this.context;
     if (!context || context.state!=='running') return;
+    const gap=COALESCE[name]??0,now=context.currentTime;
+    if(gap&&now-(this.lastPlayed.get(name)??-10)<gap)return;
+    this.lastPlayed.set(name,now);
     try {
       const buffer=this.buffers.get(name);if(buffer){const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();};source.start();return;}
-      NOTES[name].forEach((frequency,index)=>{
-        const oscillator=context.createOscillator();
-        const gain=context.createGain();
-        const start=context.currentTime+index*(name==='win'?.095:.045);
-        oscillator.type=name==='blocked'?'sine':'triangle';
-        oscillator.frequency.setValueAtTime(frequency,start);
-        oscillator.frequency.exponentialRampToValueAtTime(frequency*1.035,start+.075);
-        gain.gain.setValueAtTime(0,start);
-        gain.gain.linearRampToValueAtTime(name==='win'?.07:.045,start+.006);
-        gain.gain.exponentialRampToValueAtTime(.001,start+.13);
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        this.voices.add(oscillator);
-        oscillator.onended=()=>{this.voices.delete(oscillator);oscillator.disconnect();gain.disconnect();};
-        oscillator.start(start);
-        oscillator.stop(start+.15);
-      });
+      scheduleRecipe(context,context.destination,SYNTH_RECIPES[name],now);
     } catch { /* 浏览器中止音频后，下一次手势会重新尝试。 */ }
   }
 }
-

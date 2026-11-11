@@ -85,3 +85,32 @@ test('回到可解点不是免费通关：救回后再乱点仍可能再次锁�
   }
   assert.notEqual(game.state.phase,'won');
 });
+
+function finishOfficialStrict(game:GameEngine,sim:ReturnType<typeof physicsSimulation>,level:LevelDef){
+  for(const step of level.witness){
+    if(game.state.phase==='won')break;
+    if(game.state.screws.find(s=>s.id===step.screwId)?.place!=='board')continue;
+    waitFor(game,sim,step.screwId);
+    assert(game.canPick(step.screwId),`官方钉 ${step.screwId} 在 ${game.state.moves} 步后仍不可点`);
+    const result=game.dispatch({type:'pick',screwId:step.screwId});
+    assert(result.ok,result.reason??'官方续解失败');
+    sim.sync();for(let i=0;i<Math.ceil((step.waitMs??50)/(1000/60));i++){sim.step();game.advanceWorld(1000/60);}
+  }
+}
+
+test('先前 3 个失败种子：撤回后同步物理姿态，并退到官方前缀或开局，严格官方线可通关',()=>{
+  for(const seed of [67594,748628,1397986]){
+    const{level,game,sim}=playRandomUntilStuck(seed);
+    assert.equal(game.state.phase,'stuck');
+    const plan=game.solvableRewindPlan();
+    assert.equal(plan.ok,true,`seed ${seed} 应能回退`);
+    assert.equal(plan.moves,0,`seed ${seed} 应退回开局，实际 ${plan.moves}`);
+    const result=game.rewindToSolvable();
+    assert.equal(result.ok,true);
+    assert.equal(game.state.moves,0);
+    assert.equal(game.isOfficialPrefix(),true);
+    finishOfficialStrict(game,sim,level);
+    assert.equal(game.state.phase,'won',`seed ${seed} 开局后续官方线未过`);
+    assert.equal(Object.values(game.state.stats.assists).reduce((n,v)=>n+v,0),0);
+  }
+});

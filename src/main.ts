@@ -155,7 +155,7 @@ function showHome():void {
       </button>
       <button type="button" class="home-code text-tool" data-action="challenge">有挑战码？贴进来一起拆</button>
     </section>
-    <footer class="home-footer"><span>主线 ${progress} / ${CAMPAIGN_COUNT} · 辅助全免费</span><button data-action="save-status" data-save-status>已保存</button></footer>
+    <footer class="home-footer"><span>Doro · 打个螺丝 · 修订3 · 主线 ${progress} / ${CAMPAIGN_COUNT} · 辅助全免费</span><button data-action="save-status" data-save-status>已保存</button></footer>
   </main>${shellAccessories()}`;
   updateSaveStatus();
 }
@@ -614,7 +614,7 @@ applySettings();
 showHome();
 if(loaded.warning)toast(loaded.warning,5500);
 
-if(import.meta.env.DEV||import.meta.env.MODE==='verification') {
+if(import.meta.env.DEV||import.meta.env.MODE==='verification'||new URLSearchParams(location.search).has('check')) {
   Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,get save(){return save;},get artwork(){return artwork;}},configurable:true});
 }
 

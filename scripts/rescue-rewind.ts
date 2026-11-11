@@ -64,13 +64,8 @@ function finishOfficial(game: GameEngine, sim: ReturnType<typeof physicsSimulati
     sim.sync();
     let stable = 0;
     for (let i = 0; i < 1800 && stable < 12; i++) { sim.step(); game.advanceWorld(1000 / 60); stable = game.canPick(step.screwId) ? stable + 1 : 0; }
-    let id = step.screwId;
-    if (!game.canPick(id)) {
-      const next = game.available().filter(s => game.state.boxes.some(b => b.color === s.color))[0] ?? game.available()[0];
-      if (!next) return;
-      id = next.id;
-    }
-    if (!game.dispatch({ type: 'pick', screwId: id }).ok) return;
+    if (!game.canPick(step.screwId)) return;
+    if (!game.dispatch({ type: 'pick', screwId: step.screwId }).ok) return;
     sim.sync();
     for (let i = 0; i < Math.ceil((step.waitMs ?? 50) / (1000 / 60)); i++) { sim.step(); game.advanceWorld(1000 / 60); }
   }

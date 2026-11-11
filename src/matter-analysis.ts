@@ -7,7 +7,7 @@ import Common from 'phaser/src/physics/matter-js/lib/core/Common.js';
 import decomp from 'phaser/src/physics/matter-js/poly-decomp/index.js';
 import {GameEngine} from './core';
 import {remainingOnBoard} from './geometry';
-import {capturePlatePhysics,configurePlatePhysics,createPlatePhysics,type PlatePhysics,type PlatePhysicsAdapter} from './physics';
+import {capturePlatePhysics,configurePlatePhysics,createPlatePhysics,rotate,type PlatePhysics,type PlatePhysicsAdapter} from './physics';
 import type {GameState,HintInfo,LevelDef} from './types';
 Common.setDecomp(decomp);
 
@@ -16,7 +16,16 @@ export function physicsSimulation(game:GameEngine){
  const views=new Map<string,PlatePhysics>();
  const adapter:PlatePhysicsAdapter={fromVertices:(...args)=>{const body=Bodies.fromVertices(...args);Composite.add(engine.world,body);return body;},setAngle:Body.setAngle,setVelocity:Body.setVelocity,setAngularVelocity:Body.setAngularVelocity,setStatic:Body.setStatic,addPin:(body,pointA,pointB)=>{const pin=Constraint.create({bodyB:body,pointA,pointB,length:0,stiffness:.97,damping:.14});Composite.add(engine.world,pin);return pin;},removePin:pin=>{Composite.remove(engine.world,pin);}};
  function remove(id:string,view:PlatePhysics){if(view.pin)adapter.removePin(view.pin);Composite.remove(engine.world,view.body);views.delete(id);}
- function sync(){for(const board of game.state.boards){let view=views.get(board.id);if(board.active===false||board.gone||board.melted){if(view)remove(board.id,view);continue;}if(!view){view=createPlatePhysics(board,adapter);views.set(board.id,view);}configurePlatePhysics(view,remainingOnBoard(game.state,board.id).map(s=>({x:s.localX,y:s.localY})),adapter);}}
+ function applyPose(view:PlatePhysics,board:typeof game.state.boards[number]){
+  const offset=rotate(view.offset,board.angle);
+  Body.setPosition(view.body,{x:board.x+offset.x,y:board.y+offset.y});
+  Body.setAngle(view.body,board.angle);
+  Body.setVelocity(view.body,{x:board.vx,y:board.vy});
+  Body.setAngularVelocity(view.body,board.angularVelocity);
+  // 撤回后钉数与姿态都可能回到历史帧，必须重绑约束。
+  view.remaining=-1;
+ }
+ function sync(){for(const board of game.state.boards){let view=views.get(board.id);if(board.active===false||board.gone||board.melted){if(view)remove(board.id,view);continue;}if(!view){view=createPlatePhysics(board,adapter);views.set(board.id,view);}else applyPose(view,board);configurePlatePhysics(view,remainingOnBoard(game.state,board.id).map(s=>({x:s.localX,y:s.localY})),adapter);}}
  function step(frames=1){for(let i=0;i<frames;i++){Engine.update(engine,1000/60);for(const [id,view]of views){const board=game.state.boards.find(b=>b.id===id)!;capturePlatePhysics(board,view);if(view.remaining===0&&board.y-Math.hypot(board.width,board.height)/2>440){board.gone=true;remove(id,view);}}if(game.advanceWorld(1000/60).length)sync();}}
  sync();return{engine,views,sync,step};
 }

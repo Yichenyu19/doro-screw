@@ -128,7 +128,7 @@ function singleHinge(prefix:string,palette:ColorId[],depth:number):Scene {
 function profile(theme:string,decisions:string[],critical:string[],depth:number):DifficultyProfile {
   return{theme,decisions,dependencies:critical.slice(1).map((to,i)=>({from:critical[i],to,reason:'上一处开路改变当前盒序与后续开路所需空孔'})),planningDepth:depth,crossRegionLinks:critical.length,crossRevealLinks:0,bufferMargin:1,predecessorComparison:'待统一策略与整局物理对照验收。',originalComparison:'原作录像的四阶段画面已归档；待关键状态逐项对照。',verification:'pending',evidence:[]};
 }
-function assemble(id:number,scenes:Scene[],initialIds:string[],name=R2_NAMES[id-1],expectedTotal:number=R2_TOTALS[id-1],revision=2):LevelDef {
+function assemble(id:number,scenes:Scene[],initialIds:string[],name:string=R2_NAMES[id-1],expectedTotal:number=R2_TOTALS[id-1],revision=2):LevelDef {
   const boards=scenes.flatMap(s=>s.boards),initial=new Set(initialIds),packets:RevealPacket[]=[];
   for(const [index,scene]of scenes.entries())for(const [part,boardIds]of scene.packets.entries()){
     const reserved=boardIds.filter(id=>!initial.has(id));if(!reserved.length)continue;

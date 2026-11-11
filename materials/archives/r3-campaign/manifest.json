@@ -1,0 +1,138 @@
+{
+  "contentVersion": "v4",
+  "contentRevision": 3,
+  "mode": "campaign",
+  "archived": true,
+  "files": [
+    {
+      "id": 1,
+      "file": "level-1.json",
+      "pins": 15,
+      "seed": 4390913,
+      "bytes": 4528,
+      "sha256": "a87b060aa9fe4e2f4fc6702e8ea5caeb4443e03e282ce3127094dad091aabacc",
+      "design": {
+        "id": 1,
+        "name": "先装满一盒",
+        "total": 15
+      }
+    },
+    {
+      "id": 2,
+      "file": "level-2.json",
+      "pins": 24,
+      "seed": 4390914,
+      "bytes": 6047,
+      "sha256": "51b78b19aea76bf8efe131e9691a32b0de8cde00e165be2e15dcb899bb75f8c0",
+      "design": {
+        "id": 2,
+        "name": "先拆一座桥",
+        "total": 24
+      }
+    },
+    {
+      "id": 3,
+      "file": "level-3.json",
+      "pins": 48,
+      "seed": 4390915,
+      "bytes": 11519,
+      "sha256": "b1e1593cf6c1ac49bf6ad08c2ce1ecf0e56cde23568ab7a0bcdb1d64431a5006",
+      "design": {
+        "id": 3,
+        "name": "桥下还有一层",
+        "total": 48
+      }
+    },
+    {
+      "id": 4,
+      "file": "level-4.json",
+      "pins": 48,
+      "seed": 4390916,
+      "bytes": 11342,
+      "sha256": "358ea9505f0ec84a7fd1e3ff9669f6d01a4d9d20ac14ca6116195ad48b27d51a",
+      "design": {
+        "id": 4,
+        "name": "四角借路",
+        "total": 48
+      }
+    },
+    {
+      "id": 5,
+      "file": "level-5.json",
+      "pins": 129,
+      "seed": 4390917,
+      "bytes": 31227,
+      "sha256": "ef58a574c9377bc2473ba097faeb6939ad1ed02725c3e962b39ed6749c7ccfbd",
+      "design": {
+        "id": 5,
+        "name": "花心有后手",
+        "total": 129
+      }
+    },
+    {
+      "id": 6,
+      "file": "level-6.json",
+      "pins": 135,
+      "seed": 4390918,
+      "bytes": 30269,
+      "sha256": "b0ac6842dc3ebfe168416fbe771a4fd31d31bc08d91e35588769f58d8721f6bf",
+      "design": {
+        "id": 6,
+        "name": "先别装满",
+        "total": 135
+      }
+    },
+    {
+      "id": 7,
+      "file": "level-7.json",
+      "pins": 141,
+      "seed": 4390919,
+      "bytes": 35585,
+      "sha256": "b35bf2fd2b1d9db9a466284d6a612a8303c101ea4e2b9a3040bc4128bda9f48e",
+      "design": {
+        "id": 7,
+        "name": "交叉路口",
+        "total": 141
+      }
+    },
+    {
+      "id": 8,
+      "file": "level-8.json",
+      "pins": 156,
+      "seed": 4390920,
+      "bytes": 39296,
+      "sha256": "1c9f149f442c9961c4ee394f7a0e066d8a5e5d07304e61ce5f6f2a9198fec2a1",
+      "design": {
+        "id": 8,
+        "name": "留给下一层",
+        "total": 156
+      }
+    },
+    {
+      "id": 9,
+      "file": "level-9.json",
+      "pins": 156,
+      "seed": 4390921,
+      "bytes": 41395,
+      "sha256": "ffbda38d63b3e27c3874d409692935e58b9cdedcdfd10c90ac1ab9f608e5920c",
+      "design": {
+        "id": 9,
+        "name": "两岸接力",
+        "total": 156
+      }
+    },
+    {
+      "id": 10,
+      "file": "level-10.json",
+      "pins": 168,
+      "seed": 4390922,
+      "bytes": 44892,
+      "sha256": "c5be9ce6d5b4dff30361fbad9c0b1e11d876cc0de7b59bc347fea1bc3cd32a10",
+      "design": {
+        "id": 10,
+        "name": "花心终局",
+        "total": 168
+      }
+    }
+  ]
+}

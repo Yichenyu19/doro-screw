@@ -26,10 +26,11 @@ test('第一关弱策略：盒色/贪心应高通关，乱点也应明显可过'
   assert.ok(table.random.winRate>0.25,`乱点 ${table.random.wins}/${RUNS}`);
 });
 
-test('第二关弱策略开始需要思考：乱点明显低于第一关，贪心仍可走通桥',async()=>{
+test('第二关大墙弱策略：乱点明显低于第一关，通关率应接近失败',async()=>{
   const l1=getCampaignLevel(1),l2=getCampaignLevel(2);
   const random1=[],random2=[],greedy2=[],matching2=[];
-  for(let i=0;i<RUNS;i++){
+  const WALL_RUNS=40;
+  for(let i=0;i<WALL_RUNS;i++){
     random1.push(await play('random',5219+i*3571,l1));
     random2.push(await play('random',6219+i*3571,l2));
     greedy2.push(await play('greedy',7219+i*3571,l2));
@@ -37,6 +38,6 @@ test('第二关弱策略开始需要思考：乱点明显低于第一关，贪�
   }
   const r1=summarize(random1),r2=summarize(random2),g2=summarize(greedy2),m2=summarize(matching2);
   writeFileSync('/workspace/doro-screw-review/logs/weak-policies-l2-test.json',JSON.stringify({r1,r2,g2,m2},null,2));
-  assert.ok(r2.winRate<r1.winRate-0.15,`第2关乱点 ${r2.wins}/${RUNS} 未明显低于第1关 ${r1.wins}/${RUNS}`);
-  assert.ok(g2.winRate>=0.5,`第2关贪心过低 ${g2.wins}/${RUNS}`);
+  assert.ok(r2.winRate<r1.winRate-0.15,`第2关乱点 ${r2.wins}/${WALL_RUNS} 未明显低于第1关 ${r1.wins}/${WALL_RUNS}`);
+  assert.ok(r2.winRate<=0.05,`第2关大墙乱点仍有 ${r2.wins}/${WALL_RUNS} 通关`);
 });

@@ -122,7 +122,7 @@ async function clearAllStorage(page){
 
 async function assertPack(distDir){
   const missing=[];
-  for(const file of ['index.html','favicon.ico','og-image.jpg','campaign/r3/level-1.json','ASSETS.md','THIRD-PARTY-NOTICES.txt']){
+  for(const file of ['index.html','favicon.ico','og-image.jpg','campaign/r4/level-1.json','ASSETS.md','THIRD-PARTY-NOTICES.txt']){
     try{await access(path.join(distDir,file));}catch{missing.push(file);}
   }
   let hasR1=false;

@@ -3,8 +3,8 @@ import {strategyModule} from './strategy-modules';
 import type {BoardDef,BoardShape,ColorId,DifficultyProfile,LevelDef,RevealPacket,Vec2,WitnessStep} from './types';
 import {COLOR_NAMES} from './types';
 
-import {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS} from './r2-catalog';
-export {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS};
+import {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS,R3_NAMES,R3_TOTALS} from './r2-catalog';
+export {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS,R3_NAMES,R3_TOTALS};
 const COLORS:ColorId[]=['orange','cyan','red','purple','green','brown','yellow','blue','rose','gray'];
 type Pin=[number,number,ColorId];
 interface Scene {boards:BoardDef[];queue:ColorId[];route:string[];packets:string[][];critical:string[];decisions:string[];entry:string}
@@ -238,16 +238,19 @@ function oldL2Palette(sceneIndex:number):ColorId[]{
   const wheel=COLORS.filter(color=>color!=='gray');
   return Array.from({length:8},(_,n)=>wheel[(n+sceneIndex*3)%wheel.length]);
 }
-function annotateCampaign(level:LevelDef,id:number,notes:string[]):LevelDef{
-  level.subtitle='第 '+id+' 关 · '+CAMPAIGN_TOTALS[id-1]+' 颗钉';
+function annotateCampaign(level:LevelDef,id:number,notes:string[],revision=3):LevelDef{
+  if(revision===3)level.subtitle='第 '+id+' 关 · '+R3_TOTALS[id-1]+' 颗钉';
+  else level.subtitle=level.subtitle||('第 '+id+' 关 · '+CAMPAIGN_TOTALS[id-1]+' 颗钉');
+  level.contentRevision=revision;
   level.designNotes=notes;
   if(level.difficulty){
     level.difficulty.verification='verified';
-    level.difficulty.evidence=['tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。'];
+    level.difficulty.evidence=[revision>=4?'tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。':'tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。'];
   }
   return level;
 }
-export function getCampaignLevel(id:number):LevelDef{
+/** 未上线的修订 3 主线（24/48/48 短桥）。仅用于旧挑战码回放，不再进入修订 4 主线。 */
+export function getCampaignLevelR3(id:number):LevelDef{
   if(id===1){
     const prefix='r3-l1';
     const start=plate(prefix+'-start','square',108,108,128,96,4,row('orange'));
@@ -258,7 +261,7 @@ export function getCampaignLevel(id:number):LevelDef{
     const boards=[start,cheek,gate,nest,base];
     const route=[...ids(start),...ids(cheek),gate.screws[0].id,gate.screws[1].id,...ids(nest),gate.screws[2].id,...ids(base)];
     const scene:Scene={boards,queue:['orange','cyan','red','purple','brown'],route,packets:[],critical:[gate.id],entry:start.screws[0].id,decisions:['开局先把已经露出的当前盒色装完。','长板留下最后一颗时会自己摆开，拆光掉下去也可以。']};
-    const level=assemble(1,[scene],boards.map(b=>b.id),CAMPAIGN_NAMES[0],CAMPAIGN_TOTALS[0],3);
+    const level=assemble(1,[scene],boards.map(b=>b.id),R3_NAMES[0],R3_TOTALS[0],3);
     level.theme='hinge';level.tutorial=true;level.revealPlan=undefined;
     level.strategy='先点已经露出来的盒色，装满第一盒。长板留下一颗时会摆开，拆完掉下去也通。';
     level.curriculum={objective:'先装满已经露出的盒色，感受同色三颗装箱',prerequisites:['同色三颗装一盒'],decision:scene.decisions[0],failure:'这一关不靠占满五孔来考人；乱点一两次也应仍能装完。',release:scene.decisions[1],criticalBoardIds:[gate.id],stages:[{until:6,title:'先装满这一盒',advice:'上面两个盒子的钉子已经露出来了。先点它们，装满就会接上下一盒。'},{until:15,title:'看看板子怎么让路',advice:'中间这块板还剩一颗时，会自己摆开。留下来或拆完掉下去，下面的颜色都能看见。'}]};
@@ -266,7 +269,7 @@ export function getCampaignLevel(id:number):LevelDef{
   }
   if(id===2){
     const scene=corners('r3-l2',oldL2Palette(0),20,0);
-    const level=assemble(2,[scene],scene.boards.map(b=>b.id),CAMPAIGN_NAMES[1],CAMPAIGN_TOTALS[1],3);
+    const level=assemble(2,[scene],scene.boards.map(b=>b.id),R3_NAMES[1],R3_TOTALS[1],3);
     level.theme='quadrants';
     level.strategy='三颗桥钉会先占三个空孔，同时打开左右两个工区。先看清当前盒色再决定。';
     level.curriculum={objective:'只用一座桥学会开路成本',prerequisites:['同色三颗装箱'],decision:scene.decisions[0],failure:scene.decisions[1]??'',release:'桥板落下后左右盒色同时露出；先装箱，再接回开路暂存。',criticalBoardIds:scene.critical,stages:[{until:scene.route.length,title:'先拆这一座',advice:'桥钉会占三个空孔。左右两边的盒色会一起露出来，先装箱再收回开路的暂存。'}]};
@@ -275,7 +278,7 @@ export function getCampaignLevel(id:number):LevelDef{
   if(id===3){
     const scenes=[corners('r3-l3-a',oldL2Palette(1),16,Math.PI),corners('r3-l3-b',oldL2Palette(2),12,Math.PI/2)];
     const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)];
-    const level=assemble(3,scenes,initial,CAMPAIGN_NAMES[2],CAMPAIGN_TOTALS[2],3);
+    const level=assemble(3,scenes,initial,R3_NAMES[2],R3_TOTALS[2],3);
     const open=COLOR_NAMES[level.boxQueue[0]]+'和'+COLOR_NAMES[level.boxQueue[1]];
     level.strategy='先拆已经转过来的这一座桥，再等下一层露出来。';
     level.curriculum={objective:'先解决眼前这座桥，再接下层新桥',prerequisites:['一座桥的开路成本'],decision:'先比较眼前这座已露出的桥下面是什么颜色。',failure:'还没清掉第一座的关键板，就去拆尚未露全的颜色，会把空孔提前占满。',release:'第一座关键板清掉后，下一层的桥才会稳定露出来。',criticalBoardIds:scenes[0].critical,stages:[{until:scenes[0].route.length,title:'先拆眼前这座',advice:'眼前这座桥已经翻过来了，当前盒子要的是'+open+'。先清掉这座桥下的关键板，下面才会再露出一座。'},{until:level.witness.length,title:'再接下一层',advice:'新的一层出现后，先装箱再决定开哪座桥，不要把空孔一次花完。'}]};
@@ -284,7 +287,7 @@ export function getCampaignLevel(id:number):LevelDef{
   if(id===4){
     const scenes=[corners('r3-l4-a',oldL2Palette(3),8,-Math.PI/2),corners('r3-l4-b',oldL2Palette(4),4,0)];
     const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)];
-    const level=assemble(4,scenes,initial,CAMPAIGN_NAMES[3],CAMPAIGN_TOTALS[4-1],3);
+    const level=assemble(4,scenes,initial,R3_NAMES[3],R3_TOTALS[4-1],3);
     const open=COLOR_NAMES[level.boxQueue[0]]+'和'+COLOR_NAMES[level.boxQueue[1]];
     level.strategy='两座桥是竖着的。先看哪一座下面是当前盒色，先拆那一座。';
     level.curriculum={objective:'在竖桥之间选择先开哪一座，再接下层',prerequisites:['一座桥的开路成本和显层等待'],decision:'先比较左右竖桥下面谁在给当前盒色供货。',failure:'两座竖桥都去拆一点，可能在下层露出前把空孔占满。',release:'先拆通当前盒色的那座竖桥，关键板清掉后下层会再露出一座。',criticalBoardIds:scenes[0].critical,stages:[{until:scenes[0].route.length,title:'先选一座竖桥',advice:'这两座桥是竖着的。当前盒子要的是'+open+'，先拆下面有盒色的那一座；清掉关键板后，下层还会再露出一座。'},{until:level.witness.length,title:'再接下层',advice:'下层出现后，还是先看当前盒色在哪一座桥下面，再决定把空孔花在哪里。'}]};
@@ -293,9 +296,41 @@ export function getCampaignLevel(id:number):LevelDef{
   if(id>=5&&id<=10){
     const previous=getR2Prototype(id-2);
     const level=structuredClone(previous);
-    level.id=id;level.seed=0x430000+id;level.contentRevision=3;level.name=CAMPAIGN_NAMES[id-1];
+    level.id=id;level.seed=0x430000+id;level.contentRevision=3;level.name=R3_NAMES[id-1];
     const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
     return annotateCampaign(level,id,[`修订 3 主线：旧第 ${id-2} 关按新顺序后移，布局保持手作。`,...notes]);
+  }
+  throw Error('战役关卡不存在');
+}
+
+export function getCampaignLevel(id:number):LevelDef{
+  if(id===1){
+    const level=structuredClone(getCampaignLevelR3(1));
+    level.seed=0x440000+id;
+    level.contentRevision=4;
+    return annotateCampaign(level,1,[
+      '修订 4 保留修订 3 重做的第一关：开局就能点到当前盒色，先装满一盒。',
+      '第二关收回 120 颗大墙；这一关仍然允许少量失误，官方线无道具可解。',
+    ],4);
+  }
+  if(id===2){
+    const level=structuredClone(getR2Prototype(2));
+    level.seed=0x440000+id;
+    level.contentRevision=4;
+    level.name=CAMPAIGN_NAMES[1];
+    const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
+    return annotateCampaign(level,2,[
+      '修订 4 收回原第二关 120 颗大墙，五座四角桥保持手作，官方线无道具可解。',
+      '这关难是故意的。过不去时用免费辅助即可，成绩会写明用了挂。',
+      ...notes,
+    ],4);
+  }
+  if(id>=3&&id<=8){
+    const previous=getR2Prototype(id);
+    const level=structuredClone(previous);
+    level.id=id;level.seed=0x440000+id;level.contentRevision=4;level.name=CAMPAIGN_NAMES[id-1];
+    const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
+    return annotateCampaign(level,id,[`修订 4 主线：布局与修订 2 第 ${id} 关相同。`,...notes],4);
   }
   throw Error('战役关卡不存在');
 }

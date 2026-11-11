@@ -1,6 +1,6 @@
 import {assertConservation,makeAttemptId,occupiedBuffer} from './core';
 import {assistCount,clearRank,freshStats,newRunId,RANK_ORDER,CONTENT_REVISION} from './run';
-import {CAMPAIGN_COUNT,remapR2Completed,remapR2Unlocked} from './r2-catalog';
+import {CAMPAIGN_COUNT,remapR2Completed,remapR2Unlocked,remapR3Completed,remapR3Unlocked} from './r2-catalog';
 import type {BestRecord,GameState,RunCheckpoint,RunStats,SaveData,Settings} from './types';
 import {readJournal,unpackRun,writeJournal,recoveryText as exportJournal,readPending,archiveRecovery,flushJournal,getSaveStatus} from './journal';
 
@@ -14,7 +14,7 @@ export const ARTWORKS=[
   {id:3,title:'草莓补给站',columns:28,rows:28},{id:4,title:'螺丝小宇宙',columns:30,rows:29},
   {id:5,title:'花田休息日',columns:32,rows:30},{id:6,title:'今日螺丝王',columns:34,rows:32},
 ] as const;
-export const CAMPAIGN_MATERIAL_GRANTS=[90,90,70,48,110,115,120,125,125,127] as const;
+export const CAMPAIGN_MATERIAL_GRANTS=[90,208,110,115,120,125,125,127] as const;
 export const ALBUM_TOTAL_CELLS=ARTWORKS.reduce((sum,art)=>sum+art.columns*art.rows,0);
 export const ARTWORK_STAGE_NAMES=['核心轮廓','向外成形','画面展开','最后收边'] as const;
 export function campaignMaterialGrant(levelId:number,revision:number,pinCount:number):number{
@@ -104,12 +104,18 @@ function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
 }
 export function revisionWarning(storedRevision:unknown):string|null {
   if(storedRevision===CONTENT_REVISION)return null;
-  if(storedRevision===2)return '主线在第二关后补了两道短桥关。已通关的进度已按新顺序接好。';
+  if(storedRevision===2)return '主线第一关换成了更清楚的开局。已通关的第二关大墙和后面的进度都还在。';
+  if(storedRevision===3)return '主线第二关收回成原来的 120 颗大墙。短桥关已撤出主线；那三关都打完的，第二关记为已通关。';
   return '旧修订的盘面、成绩和画册已保留；当前主线从新的成绩记录开始。';
 }
 function migrateRevision(data:ProgressSave,stored:Partial<ProgressSave>):void {
   if(stored.version===4&&stored.contentRevision===1){data.r1Campaign={completed:[...data.completed],unlocked:data.unlocked};data.completed=[];data.unlocked=1;}
   else if(stored.version===4&&stored.contentRevision===2){data.completed=remapR2Completed(data.completed);data.unlocked=remapR2Unlocked(data.unlocked,data.completed);}
+  else if(stored.version===4&&stored.contentRevision===3){
+    data.completed=remapR3Completed(data.completed);data.unlocked=remapR3Unlocked(data.unlocked,data.completed);
+    // 修订 3 未上线，进行中的短桥关盘面与修订 4 的 120 颗墙不兼容，丢弃以免结算进错误关号。
+    if(data.current&&(data.current.mode??'campaign')==='campaign')data.current=null;
+  }
   data.completed=ids(data.completed,CAMPAIGN_COUNT);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(1,data.unlocked,...data.completed.map(id=>id+1)));data.contentRevision=CONTENT_REVISION;
 }
 export function migrateV2State(raw:unknown):GameState {

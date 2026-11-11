@@ -15,34 +15,26 @@ function wonCampaign(id:number):GameState{
   state.phase='won';state.moves=state.screws.length;state.stats.picks=state.screws.length;assertConservation(state);return state;
 }
 
-test('六幅画总格数仍为5004，主线发放曲线合计仍为1020且前两关就能看出轮廓',()=>{
-  assert.equal(ALBUM_TOTAL_CELLS,5004);
-  assert.equal(ARTWORKS[0].columns*ARTWORKS[0].rows,600);
+test('主线发放曲线合计仍为1020，八关恰好收齐画册前三幅',()=>{
   assert.equal(CAMPAIGN_MATERIAL_GRANTS.reduce((n,v)=>n+v,0),1020);
   assert.equal(campaignMaterialGrant(1,CONTENT_REVISION,15),90);
   assert.equal(campaignMaterialGrant(2,CONTENT_REVISION,120),208);
   assert.equal(campaignMaterialGrant(1,2,15),15);
   const schedule=campaignAlbumSchedule();
   assert.equal(schedule[1].cumulative,298);
-  assert.equal(schedule[1].filled[0],298);
-  assert.ok(schedule[1].filled[0]>=600/4,'前两关累计应达到第一幅核心轮廓');
-  assert.deepEqual(schedule[1].completed,[]);
-  assert.equal(schedule[2].cumulative,408);
+  assert.deepEqual(schedule[1].completed,[1]);
+  assert.ok(schedule[0].filled[0]>=ARTWORKS[0].columns*ARTWORKS[0].rows/4);
   const last=schedule[7];
   assert.equal(last.cumulative,1020);
-  assert.deepEqual(last.completed,[1]);
-  assert.equal(last.filled[0],600);
-  assert.equal(last.filled[1],420);
-  assert.equal(last.filled[2],0);
-  const goal=describeAlbumGoal([0,0,0,0,0,0],298);
-  assert.equal(goal.title,'睡到螺丝松');
-  assert.equal(goal.filled,298);
-  assert.equal(goal.stageName,'向外成形');
-  const afterTen=describeAlbumGoal([0,0,0,0,0,0],1020);
-  assert.equal(afterTen.completedCount,1);
-  assert.equal(afterTen.title,'今天也摸鱼');
-  assert.equal(afterTen.filled,420);
-  assert.equal(afterTen.nextTitle,'草莓补给站');
+  assert.deepEqual(last.completed,[1,2,3]);
+  assert.equal(last.volumeComplete,true);
+  const afterWall=describeAlbumGoal([0,0,0,0,0,0],298);
+  assert.equal(afterWall.title,'今天也摸鱼');
+  assert.equal(afterWall.completedCount,1);
+  const afterEight=describeAlbumGoal([0,0,0,0,0,0],1020);
+  assert.equal(afterEight.completedCount,3);
+  assert.equal(afterEight.volumeComplete,true);
+  assert.ok(afterEight.summary.includes('这一卷收齐了'));
 });
 
 test('修订4主线按新曲线发材料，重玩不补发，旧存档不追溯补差额',()=>{
@@ -78,7 +70,8 @@ test('新曲线结算后的导出导入保留材料，旧修订主线仍按螺�
     const imported=await importRecovery(text,freshSave());
     assert.equal(imported.data.materialBalance,298);
     assert.deepEqual(imported.data.completed,[1,2]);
-    assert.deepEqual(projectAlbumFill(imported.data.artworkProgress,imported.data.materialBalance).progress[0],298);
+    assert.deepEqual(projectAlbumFill(imported.data.artworkProgress,imported.data.materialBalance).completed,[1]);
+    assert.equal(projectAlbumFill(imported.data.artworkProgress,imported.data.materialBalance).progress[0],ARTWORKS[0].columns*ARTWORKS[0].rows);
     const r2=getR2Prototype(1);r2.mode='campaign';
     const game=new GameEngine(r2),state=game.snapshot();
     state.screws.forEach(s=>s.place='done');state.collected=state.screws.map(s=>s.id);

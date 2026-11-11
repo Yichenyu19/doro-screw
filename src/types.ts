@@ -64,7 +64,8 @@ export interface HintSearchOptions{maxNodes?:number;maxMs?:number;beamWidth?:num
 export type HintInfo={type:'move';id:string;reason:string;model:'static-current-pose'|'matter-verified';verifiedSteps:number;searchedNodes:number}|{type:'wait';reason:string}|{type:'unknown';reason:string;searchedNodes:number;budgetExhausted:boolean};
 export interface Settings{sound:boolean;reducedMotion:boolean;colorLabels:boolean}
 export type ClearRank='complete'|'independent'|'clean';
-export interface BestRecord{puzzleId:string;contentVersion:ContentVersion;levelId:number;attempt:number;seed:number;rank:ClearRank;elapsedMs:number;undos:number;hintsShown:number;assists:number;clears:number;updatedAt:number;mode?:PlayMode;contentRevision?:number}
+export interface BestRecord{puzzleId:string;contentVersion:ContentVersion;levelId:number;attempt:number;seed:number;rank:ClearRank;elapsedMs:number;undos:number;hintsShown:number;assists:number;clears:number;updatedAt:number;mode?:PlayMode;contentRevision?:number;moves?:number;bestMoves?:number;peakBuffer?:number;capacity?:number}
+export interface DailyMark{rank:ClearRank;theme:number;attempt:number;updatedAt:number}
 export interface SaveData {
   version:3|4;current:GameState|null;completed:number[];unlocked:number;album:number[];settings:Settings;updatedAt:number;
   materialBalance?:number;artworkProgress?:number[];rewardedAttempts?:string[];attemptCounter?:number;attempts?:Record<string,number>;legacyCompleted?:number[];

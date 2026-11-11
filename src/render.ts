@@ -242,6 +242,22 @@ class PuzzleScene extends Phaser.Scene {
     // 飞入、旧盒装满和后续回流由 PresentationDirector 单独编排。
     for (const event of events) {
       if (event.type === 'picked') this.burst(event.from, 0, 3);
+      if (event.type === 'board-released' && event.remaining === 1) {
+        const last = this.engine.state.screws.find(s => s.boardId === event.boardId && s.place === 'board');
+        if (last) this.burst(this.engine.position(last), 2, this.settings.reducedMotion ? 2 : 5);
+      }
+      if (event.type === 'board-released' && event.remaining === 0) {
+        const board = this.boardStates.get(event.boardId);
+        if (board) this.burst({ x: board.x, y: board.y }, 3, this.settings.reducedMotion ? 3 : 8);
+      }
+      if (event.type === 'group-revealed') {
+        for (const id of event.boardIds) {
+          const board = this.engine.state.boards.find(b => b.id === id);
+          if (board) this.burst({ x: board.x, y: board.y }, 1, this.settings.reducedMotion ? 2 : 6);
+          const view = this.plates.get(id);
+          if (view && !this.settings.reducedMotion) this.tweens.add({ targets: view.image, alpha: 1, duration: 180, yoyo: true, hold: 40 });
+        }
+      }
       if (event.type === 'won') this.burst({ x: WIDTH / 2, y: HEIGHT / 2 }, 5, 12);
     }
     this.hintId = null;
@@ -345,13 +361,19 @@ class PuzzleScene extends Phaser.Scene {
         hole.setPosition(board.x + p.x, board.y + p.y).setRotation(board.angle).setVisible(!board.gone).setAlpha(this.engine.state.contentVersion==='v4'?.32:.68);
       }
     }
+    const boxColors=new Set(this.engine.state.boxes.map(b=>b.color).filter((c):c is NonNullable<typeof c>=>!!c));
     for (const [id, image] of this.screws) {
       const screw = this.screwStates.get(id)!;
       const board = this.boardStates.get(screw.boardId)!;
       const p = screwPosition(screw, board);
-      const obscuredOpacity = this.engine.state.contentVersion==='v4'?.23:Math.max(.44, .52 - Math.max(0, topDepth - board.depth) * .025);
-      image.setPosition(p.x, p.y).setVisible(this.readable.has(id)).setAlpha(this.exposed.has(id) ? 1 : obscuredOpacity);
-      this.labels.get(id)?.setPosition(p.x,p.y).setDisplaySize(labelSize,labelSize).setVisible(this.settings.colorLabels&&this.readable.has(id)).setAlpha(this.exposed.has(id)?1:obscuredOpacity);
+      const matching=boxColors.has(screw.color);
+      const layer=Math.max(0, topDepth - board.depth);
+      const obscuredOpacity = this.engine.state.contentVersion==='v4'?(matching?.50:.23):Math.max(.44, .52 - layer * .025);
+      const ghost=matching&&!this.readable.has(id)&&layer<=2&&this.engine.state.contentVersion==='v4';
+      const visible=this.readable.has(id)||ghost;
+      const pulse=!this.settings.reducedMotion&&matching&&this.exposed.has(id)?1+Math.sin(this.clock/220)*.07:1;
+      image.setPosition(p.x, p.y).setVisible(visible).setAlpha(this.exposed.has(id) ? 1 : ghost?.28:obscuredOpacity).setDisplaySize(30*pulse,30*pulse);
+      this.labels.get(id)?.setPosition(p.x,p.y).setDisplaySize(labelSize*pulse,labelSize*pulse).setVisible(this.settings.colorLabels&&visible).setAlpha(this.exposed.has(id)?1:ghost?.28:obscuredOpacity);
     }
     if (this.hintId && this.hintImage && this.engine.canPick(this.hintId)) {
       const p = this.engine.position(this.hintId);
@@ -374,7 +396,7 @@ class PuzzleScene extends Phaser.Scene {
     }
     if(!this.pausedByUI&&!this.inspected){const events=this.engine.advanceWorld(delta);if(events.length){this.sync(events);this.callbacks.onReveal?.(events);}}
     const paintStart=profiling?performance.now():0;
-    if(this.dirty||this.hintId||this.melt||[...this.blockedUntil.values()].some(t=>t>this.clock)){this.paint();this.dirty=false;}
+    if(this.dirty||this.hintId||this.melt||(!this.settings.reducedMotion&&this.engine.state.boxes.some(b=>b.color))||[...this.blockedUntil.values()].some(t=>t>this.clock)){this.paint();this.dirty=false;}
     if(profiling){paintCost=performance.now()-paintStart;this.frameCosts.push({at:start,delta,total:performance.now()-start,physics:physicsCost,visibility:visibilityCost,paint:paintCost,plates:this.plates.size,pins:this.screws.size});if(this.frameCosts.length>2400)this.frameCosts.shift();}
   }
   diagnostics(){return this.frameCosts;}

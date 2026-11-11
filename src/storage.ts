@@ -14,6 +14,54 @@ export const ARTWORKS=[
   {id:3,title:'草莓补给站',columns:28,rows:28},{id:4,title:'螺丝小宇宙',columns:30,rows:29},
   {id:5,title:'花田休息日',columns:32,rows:30},{id:6,title:'今日螺丝王',columns:34,rows:32},
 ] as const;
+export const CAMPAIGN_MATERIAL_GRANTS=[90,90,70,48,110,115,120,125,125,127] as const;
+export const ALBUM_TOTAL_CELLS=ARTWORKS.reduce((sum,art)=>sum+art.columns*art.rows,0);
+export const ARTWORK_STAGE_NAMES=['核心轮廓','向外成形','画面展开','最后收边'] as const;
+export function campaignMaterialGrant(levelId:number,revision:number,pinCount:number):number{
+  if(revision===CONTENT_REVISION&&levelId>=1&&levelId<=CAMPAIGN_MATERIAL_GRANTS.length)return CAMPAIGN_MATERIAL_GRANTS[levelId-1];
+  return pinCount;
+}
+export function projectAlbumFill(progress:number[],balance:number):{progress:number[];completed:number[];spent:number}{
+  const next=ARTWORKS.map((art,index)=>Math.min(art.columns*art.rows,progress[index]??0));
+  let left=Math.max(0,balance),spent=0;
+  for(let index=0;index<ARTWORKS.length&&left>0;index++){
+    const total=ARTWORKS[index].columns*ARTWORKS[index].rows,add=Math.min(left,total-next[index]);
+    next[index]+=add;left-=add;spent+=add;
+  }
+  return{progress:next,completed:ARTWORKS.filter((art,index)=>next[index]>=art.columns*art.rows).map(art=>art.id),spent};
+}
+export function describeAlbumGoal(progress:number[],balance:number):{
+  index:number;title:string;filled:number;total:number;percent:number;stageName:string;
+  remainStage:number;remainArt:number;completedCount:number;nextTitle:string|null;summary:string;
+}{
+  const projected=projectAlbumFill(progress,balance);
+  const index=projected.progress.findIndex((filled,i)=>filled<ARTWORKS[i].columns*ARTWORKS[i].rows);
+  if(index<0){
+    const last=ARTWORKS[ARTWORKS.length-1];
+    return{index:-1,title:last.title,filled:last.columns*last.rows,total:last.columns*last.rows,percent:100,stageName:'全部完成',remainStage:0,remainArt:0,completedCount:ARTWORKS.length,nextTitle:null,summary:'六幅画都收齐了。剩下的材料仍留着，可以慢慢重看。'};
+  }
+  const art=ARTWORKS[index],total=art.columns*art.rows,filled=projected.progress[index];
+  const percent=Math.round(filled/total*100);
+  const stageIndex=Math.min(3,Math.floor(filled/total*4));
+  const remainStage=Math.max(0,Math.ceil((stageIndex+1)*total/4)-filled);
+  const remainArt=total-filled,completedCount=projected.completed.length;
+  const nextTitle=index+1<ARTWORKS.length?ARTWORKS[index+1].title:null;
+  const summary=filled===0?`下一幅是《${art.title}》，还差材料把它填出来。`:
+    filled<total/4?`《${art.title}》已有 ${filled} / ${total} 颗，再填 ${remainStage} 颗就能看出核心轮廓。`:
+    filled<total?`《${art.title}》已有 ${filled} / ${total} 颗，正在${ARTWORK_STAGE_NAMES[stageIndex]}。再填 ${remainArt} 颗就完成这幅${nextTitle?'，下一幅《'+nextTitle+'》已经在后面等着':''}。`:
+    `《${art.title}》已经完成。`;
+  return{index,title:art.title,filled,total,percent,stageName:ARTWORK_STAGE_NAMES[stageIndex],remainStage,remainArt,completedCount,nextTitle,summary};
+}
+export function campaignAlbumSchedule():{levelId:number;grant:number;cumulative:number;filled:number[];completed:number[]}[]{
+  let cumulative=0;const filled=ARTWORKS.map(()=>0),rows=[];
+  for(let levelId=1;levelId<=CAMPAIGN_MATERIAL_GRANTS.length;levelId++){
+    const grant=CAMPAIGN_MATERIAL_GRANTS[levelId-1];cumulative+=grant;
+    const projected=projectAlbumFill(filled,grant);
+    for(let i=0;i<filled.length;i++)filled[i]=projected.progress[i];
+    rows.push({levelId,grant,cumulative,filled:[...filled],completed:projected.completed});
+  }
+  return rows;
+}
 export interface ProgressSave extends SaveData {
   materialBalance:number;artworkProgress:number[];rewardedAttempts:string[];completedRuns:string[];
   attemptCounter:number;attempts:Record<string,number>;legacyCompleted:number[];currentAttempt:number;
@@ -148,7 +196,8 @@ export function awardVictory(data:ProgressSave,state:GameState,attempt=0):number
   const challenge=state.contentVersion==='v4'&&((state.contentRevision??1)>=2)&&(state.mode==='rescue'||state.mode==='mastery');
   const eligible=new Set(state.rewardableIds??state.screws.map(s=>s.id));
   const newCollected=state.screws.filter(s=>eligible.has(s.id)&&s.place==='done').length;
-  const earned=firstClear?state.screws.length:challenge?newCollected:0;data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;return earned;
+  const earned=firstClear?(currentCampaign?campaignMaterialGrant(state.levelId,state.contentRevision??1,state.screws.length):state.screws.length):challenge?newCollected:0;
+  data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;return earned;
 }
 export async function importRecovery(text:string,previous:ProgressSave):Promise<{data:ProgressSave;run:RunCheckpoint|null}> {
   if(text.length>35_000_000)throw Error('恢复文件过大，请使用游戏导出的 JSON 文件');

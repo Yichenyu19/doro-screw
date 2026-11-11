@@ -315,8 +315,19 @@ button.art-button.secondary>.button-surface {display:none!important;}
 
 /* V3：预告、预留槽和常用操作各占固定空间，棋盘不随消息跳动。 */
 [hidden] {display:none!important;}
-.home-code {min-height:44px;margin-top:2px;font-size:11px;color:var(--muted);}
+.home-share {width:100%;max-width:342px;display:flex;flex-direction:column;gap:8px;margin-top:10px;flex-shrink:0;}
+.home-daily {display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:72px;padding:8px 12px;text-align:left;background:#fff4ee;border:1px solid #ddc6b5;border-radius:14px;color:var(--ink);}
+.home-daily .eyebrow {font-size:10px;letter-spacing:.12em;color:var(--muted);}
+.home-daily strong {font-size:14px;font-weight:800;line-height:1.3;}
+.home-daily span,.home-daily small {font-size:11px;color:var(--muted);line-height:1.4;}
+.home-code {min-height:44px;margin-top:0;font-size:12px;color:var(--ink);width:100%;background:#fff9f0;border:1px solid #ddc6b5;border-radius:10px;}
 .home-footer {margin-top:3px;}
+.next-goal {margin:12px 0;padding:12px;background:#fff4ee;border:1px solid #ddc6b5;border-radius:14px;text-align:left;}
+.next-goal .eyebrow {display:block;margin-bottom:4px;font-size:10px;letter-spacing:.12em;color:var(--muted);}
+.next-goal strong {display:block;font-size:16px;margin-bottom:6px;}
+.next-goal p {margin:0 0 6px;font-size:13px;line-height:1.55;color:var(--ink);}
+.next-goal-meter {font-weight:800;font-variant-numeric:tabular-nums;}
+.rescue-rewind {background:#f3d9c8;border:1px solid #c995a7;}
 .play-toolbar {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;height:44px;}
 .play-toolbar .text-tool {min-width:0;font-size:12px;gap:4px;}
 .play-toolbar .text-tool .art {width:25px;height:25px;}
@@ -397,8 +408,8 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .home-footer {margin-top:6px;align-items:center;}.home-code {min-height:44px;}
 [data-art-stage] {font-size:12px;color:#68414f;margin:6px 0 10px;line-height:1.5;}
 [data-art-milestone] {font-size:13px;font-weight:700;color:#436d52;margin:2px 0 8px;}
-@media(max-height:700px) and (orientation:portrait){.home-title>.eyebrow{display:none}.home-title>.home-quantity{margin-top:2px}.home-title .home-logo{height:96px}.home-character{min-height:85px;max-height:150px}.home-actions .start-button{height:56px}.home-secondary .art-button.secondary{min-height:44px}.home-footer{margin-top:0}.home-screen{padding-top:5px;padding-bottom:5px}.home-top{height:36px}}
-@media(orientation:landscape) and (max-height:540px){.game-screen{grid-template-rows:44px 82px 26px 48px 1fr 88px}.run-line{height:44px;font-size:10px}.board-guide{padding-right:96px}.home-screen{display:grid;grid-template-columns:190px 1fr;grid-template-rows:36px 108px 1fr 44px;max-width:680px;column-gap:14px;padding:4px 12px}.home-top{grid-column:1/3}.home-title{grid-column:1;grid-row:2;margin:0}.home-title .eyebrow{display:none}.home-title .home-logo{height:86px;width:100%}.home-title .home-quantity{margin:0;font-size:11px}.home-character{grid-column:1;grid-row:3;min-height:40px;max-height:130px;margin:0}.home-actions{grid-column:2;grid-row:2/4;align-self:center}.home-code{grid-column:2;grid-row:4;font-size:11px}.home-footer{grid-column:1;grid-row:4;font-size:10px}.home-footer>span{max-width:115px}.character-note,.floating-screw,.home-heart{display:none}}
+@media(max-height:700px) and (orientation:portrait){.home-title>.eyebrow{display:none}.home-title>.home-quantity{margin-top:2px}.home-title .home-logo{height:88px}.home-character{min-height:64px;max-height:120px}.home-actions .start-button{height:52px}.home-secondary .art-button.secondary{min-height:44px}.home-share{margin-top:6px;gap:6px}.home-daily{min-height:64px;padding:6px 10px}.home-footer{margin-top:0}.home-screen{padding-top:5px;padding-bottom:5px}.home-top{height:36px}}
+@media(orientation:landscape) and (max-height:540px){.game-screen{grid-template-rows:44px 82px 26px 48px 1fr 88px}.run-line{height:44px;font-size:10px}.board-guide{padding-right:96px}.home-screen{display:grid;grid-template-columns:190px 1fr;grid-template-rows:36px 108px 1fr 44px;max-width:680px;column-gap:14px;padding:4px 12px}.home-top{grid-column:1/3}.home-title{grid-column:1;grid-row:2;margin:0}.home-title .eyebrow{display:none}.home-title .home-logo{height:86px;width:100%}.home-title .home-quantity{margin:0;font-size:11px}.home-character{grid-column:1;grid-row:3;min-height:40px;max-height:130px;margin:0}.home-actions{grid-column:2;grid-row:2/4;align-self:center}.home-share{grid-column:2;grid-row:4;margin-top:0;gap:4px}.home-daily{min-height:52px;padding:6px 10px}.home-code{grid-column:auto;grid-row:auto;font-size:11px}.home-footer{grid-column:1;grid-row:4;font-size:10px}.home-footer>span{max-width:115px}.character-note,.floating-screw,.home-heart{display:none}}
 
 /* 八关地图保留主题名，挑战说明与开始动作放在同一区域。 */
 .level-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0;}

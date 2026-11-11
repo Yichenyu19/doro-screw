@@ -10,7 +10,7 @@ import { GameServices } from './worker-client';
 import { assistCount, challengeCode, clearRank, parseChallengeCode, RANK_NAMES, CONTENT_REVISION } from './run';
 import type { ContentVersion,PlayMode } from './types';
 import type { GameView } from './render';
-import { loadSaveAsync, persistSave, awardVictory, ARTWORKS,setCurrentRun,currentRun,exportRecovery,importRecovery } from './storage';
+import { loadSaveAsync, persistSave, awardVictory, ARTWORKS,setCurrentRun,currentRun,exportRecovery,importRecovery,describeAlbumGoal } from './storage';
 import {onSaveStatus,getSaveStatus,flushJournal,noteUnsaved} from './journal';
 import { PresentationDirector } from './presentation';
 import {renderTrays} from './hud-trays';
@@ -135,6 +135,7 @@ function showHome():void {
   meltMode=false;
   const next=nextCampaignLevel();
   const progress=save.completed.length;
+  const daily=dailyPractice(),dailyReady=themeUnlocked(daily.theme);
   app.innerHTML=`<main class="home-screen">
     <img class="scene-backdrop" src="${assetUrl('backdrop.png')}" alt="" fetchpriority="high">
     <nav class="home-top"><span class="club-label">DORO'S SCREW CLUB</span><button class="icon-button" data-action="settings" aria-label="设置">${icon(save.settings.sound?5:6)}</button></nav>
@@ -145,7 +146,16 @@ function showHome():void {
       <p class="continue-note">${save.current?`${modeName(save.current.mode)} · 已为你留好盘面`:progress===CAMPAIGN_COUNT?'主线已完成 · 接下来按自己的节奏玩':`从第 ${next} 关开始 · 随时暂停，自动存档`}</p>
       <div class="home-secondary">${artButton('levels','关卡地图',{secondary:true,icon:3})}${artButton('random-menu','主题挑战',{secondary:true,icon:12})}${artButton('artwork','螺丝画册',{secondary:true,icon:15})}${artButton('records','我的记录',{secondary:true,icon:7})}</div>
     </section>
-    <button class="home-code text-tool" data-action="challenge">输入挑战码 · 重玩同一局面</button><footer class="home-footer"><span>主线 ${progress} / ${CAMPAIGN_COUNT} · 辅助全免费</span><button data-action="save-status" data-save-status>已保存</button></footer>
+    <section class="home-share" aria-label="每日挑战和挑战码">
+      <button type="button" class="home-daily" data-action="${dailyReady?'daily-start':'random-menu'}">
+        <span class="eyebrow">今日挑战</span>
+        <strong>今天大家拆同一局</strong>
+        <span>${R2_TITLES[daily.theme-1].name} · ${daily.date} UTC</span>
+        <small>${dailyReady?'点这里打开':'完成第 '+practiceCampaignId(daily.theme)+' 关后可玩'}</small>
+      </button>
+      <button type="button" class="home-code text-tool" data-action="challenge">有挑战码？贴进来一起拆</button>
+    </section>
+    <footer class="home-footer"><span>主线 ${progress} / ${CAMPAIGN_COUNT} · 辅助全免费</span><button data-action="save-status" data-save-status>已保存</button></footer>
   </main>${shellAccessories()}`;
   updateSaveStatus();
 }
@@ -320,8 +330,10 @@ function showPocket():void {
 function showTools(rescue=false):void {
   if(!engine)return;const previews=[{type:'expand-box' as const,label:'开启辅助盒'},{type:'expand-buffer' as const,label:'增加暂存孔'},{type:'clear-buffer' as const,label:'收进口袋'}].map(item=>({...item,preview:engine!.toolPreview({type:item.type})}));
   const rows=previews.filter(x=>x.preview.available&&(!rescue||x.preview.freed+x.preview.added>0)).map(({type,label,preview:p})=>`<button class="rescue-option" data-action="use-${type}"><strong>${label}</strong><span>${p.freed>0?'立即腾出 '+p.freed+' 个孔':p.added>0?'新增 '+p.added+' 个空孔':'现在腾出 0 孔'}${p.nextColor?' · '+COLOR_NAMES[p.nextColor]+'盒':''}</span></button>`).join('');
-  const why=rescue?`<div class="rescue-cause"><p>${lastDecision||'暂存孔已经全部占满。'}</p><p>${engine.state.boxes.filter(b=>b.color).map(b=>COLOR_NAMES[b.color!]+'盒还差 '+(3-b.screws.length)+' 颗').join('；')}。先腾出空孔，就能继续。</p></div>`:'';
-  openModal(rescue?'rescue':'tools',`${rescue?doro(3,'dialog-doro'):''}<h2>${rescue?'先腾出一点空间。':'这局，按你的节奏。'}</h2>${why}<p>${rescue?'下面只列出现在有效的办法。':'辅助都免费，战役首通仍拿完整材料奖励。'}</p><div class="rescue-options">${rescue&&engine.canUndo?'<button class="rescue-option" data-action="undo-rescue"><strong>撤回上一步</strong><span>换个选择 · 记录一次撤回</span></button>':''}${rows}${rescue?'':'<button class="rescue-option" data-action="use-melt"><strong>融化一块玻璃</strong><span>选择板件，原位留下螺丝</span></button>'}</div><p class="small-note">强辅助如实记录。独立解出允许撤回；零回退额外要求没有撤回。</p>${artButton('home','保存退出',{secondary:true})}`,{closable:!rescue});
+  const rewind=rescue?engine.solvableRewindPlan():{ok:false,steps:0,reason:''};
+  const why=rescue?`<div class="rescue-cause"><p>${lastDecision||'暂存孔已经全部占满。'}</p><p>${engine.state.boxes.filter(b=>b.color).map(b=>COLOR_NAMES[b.color!]+'盒还差 '+(3-b.screws.length)+' 颗').join('；')}。${rewind.ok&&rewind.steps>1?'只撤回一两步通常还是拆不开。可以回到还能继续的那一步，或用免费辅助腾出空孔。':'先腾出空孔，就能继续。'}</p></div>`:'';
+  const rewindButton=rescue&&rewind.ok&&rewind.steps>1?`<button class="rescue-option rescue-rewind" data-action="rewind-solvable"><strong>回到还能拆的地方</strong><span>撤回 ${rewind.steps} 步，记 ${rewind.steps} 次撤回。辅助仍全免费，会记进成绩档。</span></button>`:'';
+  openModal(rescue?'rescue':'tools',`${rescue?doro(3,'dialog-doro'):''}<h2>${rescue?'先腾出一点空间。':'这局，按你的节奏。'}</h2>${why}<p>${rescue?'下面只列出现在有效的办法。':'辅助都免费，战役首通仍拿完整材料奖励。'}</p><div class="rescue-options">${rewindButton}${rescue&&engine.canUndo?'<button class="rescue-option" data-action="undo-rescue"><strong>撤回上一步</strong><span>换个选择 · 记录一次撤回</span></button>':''}${rows}${rescue?'':'<button class="rescue-option" data-action="use-melt"><strong>融化一块玻璃</strong><span>选择板件，原位留下螺丝</span></button>'}</div><p class="small-note">强辅助如实记录。独立解出允许撤回；零回退额外要求没有撤回。</p>${artButton('home','保存退出',{secondary:true})}`,{closable:!rescue});
 }
 function showHint():void {
   if(!engine)return;view?.capturePhysics();const available=engine.available(),matching=available.filter(s=>engine!.state.boxes.some(b=>b.color===s.color)),free=engine.state.capacity-occupied(engine.state);
@@ -419,8 +431,23 @@ function showWin(celebrate=true):void {
   const starter=level.contentVersion==='v4'&&(level.contentRevision??1)>=2&&level.mode==='campaign'&&level.id===1;
   const challenge=level.mode==='rescue'||level.mode==='mastery',legacy=level.contentVersion!=='v4'||(level.contentRevision??1)<2,finished=!legacy&&!challenge&&level.id===CAMPAIGN_COUNT,canPaint=!allArt&&save.materialBalance>0;
   const nextText=challenge?'再来一局新编排':legacy?'回到主线':finished?'看看主题挑战':'继续下一关',count=engine.state.rewardableIds?.length??engine.state.screws.length;
+  const goal=describeAlbumGoal(save.artworkProgress,save.materialBalance);
+  const nextGoal=`<section class="next-goal"><span class="eyebrow">下一目标</span><strong>${goal.completedCount>=6?'画册已经收齐':goal.title}</strong><p>${earnedThisRound?'这局收好 '+earnedThisRound+' 颗材料。':''}${goal.summary}</p>${goal.index>=0?`<p class="next-goal-meter">${goal.filled} / ${goal.total} · ${goal.stageName}</p>`:''}</section>`;
   modalHistory=[];
-  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完，这次真毕业了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册 · 与作画材料分别保存</p>':''}${finished?'<p>从第一个支点，到最后一盒。主线已经完整收好，画册和挑战留给你慢慢玩。</p>':''}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}<br>撤回 ${stats.undos} · 小抄 ${stats.hintsShown} · 辅助 ${assistCount(stats)}</p><p class="small-note">${earnedThisRound?'收好 '+earnedThisRound+' 颗作画材料。':challenge?'本次运行的材料已经结算，成绩已保留。':legacy?'旧版成绩与材料记录已保留。':'这关的首通材料已经领过，本次成绩已记录。'}${allArt?' 六幅画已全部完成，收藏毕业啦。':''}</p>${finished?artButton('home','收下这次毕业',{icon:12}):canPaint?artButton('artwork','把螺丝画成 Doro',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('next',nextText,{secondary:true})}${artButton('challenge','挑战码与最佳记录',{secondary:true})}</div>${finished?artButton('artwork','慢慢完成螺丝画册',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
+  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完，这次真毕业了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册 · 与作画材料分别保存</p>':''}${finished?'<p>从第一个支点，到最后一盒。主线已经完整收好，画册和挑战留给你慢慢玩。</p>':''}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}<br>撤回 ${stats.undos} · 小抄 ${stats.hintsShown} · 辅助 ${assistCount(stats)}</p>${nextGoal}<p class="small-note">${earnedThisRound?'':challenge?'本次运行的材料已经结算，成绩已保留。':legacy?'旧版成绩与材料记录已保留。':'这关的首通材料已经领过，本次成绩已记录。'}${allArt?' 六幅画已全部完成，收藏毕业啦。':''}</p>${finished?artButton('home','收下这次毕业',{icon:12}):canPaint?artButton('artwork','先填进画册，看看下一目标',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('next',nextText,{secondary:true})}${artButton('challenge','挑战码与最佳记录',{secondary:true})}</div>${finished?artButton('artwork','慢慢完成螺丝画册',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
+}
+
+function rewindToLastSolvable():void {
+  if(!engine)return;services.cancelHint();hintSequence++;
+  tickClock();
+  const result=engine.rewindToSolvable();
+  modal=null;modalHistory=[];modalReturn=null;lastDecision='';
+  document.querySelector('#modal-root')!.innerHTML='';
+  meltMode=false;view?.setMeltMode(false);view?.sync([],true);view?.setPaused(document.hidden);
+  presenter?.reset(engine.snapshot());
+  lastClockTime=performance.now();saveNow();updateTeaching();
+  toast(result.reason);
+  if(engine.state.phase==='stuck')showRescue();
 }
 
 function undo():void {
@@ -516,6 +543,7 @@ function dispatchButton(button:HTMLElement):void {
   }
   if (!engine || !view) return;
   if (action==='undo' || action==='undo-rescue') {undo();return;}
+  if (action==='rewind-solvable') {rewindToLastSolvable();return;}
   if(action?.startsWith('use-')){
     const type=action.slice(4);modal=null;modalReturn=null;document.querySelector('#modal-root')!.innerHTML='';view.setPaused(document.hidden);lastClockTime=performance.now();
     if(type==='melt'){meltMode=true;view.setMeltMode(true);view.setHint(null);showBoardTip('点一块玻璃融化它。再次打开辅助可取消。');return;}

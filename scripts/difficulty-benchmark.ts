@@ -1,4 +1,6 @@
-import {writeFileSync,mkdirSync} from 'node:fs';
+import {writeFileSync,mkdirSync,readFileSync,unlinkSync} from 'node:fs';
+import {spawn} from 'node:child_process';
+import {availableParallelism} from 'node:os';
 import {GameEngine,occupiedBuffer} from '../src/core.ts';
 import {physicsSimulation} from '../src/matter-analysis.ts';
 import {getCampaignLevel} from '../src/authored-r2.ts';
@@ -73,7 +75,9 @@ export function smartChoice(game:GameEngine,rng:()=>number,profile:SmartProfile=
   const fitting=byBoard(available.filter(s=>!game.state.boxes.some(b=>b.color===s.color)))
     .filter(s=>game.state.screws.filter(x=>x.boardId===s.boardId&&x.place==='board').length<=free)
     .sort(depthId);
-  const mustSearch=!matching.length||free<=2||(!profile.eagerMatch&&(fitting.some(s=>peekBonus(game.state,s.boardId)>=14)||greedyTrapsSoon(game,profile.trapHorizon)));
+  // 有同色时，只有在本档深度/视野里已经能看见“再装箱会卡死”才去搜索跳色；看不见陷阱就装箱。不用“能露盒色”当默认跳色理由。
+  const seeTrap=greedyTrapsSoon(game,profile.trapHorizon);
+  const mustSearch=!matching.length||free<=2||(!profile.eagerMatch&&seeTrap);
   if(matching.length&&!mustSearch)return matchBoards[0]!.id;
 
   const candidates=(matchBoards.length?[...matchBoards.slice(0,4),...fitting.slice(0,3)]:(fitting.length?fitting:byBoard(available).sort(depthId)).slice(0,6));
@@ -116,16 +120,6 @@ export function smartChoice(game:GameEngine,rng:()=>number,profile:SmartProfile=
     return end.score+firstBonus+(trap?-profile.trapWeight:Math.round(profile.trapWeight*0.3))+(rng()-.5)*profile.jitter;
   };
   const ranked=candidates.map(s=>({id:s.id,board:s.boardId,score:scoreMove(s.id),match:game.state.boxes.some(b=>b.color===s.color),peek:peekBonus(game.state,s.boardId)})).sort((a,b)=>b.score-a.score);
-  // 无同色可装时，优先拆“拆完能露出当前盒色”的板，避免更深搜索被锁板/中继板的局部高分带偏（第7–8关开局）。
-  if(!matching.length){
-    const bestPeek=Math.max(0,...ranked.map(r=>r.peek));
-    if(bestPeek>=14){
-      const revealed=ranked.filter(r=>r.peek>=bestPeek);
-      const top=revealed.sort((a,b)=>b.score-a.score)[0]!;
-      const closeReveal=revealed.filter(r=>r.score>=top.score-profile.close);
-      return closeReveal[Math.floor(rng()*closeReveal.length)]!.id;
-    }
-  }
   const best=ranked[0]!;
   const close=ranked.filter(r=>r.score>=best.score-profile.close);
   return close[Math.floor(rng()*close.length)]!.id;
@@ -291,38 +285,98 @@ function summarize(rows:Awaited<ReturnType<typeof play>>[]){
   };
 }
 
+function argFlag(name:string){
+  const hit=process.argv.find(arg=>arg.startsWith(`--${name}=`));
+  return hit?hit.slice(name.length+3):undefined;
+}
+
+function shardIndices(count:number,shardIndex:number,shardCount:number){
+  return Array.from({length:count},(_,i)=>i).filter(i=>i%shardCount===shardIndex);
+}
+
+async function runShardedJobs(jobs:number,randomRuns:number,smartRuns:number,ids:number[],out:string,variants:Kind[]){
+  const script=process.argv.find(arg=>arg.endsWith('difficulty-benchmark.ts'))!;
+  const loader=process.execArgv.length?process.execArgv:['--import','tsx'];
+  const children=Array.from({length:jobs},(_,k)=>{
+    const shardOut=`${out}.shard${k}`;
+    const args=[...loader,script,String(randomRuns),String(smartRuns),ids.join(','),shardOut,variants.join(','),`--shard=${k}/${jobs}`];
+    const child=spawn(process.execPath,args,{stdio:'inherit',cwd:process.cwd()});
+    return new Promise<string>((resolve,reject)=>{
+      child.on('exit',code=>code===0?resolve(shardOut):reject(new Error(`shard ${k} exited ${code}`)));
+      child.on('error',reject);
+    });
+  });
+  const files=await Promise.all(children);
+  const shards=files.map(file=>JSON.parse(readFileSync(file,'utf8')));
+  const report:any={...shards[0],jobs,levels:shards[0].levels.map((row:any,index:number)=>{
+    const merged:any={...row};
+    const randomRows=shards.flatMap((shard:any)=>shard.levels[index].randomRows??[]);
+    merged.random=summarize(randomRows);
+    delete merged.randomRows;
+    for(const kind of variants){
+      const key=kind==='smart'?'smart':kind;
+      const rows=shards.flatMap((shard:any)=>shard.levels[index][key+'Rows']??[]);
+      merged[key]=summarize(rows);
+      delete merged[key+'Rows'];
+    }
+    return merged;
+  })};
+  report.finishedAt=new Date().toISOString();
+  writeFileSync(out,JSON.stringify(report,null,2));
+  for(const file of files)try{unlinkSync(file);}catch{}
+  for(const row of report.levels){
+    console.log(`L${row.id} official`,JSON.stringify(row.official));
+    console.log(`L${row.id} greedy`,JSON.stringify(row.greedy));
+    console.log(`L${row.id} random`,JSON.stringify(row.random));
+    for(const kind of variants)console.log(`L${row.id} ${kind}`,JSON.stringify(row[kind==='smart'?'smart':kind]));
+  }
+  console.log('wrote',out,'jobs',jobs);
+}
+
 async function main(){
   const randomRuns=Number(process.argv[2]||50);
   const smartRuns=Number(process.argv[3]||50);
   const ids=(process.argv[4]||Array.from({length:CAMPAIGN_COUNT},(_,i)=>String(i+1)).join(',')).split(',').map(Number);
   const out=process.argv[5]||'/workspace/doro-screw-review/logs/difficulty-benchmark.json';
   const variants=((process.argv[6]||'smart-weak,smart,smart-strong').split(',') as Kind[]).filter(k=>k==='smart'||k==='smart-weak'||k==='smart-strong');
-  const report:any={contentRevision:4,randomRuns,smartRuns,variants,profiles:Object.fromEntries(variants.map(k=>[k,SMART_PROFILES[k]])),levels:[],startedAt:new Date().toISOString(),
-    note:'裸玩不用辅助。乱点/贪心不撤回。第2关保持原墙（开局近高不同深的桥随机，之后装箱/层序）。第3–8关三种搜索强度：略弱深度2束宽3，聪明玩家深度4束宽5，更强深度6束宽7。均可跳过可见同色、预留空孔，并在装得下时先把当前板拆完再判断短视贪心是否会卡死；落子前等待玻璃停稳。近分用 rng 打散，幅度随强度递减。最短解步数等于全关针数。'};
+  const shardSpec=argFlag('shard');
+  const defaultJobs=(smartRuns>=16||randomRuns>=16)?Math.min(8,availableParallelism()):1;
+  const jobs=Math.max(1,Number(argFlag('jobs')||process.env.BENCH_JOBS||defaultJobs));
+  if(!shardSpec&&jobs>1){
+    mkdirSync('/workspace/doro-screw-review/logs',{recursive:true});
+    await runShardedJobs(jobs,randomRuns,smartRuns,ids,out,variants);
+    return;
+  }
+  const [shardIndex,shardCount]=shardSpec?shardSpec.split('/').map(Number):[0,1];
+  const report:any={contentRevision:4,randomRuns,smartRuns,variants,jobs:shardCount,profiles:Object.fromEntries(variants.map(k=>[k,SMART_PROFILES[k]])),levels:[],startedAt:new Date().toISOString(),
+    note:'裸玩不用辅助。乱点/贪心不撤回。第2关保持原墙（开局近高不同深的桥随机，之后装箱/层序）。第3–8关三种搜索强度：略弱深度2束宽3视野8，聪明玩家深度4束宽5视野16，更强深度6束宽7视野24。有同色时，只有本档视野已经看见再装箱会卡死才跳色；看不见陷阱就装箱。无同色时按搜索得分选择，不再额外优先“能露盒色”的板。落子前等待玻璃停稳。近分用 rng 打散，幅度随强度递减。最短解步数等于全关针数。'};
   mkdirSync('/workspace/doro-screw-review/logs',{recursive:true});
   for(const id of ids){
     const level=getCampaignLevel(id);
     const pins=level.boards.reduce((n,b)=>n+b.screws.length,0);
     const official=officialLine(level);
-    console.log(`L${id} official`,JSON.stringify(official));
+    if(!shardSpec||shardIndex===0)console.log(`L${id} official`,JSON.stringify(official));
     const greedy=await play('greedy',1,level);
-    console.log(`L${id} greedy`,JSON.stringify(greedy));
+    if(!shardSpec||shardIndex===0)console.log(`L${id} greedy`,JSON.stringify(greedy));
     const randomRows=[];
-    for(let i=0;i<randomRuns;i++)randomRows.push(await play('random',4200+id*10000+i*7919,level));
+    for(const i of shardIndices(randomRuns,shardIndex,shardCount))randomRows.push(await play('random',4200+id*10000+i*7919,level));
     const random=summarize(randomRows);
-    console.log(`L${id} random`,JSON.stringify(random));
+    if(!shardSpec)console.log(`L${id} random`,JSON.stringify(random));
     const row:any={
       id,name:CAMPAIGN_NAMES[id-1]||level.name,pins,shortestMoves:pins,
       official:{ok:official.ok,peakBuffer:official.peak,skippedMatch:official.skippedMatch,choicePoints:official.choicePoints,moves:official.moves},
       greedy:{phase:greedy.phase,win:greedy.phase==='won',moves:greedy.moves,peak:greedy.peak},
       random,
+      randomRows,
     };
     for(const kind of variants){
       const rows=[];
-      for(let i=0;i<smartRuns;i++)rows.push(await play(kind,8200+id*13000+i*3571,level));
+      for(const i of shardIndices(smartRuns,shardIndex,shardCount))rows.push(await play(kind,8200+id*13000+i*3571,level));
       const summary=summarize(rows);
-      row[kind=== 'smart'?'smart':kind]=summary;
-      console.log(`L${id} ${kind}`,JSON.stringify(summary));
+      const key=kind==='smart'?'smart':kind;
+      row[key]=summary;
+      row[key+'Rows']=rows;
+      if(!shardSpec)console.log(`L${id} ${kind}`,JSON.stringify(summary));
     }
     report.levels.push(row);
   }

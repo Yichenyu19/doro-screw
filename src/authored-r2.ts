@@ -333,14 +333,43 @@ export function getCampaignLevel(id:number):LevelDef{
     const level=structuredClone(previous);
     level.id=id;level.seed=0x440000+id;level.contentRevision=4;level.name=CAMPAIGN_NAMES[id-1];
     if(id===3){
-      // 手作：把前三段底座略抬到各自顶盖之上。贪心先装箱再拆最上层，会用底座色占满三孔，四钉顶盖就开不出来；官方线仍先开顶盖。针数、盒序、见证钉号不变。
+      // 手作：前三段底座略高于顶盖，贪心先装箱会占满孔开不出顶盖。后两段中梁略抬，先拆完南桥同色再点最高层会卡在北桥外。
       for(const boardId of ['r2-l3-a1-base','r2-l3-a2-base','r2-l3-a3-base']){
         const base=level.boards.find(board=>board.id===boardId);
         if(base)base.depth+=1.2;
       }
+      for(const boardId of ['r2-l3-a4-middle','r2-l3-a5-middle']){
+        const middle=level.boards.find(board=>board.id===boardId);
+        if(middle)middle.depth+=1.2;
+      }
+    }
+    if(id===5){
+      // 第4段锁板略降，减少“先拆最高锁板”的误导，让交叉后进入铰链窗的分叉稍可看清。官方线仍先开铰链。
+      const lock=level.boards.find(board=>board.id==='r2-l5-a4-h0-lock');
+      if(lock)lock.depth-=0.8;
+    }
+    if(id===6){
+      // 终局锁板再抬一点，留给下一层的最后一窗需要先开铰链/窗口而不是锁板。
+      const lock=level.boards.find(board=>board.id==='r2-l6-a6-lock');
+      if(lock)lock.depth+=1.0;
+    }
+    if(id===8){
+      // 回马枪中心盖前的南板略抬，终局锁板略抬：更强的“先别装满 / 先开窗”。
+      const south=level.boards.find(board=>board.id==='r2-l8-reply-south');
+      if(south)south.depth+=0.8;
+      const lock=level.boards.find(board=>board.id==='r2-l8-last-lock');
+      if(lock)lock.depth+=0.4;
     }
     const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
-    const extra=id===3?'第1段底座略抬深度，避免只点最上层同色就能过。':'修订 4 主线：布局与修订 2 第 '+id+' 关相同。';
+    const extras:Record<number,string>={
+      3:'前三段底座和后两段中梁略抬，避免只点最上层同色就能过。',
+      4:'开局与前段保持“先别装满”的中心盖结构，不额外加针。',
+      5:'第4段锁板略降，交叉进入铰链窗时少一层误导。',
+      6:'终局锁板再抬，最后一窗要先开路。',
+      7:'开局铰链窗结构保持，不额外加针。',
+      8:'回马枪南板和终局锁板略抬，先别装满、先开窗。',
+    };
+    const extra=extras[id]??('修订 4 主线：布局与修订 2 第 '+id+' 关相同。');
     return annotateCampaign(level,id,[extra,...notes],4);
   }
   throw Error('战役关卡不存在');

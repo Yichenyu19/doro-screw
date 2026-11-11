@@ -66,7 +66,8 @@ test('满孔后回到可解点，沿官方线可通关，只记撤回、不算�
   assert.equal(game.state.phase,'playing');
   assert.equal(game.state.stats.undos,result.steps);
   assert.equal(Object.values(game.state.stats.assists).reduce((n,v)=>n+v,0),0);
-  assert.ok(game.witnessSolves(game.state)||game.state.moves===0);
+  // 大墙上即使正好走在官方前缀，下一颗也可能要等落板，静态见证不能单独证明可续解。
+  assert.ok(game.state.moves===0||game.isOfficialPrefix());
   finishOfficial(game,sim,level);
   assert.equal(game.state.phase,'won');
   assert.equal(Object.values(game.state.stats.assists).reduce((n,v)=>n+v,0),0);

@@ -34,6 +34,13 @@ export function teachingTip(level:LevelDef,state:GameState,events:GameEvent[],se
     if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return '先放在孔里也没关系，同色盒子来了会接回去。';
     return '先点和上面盒子一样的颜色。同色三颗就会装满。';
   }
+  if(campaign&&level.id===2&&(level.contentRevision??0)>=4){
+    if(state.moves===0)return `这关有 120 颗，是墙。先看盒子要的是${boxText(state)}，再决定先拆哪座桥。过不去就用免费辅助，不必看广告。`;
+    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return '新盒子把孔里的同色钉接回去了。先装箱，再决定下一座桥。';
+    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return '先放在孔里也行。这关桥多，空孔要省着花。';
+    if(events.some(e=>e.type==='board-released'&&e.remaining===0))return '桥板落下后，两边的盒色会一起露出来。先装箱。';
+    return '先看当前盒色，再决定把空孔花在哪座桥上。';
+  }
   if(campaign&&level.id===2){
     if(state.moves===0)return `这座桥上的三颗会先占三个空孔。先看盒子要的是${boxText(state)}，再决定拆不拆桥。`;
     if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return '新盒子把暂存里的同色钉接回去了，空孔腾出来了。开桥前先看还剩几孔。';

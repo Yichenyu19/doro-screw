@@ -1,15 +1,15 @@
 {
   "contentVersion": "v4",
-  "contentRevision": 3,
+  "contentRevision": 4,
   "mode": "campaign",
   "files": [
     {
       "id": 1,
       "file": "level-1.json",
       "pins": 15,
-      "seed": 4390913,
-      "bytes": 4528,
-      "sha256": "a87b060aa9fe4e2f4fc6702e8ea5caeb4443e03e282ce3127094dad091aabacc",
+      "seed": 4456449,
+      "bytes": 4491,
+      "sha256": "d4f051ecbae7806351bc45cebcfba8155e74adcc8470c8d13cdb350935c2b184",
       "design": {
         "id": 1,
         "name": "先装满一盒",
@@ -30,154 +30,104 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
       "id": 2,
       "file": "level-2.json",
-      "pins": 24,
-      "seed": 4390914,
-      "bytes": 6047,
-      "sha256": "51b78b19aea76bf8efe131e9691a32b0de8cde00e165be2e15dcb899bb75f8c0",
+      "pins": 120,
+      "seed": 4456450,
+      "bytes": 27650,
+      "sha256": "c6d8d16cd8d669103971e1fa323831946dfa7068d71ebf9a1946a37b799b3df9",
       "design": {
         "id": 2,
-        "name": "先拆一座桥",
-        "total": 24
+        "name": "四角借路",
+        "total": 120
       },
       "difficulty": {
-        "theme": "先拆一座桥",
+        "theme": "四角借路",
         "decisions": [
-          "辨认r3-l2两座桥：只有一边的下层供给当前两盒。",
+          "辨认r2-l2-a1两座桥：只有一边的下层供给当前两盒。",
+          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。",
+          "辨认r2-l2-a2两座桥：只有一边的下层供给当前两盒。",
+          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。",
+          "辨认r2-l2-a3两座桥：只有一边的下层供给当前两盒。",
+          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。",
+          "辨认r2-l2-a4两座桥：只有一边的下层供给当前两盒。",
+          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。",
+          "辨认r2-l2-a5两座桥：只有一边的下层供给当前两盒。",
           "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。"
         ],
         "dependencies": [
           {
-            "from": "r3-l2-north",
-            "to": "r3-l2-south",
+            "from": "r2-l2-a1-north",
+            "to": "r2-l2-a1-south",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a1-south",
+            "to": "r2-l2-a2-north",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a2-north",
+            "to": "r2-l2-a2-south",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a2-south",
+            "to": "r2-l2-a3-north",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a3-north",
+            "to": "r2-l2-a3-south",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a3-south",
+            "to": "r2-l2-a4-north",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a4-north",
+            "to": "r2-l2-a4-south",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a4-south",
+            "to": "r2-l2-a5-north",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r2-l2-a5-north",
+            "to": "r2-l2-a5-south",
             "reason": "上一处开路改变当前盒序与后续开路所需空孔"
           }
         ],
         "planningDepth": 2,
-        "crossRegionLinks": 2,
+        "crossRegionLinks": 10,
         "crossRevealLinks": 0,
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
       "id": 3,
       "file": "level-3.json",
-      "pins": 48,
-      "seed": 4390915,
-      "bytes": 11519,
-      "sha256": "b1e1593cf6c1ac49bf6ad08c2ce1ecf0e56cde23568ab7a0bcdb1d64431a5006",
+      "pins": 129,
+      "seed": 4456451,
+      "bytes": 31225,
+      "sha256": "09cdddaf3e9851a160f9910a4b8e0dbf620a86e31f9c2da15357ecff7a768482",
       "design": {
         "id": 3,
-        "name": "桥下还有一层",
-        "total": 48
-      },
-      "difficulty": {
-        "theme": "桥下还有一层",
-        "decisions": [
-          "辨认r3-l3-a两座桥：只有一边的下层供给当前两盒。",
-          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。",
-          "辨认r3-l3-b两座桥：只有一边的下层供给当前两盒。",
-          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。"
-        ],
-        "dependencies": [
-          {
-            "from": "r3-l3-a-north",
-            "to": "r3-l3-a-south",
-            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
-          },
-          {
-            "from": "r3-l3-a-south",
-            "to": "r3-l3-b-north",
-            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
-          },
-          {
-            "from": "r3-l3-b-north",
-            "to": "r3-l3-b-south",
-            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
-          }
-        ],
-        "planningDepth": 3,
-        "crossRegionLinks": 4,
-        "crossRevealLinks": 0,
-        "bufferMargin": 1,
-        "predecessorComparison": "待统一策略与整局物理对照验收。",
-        "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "verified",
-        "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
-        ]
-      }
-    },
-    {
-      "id": 4,
-      "file": "level-4.json",
-      "pins": 48,
-      "seed": 4390916,
-      "bytes": 11342,
-      "sha256": "358ea9505f0ec84a7fd1e3ff9669f6d01a4d9d20ac14ca6116195ad48b27d51a",
-      "design": {
-        "id": 4,
-        "name": "四角借路",
-        "total": 48
-      },
-      "difficulty": {
-        "theme": "四角借路",
-        "decisions": [
-          "辨认r3-l4-a两座桥：只有一边的下层供给当前两盒。",
-          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。",
-          "辨认r3-l4-b两座桥：只有一边的下层供给当前两盒。",
-          "给当前盒色的桥保留三孔；另一桥和中间旁支也能拆，但会消耗同一份暂存。"
-        ],
-        "dependencies": [
-          {
-            "from": "r3-l4-a-north",
-            "to": "r3-l4-a-south",
-            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
-          },
-          {
-            "from": "r3-l4-a-south",
-            "to": "r3-l4-b-north",
-            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
-          },
-          {
-            "from": "r3-l4-b-north",
-            "to": "r3-l4-b-south",
-            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
-          }
-        ],
-        "planningDepth": 4,
-        "crossRegionLinks": 4,
-        "crossRevealLinks": 0,
-        "bufferMargin": 1,
-        "predecessorComparison": "待统一策略与整局物理对照验收。",
-        "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "verified",
-        "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
-        ]
-      }
-    },
-    {
-      "id": 5,
-      "file": "level-5.json",
-      "pins": 129,
-      "seed": 4390917,
-      "bytes": 31227,
-      "sha256": "ef58a574c9377bc2473ba097faeb6939ad1ed02725c3e962b39ed6749c7ccfbd",
-      "design": {
-        "id": 5,
         "name": "花心有后手",
         "total": 129
       },
@@ -288,19 +238,19 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
-      "id": 6,
-      "file": "level-6.json",
+      "id": 4,
+      "file": "level-4.json",
       "pins": 135,
-      "seed": 4390918,
-      "bytes": 30269,
-      "sha256": "b0ac6842dc3ebfe168416fbe771a4fd31d31bc08d91e35588769f58d8721f6bf",
+      "seed": 4456452,
+      "bytes": 30255,
+      "sha256": "33eb0358d0e549d957542ab5346a42924e8c2d8fe7cc0304dce088e3b75a1bc5",
       "design": {
-        "id": 6,
+        "id": 4,
         "name": "先别装满",
         "total": 135
       },
@@ -378,19 +328,19 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
-      "id": 7,
-      "file": "level-7.json",
+      "id": 5,
+      "file": "level-5.json",
       "pins": 141,
-      "seed": 4390919,
-      "bytes": 35585,
-      "sha256": "b35bf2fd2b1d9db9a466284d6a612a8303c101ea4e2b9a3040bc4128bda9f48e",
+      "seed": 4456453,
+      "bytes": 35577,
+      "sha256": "0e5f19c0b6d6a96517c47e4916ed03a31f1ea1f86472240144fa78581a624b93",
       "design": {
-        "id": 7,
+        "id": 5,
         "name": "交叉路口",
         "total": 141
       },
@@ -518,19 +468,19 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
-      "id": 8,
-      "file": "level-8.json",
+      "id": 6,
+      "file": "level-6.json",
       "pins": 156,
-      "seed": 4390920,
-      "bytes": 39296,
-      "sha256": "1c9f149f442c9961c4ee394f7a0e066d8a5e5d07304e61ce5f6f2a9198fec2a1",
+      "seed": 4456454,
+      "bytes": 39297,
+      "sha256": "82226f4dd52fd34076dd45c3da01a768ccc4d7646955273a4e4a25d8412cff05",
       "design": {
-        "id": 8,
+        "id": 6,
         "name": "留给下一层",
         "total": 156
       },
@@ -671,19 +621,19 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
-      "id": 9,
-      "file": "level-9.json",
+      "id": 7,
+      "file": "level-7.json",
       "pins": 156,
-      "seed": 4390921,
-      "bytes": 41395,
-      "sha256": "ffbda38d63b3e27c3874d409692935e58b9cdedcdfd10c90ac1ab9f608e5920c",
+      "seed": 4456455,
+      "bytes": 41393,
+      "sha256": "72e9d254aeea6bde5d606e888ee06fc761b460900170979b6e84ce1219f36a43",
       "design": {
-        "id": 9,
+        "id": 7,
         "name": "两岸接力",
         "total": 156
       },
@@ -848,19 +798,19 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     },
     {
-      "id": 10,
-      "file": "level-10.json",
+      "id": 8,
+      "file": "level-8.json",
       "pins": 168,
-      "seed": 4390922,
-      "bytes": 44892,
-      "sha256": "c5be9ce6d5b4dff30361fbad9c0b1e11d876cc0de7b59bc347fea1bc3cd32a10",
+      "seed": 4456456,
+      "bytes": 44891,
+      "sha256": "95f6957f523add90598e13728e992fb13d131ff47e372a62e37d55b2227cc01e",
       "design": {
-        "id": 10,
+        "id": 8,
         "name": "花心终局",
         "total": 168
       },
@@ -1027,7 +977,7 @@
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
         "verification": "verified",
         "evidence": [
-          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+          "tests/campaign-r4.test.ts 官方线 Matter 见证回放通过，未使用道具。"
         ]
       }
     }

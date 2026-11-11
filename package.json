@@ -14,7 +14,8 @@
     "build:mapp": "node scripts/build-mapp.mjs",
     "build:mapp:debug": "MINI_APP_DEBUG=1 node scripts/build-mapp.mjs",
     "preview:mapp": "node scripts/serve-mapp-preview.mjs",
-    "check:mapp": "node scripts/check-mapp.mjs"
+    "check:mapp": "node scripts/check-mapp.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "phaser": "^3.90.0",

@@ -33,7 +33,22 @@ export function remapR3Unlocked(unlocked:number,completed:number[]=[]):number{
   const mapped=unlocked<=1?unlocked:unlocked<=4?2:unlocked-2;
   return Math.min(CAMPAIGN_COUNT+1,Math.max(1,mapped,...completed.map(id=>id+1)));
 }
+export const DAILY_EPOCH_DAY=18262;
+export function utcDateString(now=new Date()):string{
+  return new Date(now.getTime()).toISOString().slice(0,10);
+}
+export function dailyDayNumber(date:string):number{
+  return Math.floor(Date.parse(date+'T00:00:00Z')/86400000)-DAILY_EPOCH_DAY;
+}
+export function dailyDateFromAttempt(attempt:number):string{
+  return new Date((Math.max(0,attempt)+DAILY_EPOCH_DAY)*86400000).toISOString().slice(0,10);
+}
 export function dailyPractice(now=new Date()):{theme:number;attempt:number;date:string}{
-  const date=now.toISOString().slice(0,10),day=Math.floor(Date.parse(date+'T00:00:00Z')/86400000)-18262;
+  const date=utcDateString(now),day=dailyDayNumber(date);
   return{theme:2+((day%7)+7)%7,attempt:Math.max(0,day),date};
+}
+/** 精修局的主题与尝试号若恰好等于该日的共享种子，就是当天那一局（离线也可判定）。 */
+export function isDailyBoard(theme:number,attempt:number,at=new Date(dailyDateFromAttempt(attempt)+'T12:00:00Z')):boolean{
+  const daily=dailyPractice(at);
+  return daily.theme===theme&&daily.attempt===attempt;
 }

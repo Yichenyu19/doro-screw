@@ -1,4 +1,3 @@
-import {occupiedBuffer} from './core';
 import {isScrewExposed,remainingOnBoard} from './geometry';
 import {COLOR_NAMES} from './types';
 import type {GameEvent,GameState,LevelDef} from './types';
@@ -23,31 +22,43 @@ function boxText(state:GameState):string{
   const names=state.boxes.map(b=>b.color).filter((c):c is NonNullable<typeof c>=>!!c).map(c=>COLOR_NAMES[c]);
   return names.length?names.join('和'):'当前盒色';
 }
-export function teachingTip(level:LevelDef,state:GameState,events:GameEvent[],seen:string[]):string|null{
-  if(seen.includes('skip'))return '';
+export interface TeachingCue {key:string;text:string}
+function take(seen:string[],key:string,text:string):TeachingCue|null{
+  return seen.includes(key)?null:{key,text};
+}
+/** 每个关键事件只说一次；没有新事件时返回 null，由界面把旧提示清掉。 */
+export function teachingCue(level:LevelDef,state:GameState,events:GameEvent[],seen:string[]):TeachingCue|null{
+  if(seen.includes('skip'))return null;
   const campaign=level.mode==='campaign'&&(level.contentRevision??0)>=2;
   if(campaign&&level.id===1){
-    if(state.moves===0)return `盒子要${boxText(state)}，这两种已经露出来了。先点它们。`;
-    if(events.some(e=>e.type==='box-completed')&&state.stats.boxesCompleted===1)return '同色三颗就装满了。下一盒接着收。';
-    if(events.some(e=>e.type==='board-released'&&e.remaining===1&&e.boardId.endsWith('-gate')))return '中间这块板还留着一颗，它会自己摆开。';
-    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return '同色盒子来了，孔里的钉会自己回去。';
-    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return '先放在孔里也没关系，同色盒来了会接回去。';
-    return '先点和上面盒子一样的颜色。';
+    if(state.moves===0)return take(seen,'l1-open',`盒子要${boxText(state)}，这两种已经露出来了。先点它们。`);
+    if(events.some(e=>e.type==='box-completed')&&state.stats.boxesCompleted===1)return take(seen,'l1-box','同色三颗就装满了。下一盒接着收。');
+    if(events.some(e=>e.type==='board-released'&&e.remaining===1&&e.boardId.endsWith('-gate')))return take(seen,'l1-hinge','中间这块板还留着一颗，它会自己摆开。');
+    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return take(seen,'l1-refill','同色盒子来了，孔里的钉会自己回去。');
+    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return take(seen,'l1-buffer','先放在孔里也没关系，同色盒来了会接回去。');
+    return null;
   }
   if(campaign&&level.id===2&&(level.contentRevision??0)>=4){
-    if(state.moves===0)return `120 颗的墙。先看盒子要的是${boxText(state)}。过不去用免费辅助。`;
-    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return '同色钉接回去了。先装箱，再看下一座桥。';
-    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return '先放在孔里也行。空孔要省着花。';
-    if(events.some(e=>e.type==='board-released'&&e.remaining===0))return '桥板落下了，两边的盒色露出来了。先装箱。';
-    return '先看当前盒色，再决定空孔花在哪座桥。';
+    if(state.moves===0)return take(seen,'l2-open',`120 颗的墙。先看盒子要的是${boxText(state)}。过不去用免费辅助。`);
+    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return take(seen,'l2-refill','同色钉接回去了。先装箱，再看下一座桥。');
+    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return take(seen,'l2-buffer','先放在孔里也行。空孔要省着花。');
+    if(events.some(e=>e.type==='board-released'&&e.remaining===0))return take(seen,'l2-bridge','桥板落下了，两边的盒色露出来了。先装箱。');
+    return null;
   }
   if(campaign&&level.id===2){
-    if(state.moves===0)return `这座桥上的三颗会先占三个空孔。先看盒子要的是${boxText(state)}，再决定拆不拆桥。`;
-    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return '同色钉接回去了，空孔腾出来了。开桥前先看还剩几孔。';
-    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return '这两颗会先在孔里等着。这座桥要占三孔。';
-    if(events.some(e=>e.type==='board-released'&&e.remaining===0))return '桥板落下后，两边的盒色会一起露出来。先装箱。';
-    return '先看当前盒色，再决定空孔花在桥上还是两边。';
+    if(state.moves===0)return take(seen,'l2-r3-open',`这座桥上的三颗会先占三个空孔。先看盒子要的是${boxText(state)}，再决定拆不拆桥。`);
+    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return take(seen,'l2-r3-refill','同色钉接回去了，空孔腾出来了。开桥前先看还剩几孔。');
+    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return take(seen,'l2-r3-buffer','这两颗会先在孔里等着。这座桥要占三孔。');
+    if(events.some(e=>e.type==='board-released'&&e.remaining===0))return take(seen,'l2-r3-bridge','桥板落下后，两边的盒色会一起露出来。先装箱。');
+    return null;
   }
-  if(events.some(e=>e.type==='group-revealed'))return '新的一层露出来了。先看当前盒色。';
+  if(events.some(e=>e.type==='group-revealed'))return take(seen,'reveal-'+state.levelId+'-'+(state.revealState?.opened.length??0),'新的一层露出来了。先看当前盒色。');
   return null;
+}
+export function teachingTip(level:LevelDef,state:GameState,events:GameEvent[],seen:string[]):string|null{
+  if(seen.includes('skip'))return '';
+  return teachingCue(level,state,events,seen)?.text??null;
+}
+export function teachingStageKey(level:LevelDef):string{
+  return `stage-${level.contentRevision??1}-${level.mode}-${level.id}`;
 }

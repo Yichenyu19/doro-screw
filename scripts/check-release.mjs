@@ -120,7 +120,7 @@ async function clearAllStorage(page){
   });
 }
 
-const SFX_FILES=['pick','loosen','arrive-0','arrive-1','arrive-2','box','refill','fall','reveal','tool','blocked','chain','win','wall'].map(name=>'sfx/'+name+'.ogg');
+const SFX_FILES=['pick','loosen','arrive-0','arrive-1','arrive-2','box','refill','fall','reveal','tool','blocked','chain','win','wall','undo','ui','album','full'].map(name=>'sfx/'+name+'.ogg');
 const R4_FILES=['manifest.json',...Array.from({length:8},(_,i)=>'level-'+(i+1)+'.json')].map(name=>'campaign/r4/'+name);
 
 async function assertPack(distDir){

@@ -126,7 +126,7 @@ export function writeJournal(progress:unknown,run:RunCheckpoint|null):boolean {
   let local=false;
   for(const item of outstanding.values())if(!item.local){try{localStorage.setItem(OUTBOX+item.delta.sequence,JSON.stringify(item.delta));item.local=true;}catch{}}
   try{localStorage.setItem(OUTBOX+delta.sequence,JSON.stringify(delta));local=true;}catch(error){lastError=String(error);}
-  notify(local?'saving':'error',local?'':'同步恢复记录未写入，请保持页面开启或导出备份。');queueCommit(delta,local);return local;
+  notify('saving',local?'':'浏览器空间不足，正在尝试备用存储。');queueCommit(delta,local);return local;
 }
 export async function flushJournal():Promise<void>{await pending;}
 export async function archiveRecovery(text:string):Promise<void>{

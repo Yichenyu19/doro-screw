@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync,readdirSync} from 'node:fs';
 import path from 'node:path';
 
-const SFX=['pick','loosen','arrive-0','arrive-1','arrive-2','box','refill','fall','reveal','tool','blocked','chain','win','wall'];
+const SFX=['pick','loosen','arrive-0','arrive-1','arrive-2','box','refill','fall','reveal','tool','blocked','chain','win','wall','undo','ui','album','full'];
 
 test('发行复制脚本带修订4战役和音效，构建会先清空 dist',()=>{
   const copy=readFileSync('scripts/copy-release-assets.mjs','utf8');
@@ -24,7 +24,7 @@ test('发行复制脚本带修订4战役和音效，构建会先清空 dist',()=
   assert.match(check,/SFX_FILES/);
 });
 
-test('源码里的十四个短音效都在 public/sfx，可见名称已统一为修订4',()=>{
+test('源码里的十八个短音效都在 public/sfx，可见名称已统一为修订4',()=>{
   for(const name of SFX){
     assert.equal(existsSync(path.join('public/sfx',name+'.ogg')),true,name+' 缺失');
   }

@@ -334,40 +334,80 @@ export function getCampaignLevel(id:number):LevelDef{
     level.id=id;level.seed=0x440000+id;level.contentRevision=4;level.name=CAMPAIGN_NAMES[id-1];
     if(id===3){
       // 手作：前三段底座略高于顶盖，贪心先装箱会占满孔开不出顶盖。后两段中梁略抬，先拆完南桥同色再点最高层会卡在北桥外。
-      for(const boardId of ['r2-l3-a1-base','r2-l3-a2-base','r2-l3-a3-base']){
+      for(const boardId of ['r2-l3-a1-base','r2-l3-a3-base']){
         const base=level.boards.find(board=>board.id===boardId);
         if(base)base.depth+=1.2;
       }
+      // 第二段底座中等抬升：既要让提前进入第二段再优先装满玫瑰底座的路线会卡住，又要留下一部分中档能先收掉本段剩下的黄钉。
+      const secondBase=level.boards.find(board=>board.id==='r2-l3-a2-base');
+      if(secondBase)secondBase.depth+=1.0;
       for(const boardId of ['r2-l3-a4-middle','r2-l3-a5-middle']){
         const middle=level.boards.find(board=>board.id===boardId);
         if(middle)middle.depth+=1.2;
       }
+      // 下一段顶盖下移，压到本段底座和两侧云板底下。官方线清完本段再开顶盖；中档若提前拆开两侧立板，也要先完成本段边角，不能立刻去装箱下一段的同色黄钉。
+      const cap=level.boards.find(board=>board.id==='r2-l3-a2-cap');
+      if(cap)cap.y+=60;
+      // 第二段右板靠上的一颗绿钉略移到本段花心遮挡范围内：中档在花心还在时只能看见另一颗，提前伸手的诱惑还在，但不至于几乎总会伸手。
+      const right=level.boards.find(board=>board.id==='r2-l3-a2-right');
+      const upper=right?.screws.find(screw=>screw.y<-40);
+      if(upper){upper.x+=25;upper.y+=25;}
+    }
+    if(id===4){
+      // 第五段中心板略上移，左侧棕钉压在第四段东南角下、右侧棕钉压在西桥下。官方线清完这些边角后再开中心板；中档若边角还在就去装箱顶上红钉，后面会卡住。
+      const center=level.boards.find(board=>board.id==='r2-l4-a5-center');
+      if(center)center.y-=35;
+    }
+    if(id===5||id===6){
+      // 下一段竖板上居中的青钉移到本段西南角底下。开局不再露出当前盒色；官方线先拆本段北桥，清完边角后再装箱这段青钉。
+      const prefix=id===5?'r2-l5':'r2-l6';
+      const vertical=level.boards.find(board=>board.id===prefix+'-a2-vertical');
+      const mid=vertical?.screws.find(screw=>Math.abs(screw.x)<1e-6&&Math.abs(screw.y)<1e-6);
+      if(mid)mid.y=-35;
     }
     if(id===5){
-      // 第4段锁板略降，减少“先拆最高锁板”的误导，让交叉后进入铰链窗的分叉稍可看清。官方线仍先开铰链。
+      // 第4段锁板只略低于原高度、仍略高于铰链：官方线仍先开铰链；中档若先拆这块略高的锁板，会在这一段卡住。
       const lock=level.boards.find(board=>board.id==='r2-l5-a4-h0-lock');
-      if(lock)lock.depth-=0.8;
+      if(lock)lock.depth-=0.2;
     }
     if(id===6){
-      // 终局锁板再抬一点，留给下一层的最后一窗需要先开铰链/窗口而不是锁板。
+      // 终局锁板再抬一点，留给下一层的最后一窗需要先开铰链/窗口而不是锁板。比第5关略紧。
       const lock=level.boards.find(board=>board.id==='r2-l6-a6-lock');
-      if(lock)lock.depth+=1.0;
+      if(lock)lock.depth+=1.6;
+    }
+    if(id===7){
+      // 下一段铰链下移，压在本段对侧铰链底下；锁板下移，压在本段对侧铰链底下。官方线清完本段后再开下一段；中档若本段还没收完就伸手锁板，容易卡住。
+      const hinge=level.boards.find(board=>board.id==='r2-l7-a2-h0-hinge');
+      if(hinge)hinge.y+=20;
+      const lock=level.boards.find(board=>board.id==='r2-l7-a2-h0-lock');
+      // 锁板本体不动，只把三颗钉移到本段收尾板能挡住的位置。官方线清完收尾板后再拆这些钉。
+      if(lock){
+        const spots=[[50,5],[70,15],[40,-10]];
+        lock.screws.forEach((screw,index)=>{const spot=spots[index];if(spot){screw.x=spot[0];screw.y=spot[1];}});
+      }
     }
     if(id===8){
-      // 回马枪中心盖前的南板略抬，终局锁板略抬：更强的“先别装满 / 先开窗”。
+      // 下一段铰链同样下移，锁板同样下移，压在开场对侧铰链下，让中档不必几乎全军覆没。南板和终局锁板仍略抬，但比原先少一点。
+      const hinge=level.boards.find(board=>board.id==='r2-l8-window-h0-hinge');
+      if(hinge)hinge.y+=20;
+      const nextLock=level.boards.find(board=>board.id==='r2-l8-window-h0-lock');
+      if(nextLock){
+        const spots=[[50,5],[70,15],[40,-10]];
+        nextLock.screws.forEach((screw,index)=>{const spot=spots[index];if(spot){screw.x=spot[0];screw.y=spot[1];}});
+      }
       const south=level.boards.find(board=>board.id==='r2-l8-reply-south');
-      if(south)south.depth+=0.8;
-      const lock=level.boards.find(board=>board.id==='r2-l8-last-lock');
-      if(lock)lock.depth+=0.4;
+      if(south)south.depth+=0.4;
+      const lastLock=level.boards.find(board=>board.id==='r2-l8-last-lock');
+      if(lastLock)lastLock.depth+=0.2;
     }
     const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
     const extras:Record<number,string>={
-      3:'前三段底座和后两段中梁略抬，避免只点最上层同色就能过。',
-      4:'开局与前段保持“先别装满”的中心盖结构，不额外加针。',
-      5:'第4段锁板略降，交叉进入铰链窗时少一层误导。',
-      6:'终局锁板再抬，最后一窗要先开路。',
-      7:'开局铰链窗结构保持，不额外加针。',
-      8:'回马枪南板和终局锁板略抬，先别装满、先开窗。',
+      3:'前三段底座和后两段中梁略抬；第二段顶盖下移，压在第一段底座和边角下，避免提前装箱下一段同色。',
+      4:'开局保持中心盖结构；第五段中心板上移，压在第四段边角下，边角还在时先装箱顶上红钉会卡住。',
+      5:'开局把下一段当前盒色竖板压在边角下；第4段锁板略高于铰链，先拆锁板会卡住。',
+      6:'开局把下一段当前盒色竖板压在边角下；终局锁板再抬一点，最后一窗要先开路。',
+      7:'下一段铰链下移，压在本段对侧铰链下，避免过早伸进下一段。',
+      8:'下一段铰链下移压在对侧铰链下；回马枪南板和终局锁板略抬。',
     };
     const extra=extras[id]??('修订 4 主线：布局与修订 2 第 '+id+' 关相同。');
     return annotateCampaign(level,id,[extra,...notes],4);

@@ -70,6 +70,8 @@ export function scheduleRecipe(context:BaseAudioContext,destination:AudioNode,re
 }
 
 export interface PlayOptions{tone?:number}
+/** 小彩蛋与仪式感用的合成短句：分类沿用音效总线命名，便于并入分类增益链。 */
+export interface CueOptions{bus?:'action'|'impact'|'reward'|'warn'|'ui';gain?:number;delay?:number}
 
 /** 短音效在第一次用户手势后启用；音频失败不影响任何游戏动作。 */
 export class GameAudio {
@@ -130,6 +132,20 @@ export class GameAudio {
     for (const voice of this.voices) { try {voice.stop();} catch { /* 音符可能已经结束。 */ } }
     this.voices.clear();
     if (this.context?.state==='running') void this.context.suspend().catch(()=>{});
+  }
+
+  /** 播放一段现场合成的短句（不引入新素材）。与 play 共享开关和隐藏页静音。 */
+  cue(recipe:SynthVoice[],options:CueOptions={}):void {
+    if (!this.enabled || document.hidden || !recipe.length) return;
+    this.unlock();
+    const context=this.context;
+    if (!context || context.state!=='running') return;
+    try {
+      const gain=context.createGain();gain.gain.value=Math.max(0,Math.min(1,options.gain??1));gain.connect(context.destination);
+      scheduleRecipe(context,gain,recipe,context.currentTime+Math.max(0,options.delay??0));
+      const end=recipe.reduce((max,v)=>Math.max(max,v.start+v.dur),0)+(options.delay??0)+.1;
+      window.setTimeout(()=>{try{gain.disconnect();}catch{ /* already gone */ }},end*1000);
+    } catch { /* 合成失败不影响游戏。 */ }
   }
 
   play(name:SoundName,options:PlayOptions={}):void {

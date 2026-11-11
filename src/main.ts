@@ -16,6 +16,7 @@ import { PresentationDirector } from './presentation';
 import {renderTrays} from './hud-trays';
 import { ScrewArtwork } from './collection';
 import { COLORS, COLOR_NAMES, type Action, type GameEvent, type GameState, type LevelDef } from './types';
+import { createDelight } from './delight';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
 const loaded=await loadSaveAsync();
@@ -54,6 +55,7 @@ let artPointerClickTarget:HTMLElement|null=null;
 let saveFrame=0,saveTask=0;
 let rulesPrepared=false;
 const htmlCache=new WeakMap<Element,string>();
+const delight=createDelight({audio,reduced:()=>save.settings.reducedMotion,canIdle:()=>mode==='game'&&!!engine&&!!view&&engine.state.phase==='playing'&&!modal&&!inspecting&&!document.hidden,react:index=>react(index)});
 const occupied=(state:GameState)=>state.buffer.filter(id=>id!==null).length;
 function setHtml(selector:string,html:string):void {const target=document.querySelector(selector);if(target&&htmlCache.get(target)!==html){target.innerHTML=html;htmlCache.set(target,html);}}
 function setText(selector:string,value:string):void{const target=document.querySelector(selector);if(target&&target.textContent!==value)target.textContent=value;}
@@ -157,7 +159,7 @@ function showHome():void {
     </section>
     <footer class="home-footer"><span>Doro · 打个螺丝 · 修订4 · ${progress} / ${CAMPAIGN_COUNT}</span><button data-action="save-status" data-save-status>已保存</button></footer>
   </main>${shellAccessories()}`;
-  updateSaveStatus();
+  updateSaveStatus();delight.onLeave();delight.attachHome(app);
 }
 
 function gameShell():void {
@@ -194,7 +196,7 @@ async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,versi
     if(!saved){save.attempts[key]=Math.max(save.attempts[key]??0,attempt+1);save.attemptCounter++;}
     presenter=new PresentationDirector(save.settings,{render:()=>updateHUD(),screenPoint:point=>view?.screenPoint(point)??null,boxSound:()=>{audio.play('box');react(1);},arriveSound:()=>{const filled=Math.max(0,...(engine?.state.boxes.map(b=>b.screws.length)??[1]));audio.play('arrive',{tone:Math.min(2,Math.max(0,filled-1))});},refillSound:()=>audio.play('refill')});presenter.reset(active.snapshot());
     const mounted=await renderer.mountGame(document.querySelector<HTMLElement>('#game-canvas')!,active,save.settings,{onPick:pick,onBoard:meltBoard,onReveal:events=>{services.cancelHint();hintSequence++;presenter?.reset(active.snapshot());audio.play('reveal');showBoardTip('新的一层露出来了。先看当前盒色。');saveNow();},onAmbiguous:()=>{showBoardTip('两颗钉靠得太近，先放大再拆。');const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu)menu.hidden=false;},onBlocked:ids=>{audio.play('blocked');showBoardTip(ids.length?'先移开闪动的玻璃，再拆下面这颗。':'先等玻璃摆稳。');},onFall:()=>audio.play('fall'),onInvalid:()=>showBoardTip('这颗钉被挡住了，或者位置变了。'),onInspect:text=>{tickClock();inspecting=!!text;lastClockTime=performance.now();const panel=document.querySelector<HTMLElement>('#board-inspect');if(panel){panel.hidden=!text;panel.textContent=text??'';}},onCamera:zoom=>{const label=document.querySelector('#zoom-value');if(label)label.textContent=Math.round(zoom*100)+'%';presenter?.flush();}});
-    if(token!==generation){mounted.destroy();return;}view=mounted;lastClockTime=performance.now();document.querySelector('#board-loading')?.remove();view.setPaused(document.hidden||!!modal);presenter.prepareLayout();saveNow();
+    if(token!==generation){mounted.destroy();return;}view=mounted;lastClockTime=performance.now();document.querySelector('#board-loading')?.remove();delight.onLevelStart(prepared,active.state);view.setPaused(document.hidden||!!modal);presenter.prepareLayout();saveNow();
     if(active.state.phase==='stuck')showRescue();else updateTeaching();if(save.settings.sound)audio.unlock();
   }catch(error){if(token!==generation)return;openModal('error',`${doro(3,'dialog-doro')}<h2>这一局还没准备好</h2><p>盘面记录仍保留着。请重新加载；如果仍未完成，可以先保存退出。</p><p class="small-note">${escapeText(error instanceof Error?error.message:'资源暂时不可用')}。</p>${artButton('retry','重新加载',{icon:12})}${artButton('home','保存退出',{secondary:true})}`,{closable:false});}
 }
@@ -259,6 +261,7 @@ function react(index:number):void {
 function pick(id:string):void {
   if (!engine || modal || meltMode) return;
   audio.unlock();
+  delight.notePickPoint(view?.getScrewScreenPosition(id)??null);
   runAction({type:'pick',screwId:id});
 }
 
@@ -269,6 +272,7 @@ function runAction(action:Action):void {
   const result=engine.dispatch(action);
   if (!result.ok) {if(result.reason)toast(result.reason);audio.play('blocked');return;}
   if(action.type==='pick'){const picked=engine.state.screws.find(s=>s.id===action.screwId)!;const back=result.events.filter(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box').length;lastDecision=`刚拆的${COLOR_NAMES[picked.color]}钉${picked.place==='buffer'?'占用了一个暂存孔':'已进入收集流程'}；${back?'本次回流腾出 '+back+' 个孔':'本次没有暂存钉回流'}。`;}
+  if(action.type==='pick')delight.onPick(engine.state,action.screwId,result.events);
   view?.setHint(null);
   view?.sync(result.events);
   const after=engine.snapshot();
@@ -283,8 +287,9 @@ function runAction(action:Action):void {
   saveSoon(after);
   const active=engine,token=generation;
   if(engine.state.phase==='won'){
-    void (async()=>{await presenter?.whenIdle();await view?.whenSettled(1800);if(engine===active&&generation===token&&!modal)showWin();})();
+    void (async()=>{await presenter?.whenIdle();await view?.whenSettled(1800);if(engine===active&&generation===token&&!modal){const wall=await delight.beforeWin(level,engine.state);if(engine===active&&generation===token&&!modal)showWin(!wall);}})();
   }else if(engine.state.phase==='stuck'){
+    delight.onStuck(level);
     void (async()=>{await presenter?.whenIdle();if(engine===active&&generation===token&&engine.state.phase==='stuck'&&!modal)showRescue();})();
   }
 }
@@ -294,7 +299,7 @@ function meltBoard(id:string):void {
   meltMode=false;
   view?.setMeltMode(false);
   runAction({type:'melt',boardId:id});
-  react(4);
+  react(4);delight.onAssist();
   toast('玻璃融化啦，螺丝还在原位。');
 }
 
@@ -351,7 +356,8 @@ function showTools(rescue=false):void {
   const wall=level?.mode==='campaign'&&level.id===2;
   const title=rescue?(wall?'别人这时候在看广告。这里不用。':'先腾出一点空间。'):(wall?'这关是墙，过不去很正常。':'要用挂，就用。');
   const blurb=wall?'用了会记成「完成（用了挂）」。':'用了会记进成绩。';
-  openModal(rescue?'rescue':'tools',`${rescue||wall?doro(rescue?3:0,'dialog-doro'):''}<h2>${title}</h2>${why}<p>${blurb}</p><div class="rescue-options">${rewindButton}${rescue&&engine.canUndo?'<button class="rescue-option" data-action="undo-rescue"><strong>撤回上一步</strong><span>换个选择 · 记一次撤回</span></button>':''}${rows}${rescue?'':'<button class="rescue-option" data-action="use-melt"><strong>融化一块玻璃</strong><span>选出一块，螺丝留在原处</span></button>'}</div><p class="small-note">独立解出：没用强辅助、没看具体目标，允许撤回。零回退还要求一次都没撤。</p>${artButton('home','保存退出',{secondary:true})}`,{closable:!rescue});
+  openModal(rescue?'rescue':'tools',`${rescue||wall?doro(rescue?3:0,'dialog-doro'):''}${rescue?'':delight.toolsPlate(wall)}<h2>${title}</h2>${why}<p>${blurb}</p><div class="rescue-options">${rewindButton}${rescue&&engine.canUndo?'<button class="rescue-option" data-action="undo-rescue"><strong>撤回上一步</strong><span>换个选择 · 记一次撤回</span></button>':''}${rows}${rescue?'':'<button class="rescue-option" data-action="use-melt"><strong>融化一块玻璃</strong><span>选出一块，螺丝留在原处</span></button>'}</div><p class="small-note">独立解出：没用强辅助、没看具体目标，允许撤回。零回退还要求一次都没撤。</p>${artButton('home','保存退出',{secondary:true})}`,{closable:!rescue});
+  if(!rescue)delight.decorateTools(document.querySelector('#modal-root')!);
 }
 function showHint():void {
   if(!engine)return;view?.capturePhysics();const available=engine.available(),matching=available.filter(s=>engine!.state.boxes.some(b=>b.color===s.color)),free=engine.state.capacity-occupied(engine.state);
@@ -565,7 +571,7 @@ function dispatchButton(button:HTMLElement):void {
   if(action?.startsWith('use-')){
     const type=action.slice(4);modal=null;modalReturn=null;document.querySelector('#modal-root')!.innerHTML='';view.setPaused(document.hidden);lastClockTime=performance.now();
     if(type==='melt'){meltMode=true;view.setMeltMode(true);view.setHint(null);showBoardTip('点一块玻璃融化它。再次打开辅助可取消。');return;}
-    if(type==='expand-box'||type==='expand-buffer'||type==='clear-buffer'){runAction({type});react(4);return;}
+    if(type==='expand-box'||type==='expand-buffer'||type==='clear-buffer'){runAction({type});react(4);delight.onAssist();return;}
   }
   if(modal)return;
 
@@ -583,6 +589,7 @@ app.addEventListener('click',event=>{
 });
 app.addEventListener('pointerdown',event=>{
   if(event.target instanceof Element&&!event.target.closest('.board-camera')){const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu){menu.hidden=true;document.querySelector('[data-action="zoom-toggle"]')?.setAttribute('aria-expanded','false');}}
+  delight.noteInput();
   if(!event.isPrimary||event.button!==0)return;
   if(mode==='game'&&view)audio.unlock();
   const target=event.target instanceof Element?event.target.closest<HTMLElement>('[data-action="art-shoot"]'):null;
@@ -602,6 +609,7 @@ app.addEventListener('error',event=>{
   image.insertAdjacentElement('afterend',retry);
 },true);
 document.addEventListener('keydown',event=>{
+  delight.noteInput();
   if (event.key==='Escape') {
     if(mode==='game'&&!view){showHome();return;}
     if(modal==='rescue'||modal==='win'||modal==='error')return;
@@ -633,7 +641,7 @@ showHome();
 if(loaded.warning)toast(loaded.warning,5500);
 
 if(import.meta.env.DEV||import.meta.env.MODE==='verification'||new URLSearchParams(location.search).has('check')) {
-  Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,pick,get save(){return save;},get artwork(){return artwork;}},configurable:true});
+  Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,pick,get save(){return save;},get artwork(){return artwork;},delight},configurable:true});
 }
 
 

@@ -21,8 +21,8 @@ test('修订3生成器仍保留短桥关，供旧挑战码回放，不再作为�
   assert.equal(getCampaignLevel(2).contentRevision,4);
 });
 
-test('第一关开局就有当前盒色可点，教学不再把盒色藏起来考人',()=>{
-  const level=getCampaignLevel(1),game=new GameEngine(level),state=game.state;
+test('修订3第一关仍是当时的开局，当前主线不再走这套提示',()=>{
+  const level=getCampaignLevelR3(1),game=new GameEngine(level),state=game.state;
   const matching=game.available().filter(s=>state.boxes.some(b=>b.color===s.color));
   assert.ok(matching.length>=3,`开局可点盒色仅 ${matching.length}`);
   assert.ok(new Set(matching.map(s=>s.color)).size>=2);

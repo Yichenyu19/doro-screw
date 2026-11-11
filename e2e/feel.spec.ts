@@ -213,32 +213,15 @@ test.describe('手感与稳定性',()=>{
 });
 
 test.describe('教学交互',()=>{
-  test('新玩家第一关开场提示短、靠高亮教盒色，且同一句不反复出现',async({page})=>{
+  test('新玩家第一关开场没有说明文字',async({page})=>{
     await startFresh(page,1);
     await page.screenshot({path:resolve(shots,'teach-open.png')});
     const opening=await tip(page);
-    expect(opening.length).toBeLessThanOrEqual(28);
-    expect(opening).toMatch(/已经露出来了|盒子/);
-    const highlighted=await page.locator('#box-tray.guide-match, #box-tray.guide-box-pulse').count();
-    expect(highlighted).toBeGreaterThan(0);
-    const available=await page.evaluate(()=>window.__DORO__!.engine.available().map(s=>s.id));
-    const seen=new Set<string>();
-    seen.add(opening);
-    for(const id of available.slice(0,2)){
-      const before=await tip(page);
-      await page.evaluate((screwId)=>window.__DORO__!.pick(screwId),id);
-      await page.waitForTimeout(200);
-      const after=await tip(page);
-      if(after&&after===before)seen.add(after);
-      else if(after)seen.add(after);
-    }
+    expect(opening).toBe('');
+    expect(opening).not.toMatch(/免费辅助|已经露出来/);
     const repeats=await page.evaluate(()=>window.__DORO__!.save.tutorialSeen);
-    expect(repeats.includes('l1-open')).toBe(true);
-    const afterMore=await tip(page);
-    // 没有新事件时不应继续挂着开场长句以外的重复口号。
-    expect(afterMore).not.toMatch(/同色进盒，别的颜色先暂存/);
-    expect(afterMore.length).toBeLessThanOrEqual(28);
-    writeFileSync(resolve(shots,'teach-tips.json'),JSON.stringify({opening,afterMore,seen:[...seen],tutorialSeen:repeats},null,2));
+    expect(repeats.includes('l1-open')).toBe(false);
+    writeFileSync(resolve(shots,'teach-tips.json'),JSON.stringify({opening,tutorialSeen:repeats},null,2));
   });
 });
 

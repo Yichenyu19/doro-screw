@@ -41,7 +41,7 @@ test('修订4主线按新曲线发材料，重玩不补发，旧存档不追溯�
   const data=freshSave();
   assert.equal(awardVictory(data,wonCampaign(1)),90);
   assert.equal(data.materialBalance,90);
-  assert.equal(data.totalScrews,15);
+  assert.equal(data.totalScrews,30);
   const again=wonCampaign(1);again.runId='run-replay';
   assert.equal(awardVictory(data,again),0);
   assert.equal(data.materialBalance,90);

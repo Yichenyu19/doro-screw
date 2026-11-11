@@ -138,7 +138,7 @@ function showHome():void {
   app.innerHTML=`<main class="home-screen">
     <img class="scene-backdrop" src="${assetUrl('backdrop.png')}" alt="" fetchpriority="high">
     <nav class="home-top"><span class="club-label">DORO'S SCREW CLUB</span><button class="icon-button" data-action="settings" aria-label="设置">${icon(save.settings.sound?5:6)}</button></nav>
-    <header class="home-title"><span class="eyebrow">先学会留支点，再学一座桥。</span><h1><img class="home-logo" src="${assetUrl('logo.png')}" alt="DORO 打个螺丝" fetchpriority="high"></h1><p class="home-quantity">从 15 颗起手，一步一步拆。</p></header>
+    <header class="home-title"><span class="eyebrow">先装满一盒，再学一座桥。</span><h1><img class="home-logo" src="${assetUrl('logo.png')}" alt="DORO 打个螺丝" fetchpriority="high"></h1><p class="home-quantity">从 15 颗起手，一步一步拆。</p></header>
     <div class="home-character" aria-label="一只准备拆螺丝的 Doro">${doro(1,'home-doro')}${sprite('fx',2,'home-heart')}${sprite('heads',0,'floating-screw screw-one')}${sprite('heads',4,'floating-screw screw-two')}<span class="character-note">你先拆，我看着。</span></div>
     <section class="home-actions" aria-label="开始游戏">
       ${artButton(save.current?'continue':progress===CAMPAIGN_COUNT?'random-menu':'start',save.current?'继续拆！':progress===CAMPAIGN_COUNT?'来一局主题挑战':'开始拆！',{className:'start-button',icon:12})}

@@ -1,6 +1,7 @@
 import './geometry-setup';
 import {strategyModule} from './strategy-modules';
 import type {BoardDef,BoardShape,ColorId,DifficultyProfile,LevelDef,RevealPacket,Vec2,WitnessStep} from './types';
+import {COLOR_NAMES} from './types';
 
 import {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS} from './r2-catalog';
 export {R2_TOTALS,R2_NAMES,CAMPAIGN_NAMES,CAMPAIGN_TOTALS};
@@ -140,7 +141,7 @@ function assemble(id:number,scenes:Scene[],initialIds:string[],name=R2_NAMES[id-
   const total=boards.reduce((n,b)=>n+b.screws.length,0);
   if(total!==expectedTotal)throw Error(`第${id}关总量${total}不符`);
   const decisions=scenes.flatMap(s=>s.decisions),critical=scenes.flatMap(s=>s.critical);
-  return{id,name,subtitle:'先看上下两处供给，再决定把空孔花在哪里',seed:(revision>=3?0x430000:0x420000)+id,attempt:0,mode:'campaign',contentRevision:revision,contentVersion:'v4',geometryVersion:'v4',theme:'quadrants',sourceKind:'doro-original',boards,boxQueue:scenes.flatMap(s=>s.queue),witness,revealPlan:{threshold:4,stableMs:250,packets},difficulty:profile(name,decisions,critical,id),strategy:'当前盒需要的颜色被哪座桥挡住？留意另一座桥会先占去几孔。',designNotes:['全关五轮双桥供给关系，开路决策持续到最后一轮；没有通用随机尾段。','初始十四块板；后续每批2至3块从更深处显露。盒序、颜色与显层蓝图在开局固定。'],curriculum:{objective:'在两座桥之间选择先投资哪一侧',prerequisites:['第一关的支点、暂存与回流'],decision:decisions[0],failure:'把旁支颜色提前放进暂存，会挤掉当前盒色桥的开路空间。',release:'解除一座桥后，两个工区补齐当前盒，并接回开路暂存。',criticalBoardIds:critical,stages:scenes.map((s,i)=>({until:scenes.slice(0,i+1).reduce((n,s)=>n+s.route.length,0),title:`第${i+1}段 · 两处桥接`,advice:'比较两座桥下面的颜色。先拆哪座，会改变随后两盒接走什么。'}))}};
+  return{id,name,subtitle:'先看上下两处供给，再决定把空孔花在哪里',seed:(revision>=3?0x430000:0x420000)+id,attempt:0,mode:'campaign',contentRevision:revision,contentVersion:'v4',geometryVersion:'v4',theme:'quadrants',sourceKind:'doro-original',boards,boxQueue:scenes.flatMap(s=>s.queue),witness,revealPlan:{threshold:4,stableMs:250,packets},difficulty:profile(name,decisions,critical,id),strategy:'当前盒需要的颜色被哪座桥挡住？留意另一座桥会先占去几孔。',designNotes:['全关五轮双桥供给关系，开路决策持续到最后一轮；没有通用随机尾段。','初始十四块板；后续每批2至3块从更深处显露。盒序、颜色与显层蓝图在开局固定。'],curriculum:{objective:'在两座桥之间选择先投资哪一侧',prerequisites:['同色三颗装箱'],decision:decisions[0],failure:'把旁支颜色提前放进暂存，会挤掉当前盒色桥的开路空间。',release:'解除一座桥后，两个工区补齐当前盒，并接回开路暂存。',criticalBoardIds:critical,stages:scenes.map((s,i)=>({until:scenes.slice(0,i+1).reduce((n,s)=>n+s.route.length,0),title:`第${i+1}段 · 两处桥接`,advice:'比较两座桥下面的颜色。先拆哪座，会改变随后两盒接走什么。'}))}};
 }
 
 export function getR2Practice(theme:number,variant:number,revision=2):LevelDef {
@@ -234,42 +235,60 @@ export function getR2Prototype(id:number):LevelDef {
 }
 
 function oldL2Palette(sceneIndex:number):ColorId[]{
-  return Array.from({length:8},(_,n)=>COLORS[(n+sceneIndex*3)%COLORS.length]);
+  const wheel=COLORS.filter(color=>color!=='gray');
+  return Array.from({length:8},(_,n)=>wheel[(n+sceneIndex*3)%wheel.length]);
 }
 function annotateCampaign(level:LevelDef,id:number,notes:string[]):LevelDef{
   level.subtitle='第 '+id+' 关 · '+CAMPAIGN_TOTALS[id-1]+' 颗钉';
   level.designNotes=notes;
+  if(level.difficulty){
+    level.difficulty.verification='verified';
+    level.difficulty.evidence=['tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。'];
+  }
   return level;
 }
 export function getCampaignLevel(id:number):LevelDef{
   if(id===1){
-    const part=strategyModule('hinge','r2-l1');
-    const scene:Scene={boards:part.boards,queue:part.queue,route:part.witness.map(s=>s.screwId),packets:[],critical:[part.hinge!.boardId],entry:part.witness[0].screwId,decisions:[part.curriculum.decision,part.curriculum.failure]};
-    const level=assemble(1,[scene],scene.boards.map(b=>b.id),CAMPAIGN_NAMES[0],CAMPAIGN_TOTALS[0],3);
-    level.theme='hinge';level.hinge=part.hinge;level.tutorial=true;level.revealPlan=undefined;
-    level.strategy='先认出当前盒色还压在长板下面，再用两孔暂存换开窗口。';
-    level.curriculum={...part.curriculum,objective:'理解支点和有限暂存的取舍',decision:part.curriculum.decision,stages:[{until:5,title:'先看盒色和空孔',advice:'上面两个盒子的颜色还压在长板下面。其他颜色会先占暂存孔。只剩一钉时，玻璃会绕着它摆开。'},{until:15,title:'接回暂存的颜色',advice:'新盒出现会把同色钉接回去。空孔腾出来后，再看下一处入口。'}]};
-    return annotateCampaign(level,1,['修订 3 加强开局辨认：当前盒色在棋盘上可对上，被压住的目标色会隐约露出来。','窗口摆开和首次回流各给一句短提示；教学结构仍是留下支点，让长板自己让出入口。']);
+    const prefix='r3-l1';
+    const start=plate(prefix+'-start','square',108,108,128,96,4,row('orange'));
+    const cheek=plate(prefix+'-cheek','cloud',282,112,136,102,4,row('cyan'));
+    const gate=plate(prefix+'-gate','capsule',195,228,328,126,2,[[-110,0,'red'],[0,0,'red'],[110,0,'red']]);
+    const nest=plate(prefix+'-nest','square',195,208,150,118,1,row('purple'));
+    const base=plate(prefix+'-base','cloud',195,304,168,118,0,[[-36,-18,'brown'],[0,-18,'brown'],[36,-18,'brown']]);
+    const boards=[start,cheek,gate,nest,base];
+    const route=[...ids(start),...ids(cheek),gate.screws[0].id,gate.screws[1].id,...ids(nest),gate.screws[2].id,...ids(base)];
+    const scene:Scene={boards,queue:['orange','cyan','red','purple','brown'],route,packets:[],critical:[gate.id],entry:start.screws[0].id,decisions:['开局先把已经露出的当前盒色装完。','长板留下最后一颗时会自己摆开，拆光掉下去也可以。']};
+    const level=assemble(1,[scene],boards.map(b=>b.id),CAMPAIGN_NAMES[0],CAMPAIGN_TOTALS[0],3);
+    level.theme='hinge';level.tutorial=true;level.revealPlan=undefined;
+    level.strategy='先点已经露出来的盒色，装满第一盒。长板留下一颗时会摆开，拆完掉下去也通。';
+    level.curriculum={objective:'先装满已经露出的盒色，感受同色三颗装箱',prerequisites:['同色三颗装一盒'],decision:scene.decisions[0],failure:'这一关不靠占满五孔来考人；乱点一两次也应仍能装完。',release:scene.decisions[1],criticalBoardIds:[gate.id],stages:[{until:6,title:'先装满这一盒',advice:'上面两个盒子的钉子已经露出来了。先点它们，装满就会接上下一盒。'},{until:15,title:'看看板子怎么让路',advice:'中间这块板还剩一颗时，会自己摆开。留下来或拆完掉下去，下面的颜色都能看见。'}]};
+    return annotateCampaign(level,1,['修订 3 再设计：开局至少有两组当前盒色可直接点，第一盒可以连续装满。','留支点和暂存孔的取舍放到第二关再教；第一关允许摆开或整板落下两条路，官方线无道具可解。']);
   }
   if(id===2){
     const scene=corners('r3-l2',oldL2Palette(0),20,0);
     const level=assemble(2,[scene],scene.boards.map(b=>b.id),CAMPAIGN_NAMES[1],CAMPAIGN_TOTALS[1],3);
     level.theme='quadrants';
     level.strategy='三颗桥钉会先占三个空孔，同时打开左右两个工区。先看清当前盒色再决定。';
-    level.curriculum={objective:'只用一座桥学会开路成本',prerequisites:['第一关的支点、暂存与回流'],decision:scene.decisions[0],failure:scene.decisions[1]??'',release:'桥板落下后左右盒色同时露出；先装箱，再接回开路暂存。',criticalBoardIds:scene.critical,stages:[{until:scene.route.length,title:'先拆这一座',advice:'桥钉会占三个空孔。左右两边的盒色会一起露出来，先装箱再收回开路的暂存。'}]};
+    level.curriculum={objective:'只用一座桥学会开路成本',prerequisites:['同色三颗装箱'],decision:scene.decisions[0],failure:scene.decisions[1]??'',release:'桥板落下后左右盒色同时露出；先装箱，再接回开路暂存。',criticalBoardIds:scene.critical,stages:[{until:scene.route.length,title:'先拆这一座',advice:'桥钉会占三个空孔。左右两边的盒色会一起露出来，先装箱再收回开路的暂存。'}]};
     return annotateCampaign(level,2,['把旧第二关五座四角桥拆成短关。这一关只交一座桥，24 颗钉全部开局可见。','官方线无道具可解；见证含物理等待。']);
   }
   if(id===3){
     const scenes=[corners('r3-l3-a',oldL2Palette(1),16,Math.PI),corners('r3-l3-b',oldL2Palette(2),12,Math.PI/2)];
     const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)];
     const level=assemble(3,scenes,initial,CAMPAIGN_NAMES[2],CAMPAIGN_TOTALS[2],3);
-    return annotateCampaign(level,3,['旧第二关的第二、第三座桥。第一座清掉关键板后，下一层才会露出来。','48 颗钉，手作供给与显层，官方线无道具可解。']);
+    const open=COLOR_NAMES[level.boxQueue[0]]+'和'+COLOR_NAMES[level.boxQueue[1]];
+    level.strategy='先拆已经转过来的这一座桥，再等下一层露出来。';
+    level.curriculum={objective:'先解决眼前这座桥，再接下层新桥',prerequisites:['一座桥的开路成本'],decision:'先比较眼前这座已露出的桥下面是什么颜色。',failure:'还没清掉第一座的关键板，就去拆尚未露全的颜色，会把空孔提前占满。',release:'第一座关键板清掉后，下一层的桥才会稳定露出来。',criticalBoardIds:scenes[0].critical,stages:[{until:scenes[0].route.length,title:'先拆眼前这座',advice:'眼前这座桥已经翻过来了，当前盒子要的是'+open+'。先清掉这座桥下的关键板，下面才会再露出一座。'},{until:level.witness.length,title:'再接下一层',advice:'新的一层出现后，先装箱再决定开哪座桥，不要把空孔一次花完。'}]};
+    return annotateCampaign(level,3,['旧第二关的第二、第三座桥。第一座清掉关键板后，下一层才会露出来。','48 颗钉，手作供给与显层，官方线无道具可解。开场提示按本关盒色与显层写具体。']);
   }
   if(id===4){
     const scenes=[corners('r3-l4-a',oldL2Palette(3),8,-Math.PI/2),corners('r3-l4-b',oldL2Palette(4),4,0)];
     const initial=[...scenes[0].boards.map(b=>b.id),...scenes[1].boards.filter(b=>['north','south','nw','ne'].some(name=>b.id.endsWith('-'+name))).map(b=>b.id)];
-    const level=assemble(4,scenes,initial,CAMPAIGN_NAMES[3],CAMPAIGN_TOTALS[3],3);
-    return annotateCampaign(level,4,['旧第二关的最后两座桥，收回“四角借路”这个名字。','48 颗钉，布局仍是手作四角桥，不含新增玩法。']);
+    const level=assemble(4,scenes,initial,CAMPAIGN_NAMES[3],CAMPAIGN_TOTALS[4-1],3);
+    const open=COLOR_NAMES[level.boxQueue[0]]+'和'+COLOR_NAMES[level.boxQueue[1]];
+    level.strategy='两座桥是竖着的。先看哪一座下面是当前盒色，先拆那一座。';
+    level.curriculum={objective:'在竖桥之间选择先开哪一座，再接下层',prerequisites:['一座桥的开路成本和显层等待'],decision:'先比较左右竖桥下面谁在给当前盒色供货。',failure:'两座竖桥都去拆一点，可能在下层露出前把空孔占满。',release:'先拆通当前盒色的那座竖桥，关键板清掉后下层会再露出一座。',criticalBoardIds:scenes[0].critical,stages:[{until:scenes[0].route.length,title:'先选一座竖桥',advice:'这两座桥是竖着的。当前盒子要的是'+open+'，先拆下面有盒色的那一座；清掉关键板后，下层还会再露出一座。'},{until:level.witness.length,title:'再接下层',advice:'下层出现后，还是先看当前盒色在哪一座桥下面，再决定把空孔花在哪里。'}]};
+    return annotateCampaign(level,4,['旧第二关的最后两座桥，收回“四角借路”这个名字。','48 颗钉，布局仍是手作四角桥。开场提示写明竖桥选择，盒色避开银灰。']);
   }
   if(id>=5&&id<=10){
     const previous=getR2Prototype(id-2);

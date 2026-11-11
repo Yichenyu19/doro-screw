@@ -2,7 +2,7 @@ export const R2_TOTALS=[15,120,129,135,141,156,156,168] as const;
 export const R2_NAMES=['支点的代价','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局'] as const;
 export const R2_TITLES=R2_NAMES.map((name,index)=>({id:index+1,name,total:R2_TOTALS[index]}));
 export const CAMPAIGN_TOTALS=[15,24,48,48,129,135,141,156,156,168] as const;
-export const CAMPAIGN_NAMES=['支点的代价','先拆一座桥','桥下还有一层','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局'] as const;
+export const CAMPAIGN_NAMES=['先装满一盒','先拆一座桥','桥下还有一层','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局'] as const;
 export const CAMPAIGN_TITLES=CAMPAIGN_NAMES.map((name,index)=>({id:index+1,name,total:CAMPAIGN_TOTALS[index]}));
 export const CAMPAIGN_COUNT=CAMPAIGN_TOTALS.length;
 export const CAMPAIGN_TOTAL_PINS=CAMPAIGN_TOTALS.reduce((n,value)=>n+value,0);

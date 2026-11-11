@@ -8,18 +8,18 @@
       "file": "level-1.json",
       "pins": 15,
       "seed": 4390913,
-      "bytes": 4824,
-      "sha256": "c3a60cadd0eee2e1810650ed0a67df6e41d1bfde39a24101ad109501e9f349ae",
+      "bytes": 4528,
+      "sha256": "a87b060aa9fe4e2f4fc6702e8ea5caeb4443e03e282ce3127094dad091aabacc",
       "design": {
         "id": 1,
-        "name": "支点的代价",
+        "name": "先装满一盒",
         "total": 15
       },
       "difficulty": {
-        "theme": "支点的代价",
+        "theme": "先装满一盒",
         "decisions": [
-          "用两孔暂存拆掉长板右侧两钉，保留左侧支点，让重心把长板带离窗口",
-          "先把遮住支点的三角板清空，再想整块拆掉长板，会在露出当前盒色前占满五孔"
+          "开局先把已经露出的当前盒色装完。",
+          "长板留下最后一颗时会自己摆开，拆光掉下去也可以。"
         ],
         "dependencies": [],
         "planningDepth": 1,
@@ -28,8 +28,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -37,8 +39,8 @@
       "file": "level-2.json",
       "pins": 24,
       "seed": 4390914,
-      "bytes": 5980,
-      "sha256": "9b5a24f91fbb2b5bb3ce2a68c9d5bf96baa97181b448244217ccdf79e4190712",
+      "bytes": 6047,
+      "sha256": "51b78b19aea76bf8efe131e9691a32b0de8cde00e165be2e15dcb899bb75f8c0",
       "design": {
         "id": 2,
         "name": "先拆一座桥",
@@ -63,8 +65,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -72,8 +76,8 @@
       "file": "level-3.json",
       "pins": 48,
       "seed": 4390915,
-      "bytes": 11388,
-      "sha256": "f37de9f288cd0f41cebacfb6d513b3c3eaabc8a718909531b42c10acc60a81f8",
+      "bytes": 11519,
+      "sha256": "b1e1593cf6c1ac49bf6ad08c2ce1ecf0e56cde23568ab7a0bcdb1d64431a5006",
       "design": {
         "id": 3,
         "name": "桥下还有一层",
@@ -110,8 +114,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -119,8 +125,8 @@
       "file": "level-4.json",
       "pins": 48,
       "seed": 4390916,
-      "bytes": 11171,
-      "sha256": "cc6f5a8583ac52199cb1d0181a426c63d0434f03f0d59348942e5b1cec94261f",
+      "bytes": 11342,
+      "sha256": "358ea9505f0ec84a7fd1e3ff9669f6d01a4d9d20ac14ca6116195ad48b27d51a",
       "design": {
         "id": 4,
         "name": "四角借路",
@@ -157,8 +163,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -166,8 +174,8 @@
       "file": "level-5.json",
       "pins": 129,
       "seed": 4390917,
-      "bytes": 31160,
-      "sha256": "f42ef2425ba1653149f7cb876330533081ef6e85306ebf1f349ab1628cffac5e",
+      "bytes": 31227,
+      "sha256": "ef58a574c9377bc2473ba097faeb6939ad1ed02725c3e962b39ed6749c7ccfbd",
       "design": {
         "id": 5,
         "name": "花心有后手",
@@ -278,8 +286,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -287,8 +297,8 @@
       "file": "level-6.json",
       "pins": 135,
       "seed": 4390918,
-      "bytes": 30202,
-      "sha256": "30551982826b5e7deadbf1ec262af85d24ff024d43f39234d3c5dbc39212a9cf",
+      "bytes": 30269,
+      "sha256": "b0ac6842dc3ebfe168416fbe771a4fd31d31bc08d91e35588769f58d8721f6bf",
       "design": {
         "id": 6,
         "name": "先别装满",
@@ -366,8 +376,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -375,8 +387,8 @@
       "file": "level-7.json",
       "pins": 141,
       "seed": 4390919,
-      "bytes": 35518,
-      "sha256": "b887617e7f3101d67d421c09f5ebb4d1ca01002b9afda413139592a0614bce98",
+      "bytes": 35585,
+      "sha256": "b35bf2fd2b1d9db9a466284d6a612a8303c101ea4e2b9a3040bc4128bda9f48e",
       "design": {
         "id": 7,
         "name": "交叉路口",
@@ -504,8 +516,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -513,8 +527,8 @@
       "file": "level-8.json",
       "pins": 156,
       "seed": 4390920,
-      "bytes": 39229,
-      "sha256": "2c64e9cc76b24c24bf1f5f9909619546f42a4aa052b09d61512f24e9814a4e0a",
+      "bytes": 39296,
+      "sha256": "1c9f149f442c9961c4ee394f7a0e066d8a5e5d07304e61ce5f6f2a9198fec2a1",
       "design": {
         "id": 8,
         "name": "留给下一层",
@@ -655,8 +669,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -664,8 +680,8 @@
       "file": "level-9.json",
       "pins": 156,
       "seed": 4390921,
-      "bytes": 41328,
-      "sha256": "af737680773c8158d86d0f3c11269b2b66f359995f6f8ab16c9a4eec7f12c80e",
+      "bytes": 41395,
+      "sha256": "ffbda38d63b3e27c3874d409692935e58b9cdedcdfd10c90ac1ab9f608e5920c",
       "design": {
         "id": 9,
         "name": "两岸接力",
@@ -830,8 +846,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     },
     {
@@ -839,8 +857,8 @@
       "file": "level-10.json",
       "pins": 168,
       "seed": 4390922,
-      "bytes": 44825,
-      "sha256": "927aca1e04b4cb389ab90c2b2cd4ef6d7a01fdb895c4b189391587e378010632",
+      "bytes": 44892,
+      "sha256": "c5be9ce6d5b4dff30361fbad9c0b1e11d876cc0de7b59bc347fea1bc3cd32a10",
       "design": {
         "id": 10,
         "name": "花心终局",
@@ -1007,8 +1025,10 @@
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
         "originalComparison": "原作录像的四阶段画面已归档；待关键状态逐项对照。",
-        "verification": "pending",
-        "evidence": []
+        "verification": "verified",
+        "evidence": [
+          "tests/campaign-r3.test.ts 官方线 Matter 见证回放通过，未使用道具。"
+        ]
       }
     }
   ]

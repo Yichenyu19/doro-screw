@@ -8,8 +8,8 @@
 | 2 | `index.html` 是正文片段：不带脚本入口、内联样式、事件属性、资源预连接、嵌套 iframe/object 等浏览上下文。 | `mapp/template.html` 只有 `<div id="app"></div>`。 | 满足 |
 | 3 | 脚本为单个 IIFE `app.js`，样式为 `app.css`。版本号必须是 `x.x.x` 三段数字，最长 64 字符，不带前导零或后缀。 | `mapp/vite.config.ts` 输出 IIFE `DoroScrew`；版本 `1.0.0`。 | 满足 |
 | 4 | `id` 必须是社区应用页分配的 UUID v7，原样复制，不要自行生成。 | 清单里是符合官方 v7 正则的占位符 `019a0d0d-0000-7000-8000-00000000d0d0`。构建读取 `MINI_APP_ID`。未替换前 `BUILD.json` 的 `placeholderId` 为 `true`。 | 待用户操作 |
-| 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。 | 参考包解压 12 387 624 字节（约 11.81 MiB），142 个文件，最大 `app.js` 1 586 731 字节（约 1.51 MiB）。未打入画册 HD、campaign/r1、favicon、og。 | 满足 |
-| 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 参考 ZIP 11 090 577 字节（约 10.58 MiB）。上传页限额未在文档写死，本助手未打开上传页。 | 待用户操作 |
+| 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。 | 参考包解压 12 482 493 字节（约 11.91 MiB），154 个文件，最大 `app.js` 1 590 583 字节（约 1.52 MiB）。未打入画册 HD、campaign/r1、favicon、og。 | 满足 |
+| 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 参考 ZIP 11 090 350 字节（约 10.58 MiB）。上传页限额未在文档写死，本助手未打开上传页。 | 待用户操作 |
 | 7 | 只申请实际需要的权限；未声明不得使用对应能力。 | 申请：`theme.read`、`storage.read`、`storage.write`、`audio.webAudio`、`files.save`。未申请：`user.read`、`clipboard.write`、`links.open`、`network.*`、`assets.remote`、`workers.create`、`cookies.*`、`fullscreen`、`code.*`。 | 满足 |
 | 8 | 网络必须在 manifest 声明端点；不能未声明联网，也不能把秘密放进包内。 | 无 `endpoints` / `websockets` / `remote_assets`。关卡不按 URL 拉取。包内无令牌或密钥。网站统计、noindex、favicon、og 未进入微应用包。 | 满足 |
 | 9 | 原生 `new Worker()` / `importScripts()` 不是加载入口；Worker 须声明并申请 `workers.create`。 | 微应用构建用 Vite 插件去掉 Worker 构造，提示/预分析改在主线程（`src/mapp/inline-services.ts`）。网站版仍用原来的 Worker。 | 满足 |
@@ -32,4 +32,4 @@
 - `campaign/r1` 旧关卡资源：未包含。修订 4 的 1–8 关 JSON 和 `public/sfx` 短音效已声明进包。运行时关卡数据实际来自打进 `app.js` 的内容模块；音效按路径从包内加载。
 - 网站用 favicon、og 图、以及任何 noindex / 统计相关页面头：未包含。`index.html` 没有 meta。
 
-当前解压约 11.90 MiB，远低于 128 MiB。上传页是否另有更小上限，须用户在上传页查看。
+当前解压约 11.91 MiB，远低于 128 MiB。上传页是否另有更小上限，须用户在上传页查看。

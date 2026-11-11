@@ -7,3 +7,35 @@ test('抬手才提交同一目标；目标改变只反馈失效，不换拆另�
 test('拖走再回到起点仍取消点击；pointercancel 之后的抬手也不提交',()=>{const f=setup();f.canvas.fire('pointerdown');f.canvas.fire('pointermove',72);f.canvas.fire('pointermove',50);f.canvas.fire('pointerup');assert.deepEqual(f.actions,[]);f.canvas.fire('pointerdown');f.canvas.fire('pointercancel');f.canvas.fire('pointerup');assert.deepEqual(f.actions,[]);f.control.destroy();});
 test('双指缩放后，即使只剩一根手指也不恢复待执行点击',()=>{const f=setup();f.canvas.fire('pointerdown',50,50,1);f.canvas.fire('pointerdown',100,50,2);f.canvas.fire('pointermove',150,50,2);assert.equal(f.camera.zoom,2);f.canvas.fire('pointerup',150,50,2);f.canvas.fire('pointerup',50,50,1);assert.deepEqual(f.actions,[]);f.control.destroy();});
 test('长按进入检查，松手结束检查并取消拆钉',async()=>{const f=setup();f.canvas.fire('pointerdown');await new Promise(resolve=>setTimeout(resolve,410));assert.equal((f.inspections[0] as {id:string}).id,'first');f.canvas.fire('pointerup');assert.equal(f.inspections.at(-1),null);assert.deepEqual(f.actions,[]);f.control.destroy();});
+test('丢失指针捕获后抬手不再拆钉，也不会留下卡住的触点',()=>{
+  const f=setup();
+  f.canvas.fire('pointerdown');
+  f.canvas.fire('lostpointercapture');
+  f.canvas.fire('pointerup');
+  assert.deepEqual(f.actions,[]);
+  f.canvas.fire('pointerdown');
+  f.canvas.fire('pointerup');
+  assert.deepEqual(f.actions,['first']);
+  f.control.destroy();
+});
+test('没有 PointerEvent 的环境可以用触摸点完成一次点击',()=>{
+  const Pointer=Object.getOwnPropertyDescriptor(globalThis,'PointerEvent');
+  Reflect.deleteProperty(globalThis,'PointerEvent');
+  try{
+    const canvas=new CanvasFixture(),actions:string[]=[];
+    const host:GestureHost={world:p=>p,target:()=>({kind:'screw',id:'first'}),activate:p=>actions.push(p.id),camera:()=>({zoom:1,center:{x:195,y:210}}),setCamera(){},inspect(){},enabled:()=>true};
+    Object.defineProperty(globalThis,'window',{configurable:true,value:{setTimeout}});
+    const control=new BoardGestures(canvas as unknown as HTMLCanvasElement,host);
+    const touch=(type:string)=>{
+      const e=new Event(type,{cancelable:true,bubbles:true});
+      const t={identifier:7,clientX:50,clientY:50};
+      Object.assign(e,{touches:type==='touchend'||type==='touchcancel'?[]:[t],changedTouches:[t]});
+      canvas.dispatchEvent(e);
+    };
+    touch('touchstart');assert.deepEqual(actions,[]);
+    touch('touchend');assert.deepEqual(actions,['first']);
+    control.destroy();
+  }finally{
+    if(Pointer)Object.defineProperty(globalThis,'PointerEvent',Pointer);
+  }
+});

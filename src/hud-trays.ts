@@ -1,5 +1,6 @@
 import {sprite} from './art';
 import {COLORS,COLOR_NAMES,type GameState,type Settings} from './types';
+import {colorSignHtml} from './color-signs';
 import type {PresentationDirector} from './presentation';
 
 const content=new WeakMap<Element,string>();
@@ -18,7 +19,7 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
     const node=boxes.children[index] as HTMLElement,color=box.color;
     if(node.dataset.color!==(color??'')){
       node.dataset.color=color??'';
-      node.innerHTML=(color?sprite('cases',COLORS.indexOf(color),'box-art')+'<div class="box-screws">'+Array.from({length:3},()=>'<span class="box-hole">'+sprite('screws',8,'box-empty-hole')+'<span data-head></span></span>').join('')+'</div>':'')+'<span class="box-caption"></span><span class="box-next" hidden></span>';
+      node.innerHTML=(color?sprite('cases',COLORS.indexOf(color),'box-art')+'<div class="box-screws">'+Array.from({length:3},()=>'<span class="box-hole">'+sprite('screws',8,'box-empty-hole')+'<span data-head></span></span>').join('')+'</div>'+colorSignHtml(color):'')+'<span class="box-caption"></span><span class="box-next" hidden></span>';
     }
     attr(node,'data-generation',String(box.completed));cls(node,'box-packing',presenter?.closing.has(box.id)??false);cls(node,'box-finished',!color);cls(node,'box-active',!!color);
     attr(node,'aria-label',color?COLOR_NAMES[color]+'盒，已接收'+box.screws.length+'颗':'收集盒已完成');
@@ -36,8 +37,8 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
   }
   for(const [index,id]of state.buffer.entries()){
     const node=buffer.children[index] as HTMLElement,screw=id?state.screws.find(s=>s.id===id):null,arrived=!!id&&(presenter?.isArrived(id)??false);
-    attr(node,'data-arrived',String(arrived));attr(node,'data-screw-id',id??'');cls(node,'slot-reserved',!!id&&!arrived);attr(node,'aria-label',screw?COLOR_NAMES[screw.color]+'，已接收':'空暂存孔');
-    replace(node.querySelector('[data-head]')!,screw?sprite('heads',COLORS.indexOf(screw.color),'buffer-screw'):'');
+    attr(node,'data-arrived',String(arrived));attr(node,'data-screw-id',id??'');attr(node,'data-color',screw?screw.color:'');cls(node,'slot-reserved',!!id&&!arrived);attr(node,'aria-label',screw?COLOR_NAMES[screw.color]+'，已接收':'空暂存孔');
+    replace(node.querySelector('[data-head]')!,screw?sprite('heads',COLORS.indexOf(screw.color),'buffer-screw')+colorSignHtml(screw.color):'');
     const label=node.querySelector('small')!;label.hidden=!screw||!settings.colorLabels;if(screw&&settings.colorLabels)text(label,COLOR_NAMES[screw.color]);
   }
 }

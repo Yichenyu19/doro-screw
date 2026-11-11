@@ -124,8 +124,8 @@
       "file": "level-3.json",
       "pins": 129,
       "seed": 4456451,
-      "bytes": 31225,
-      "sha256": "09cdddaf3e9851a160f9910a4b8e0dbf620a86e31f9c2da15357ecff7a768482",
+      "bytes": 31244,
+      "sha256": "c1093388321765cc8f6a99923d1c3fbf9f78f78328b4fbe8ae04a87be7ada82f",
       "design": {
         "id": 3,
         "name": "花心有后手",

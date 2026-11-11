@@ -4,7 +4,7 @@ import path from 'node:path';
 const manifest=JSON.parse(await readFile('src/runtime-art.json','utf8'));
 const out=process.env.DORO_OUTPUT||'dist';
 
-// Phaser 修订3 用图集；DOM 首页/托盘/画册用单帧。旧版进行中的盘面仍要 plates / plateExtra 图集。
+// Phaser 3 用图集；DOM 首页/托盘/画册用单帧。旧版进行中的盘面仍要 plates / plateExtra 图集。
 const phaserAtlases=new Set(['heads','assistHeads','screws','fx','plates','plateExtra']);
 const individualSheets=new Set(['doro','ui','button','panel','boxes','cases','paintPeg','heads','assistHeads','fx','screws','plateA','plateB','plateC']);
 const deferred=new Set();
@@ -28,9 +28,11 @@ for(const file of siteFiles){
 }
 // 生产包只带当前修订战役 JSON；R1 三十关仍在源码与测试中，不打进静态包。
 await mkdir(path.join(out,'campaign'),{recursive:true});
-for(const revision of ['r2','r3']){
+for(const revision of ['r2','r4']){
   await cp(path.join('public/campaign',revision),path.join(out,'campaign',revision),{recursive:true});
 }
+// Vite 生产构建关闭了 publicDir，音效必须在这里复制进发行包。
+await cp(path.join('public','sfx'),path.join(out,'sfx'),{recursive:true});
 await copyFile('docs/THIRD-PARTY-NOTICES.txt',path.join(out,'THIRD-PARTY-NOTICES.txt'));
 await copyFile('ASSETS.md',path.join(out,'ASSETS.md'));
 
@@ -51,4 +53,5 @@ for(const file of files)if(deferred.has(file))hd+=(await stat(path.join(out,file
 const campaign=await dirBytes(path.join(out,'campaign'));
 const whole=await dirBytes(out);
 const fmt=n=>(n/1024/1024).toFixed(2);
-console.log(`V4运行时素材 ${files.size} 个文件，${fmt(runtimeBytes)} MiB（其中画册高清按需 ${fmt(hd)} MiB，不计入首屏）。战役 JSON ${campaign.count} 个文件 ${fmt(campaign.bytes)} MiB（不含 r1）。整包 ${whole.count} 个文件 ${fmt(whole.bytes)} MiB。原图在源码素材包中保留。`);
+const sfx=await dirBytes(path.join(out,'sfx'));
+console.log(`V4运行时素材 ${files.size} 个文件，${fmt(runtimeBytes)} MiB（其中画册高清按需 ${fmt(hd)} MiB，不计入首屏）。战役 JSON ${campaign.count} 个文件 ${fmt(campaign.bytes)} MiB（不含 r1/r3）。音效 ${sfx.count} 个文件 ${fmt(sfx.bytes)} MiB。整包 ${whole.count} 个文件 ${fmt(whole.bytes)} MiB。原图在源码素材包中保留。`);

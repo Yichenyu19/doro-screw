@@ -2,7 +2,7 @@ import './style.css';
 import { GameEngine } from './core';
 import {remainingOnBoard} from './geometry';
 import {observeVisible} from './visible-analysis';
-import {tutorialEvidence,teachingTip,teachingFlags} from './teaching';
+import {tutorialEvidence,teachingCue,teachingFlags,teachingStageKey} from './teaching';
 import { GameAudio } from './audio';
 import { assetUrl, sprite, PANEL_SLICE, preloadFrames } from './art';
 import {R2_TITLES,CAMPAIGN_TITLES,CAMPAIGN_COUNT,CAMPAIGN_TOTAL_PINS,dailyPractice,practiceCampaignId} from './r2-catalog';
@@ -53,6 +53,7 @@ let lastDecision:string='';
 let artPointerClickTarget:HTMLElement|null=null;
 let saveFrame=0,saveTask=0;
 let rulesPrepared=false;
+let teachingTimers:number[]=[];
 const htmlCache=new WeakMap<Element,string>();
 const occupied=(state:GameState)=>state.buffer.filter(id=>id!==null).length;
 function setHtml(selector:string,html:string):void {const target=document.querySelector(selector);if(target&&htmlCache.get(target)!==html){target.innerHTML=html;htmlCache.set(target,html);}}
@@ -92,10 +93,7 @@ function saveNow(snapshot?:GameState):void {
     save.current=engine.state.phase==='won'?null:snapshot??engine.snapshot();
     setCurrentRun(save.current?engine.checkpoint(save.current):null);
   }
-  if (!persistSave(save) && !lastSaveWarning) {
-    lastSaveWarning=true;
-    toast('保存遇到问题。请保持页面开启，并点保存状态导出恢复记录。',5000);
-  }
+  if (!persistSave(save)) void flushJournal().then(()=>{if(getSaveStatus().status==='error'&&!lastSaveWarning){lastSaveWarning=true;toast('保存遇到问题。请保持页面开启，并点保存状态导出恢复记录。',5000);}});
 }
 function saveSoon(snapshot:GameState):void {
   if(!engine)return;
@@ -103,7 +101,7 @@ function saveSoon(snapshot:GameState):void {
   noteUnsaved();
   if(saveFrame||saveTask)return;
   // 先让这次拆钉和新盒色完成绘制；离开或隐藏页面时 saveNow 会同步接管尚未提交的状态。
-  saveFrame=requestAnimationFrame(()=>{saveFrame=0;saveTask=window.setTimeout(()=>{saveTask=0;if(!persistSave(save)&&!lastSaveWarning){lastSaveWarning=true;toast('保存遇到问题，请点保存状态导出恢复记录。',5000);}},0);});
+  saveFrame=requestAnimationFrame(()=>{saveFrame=0;saveTask=window.setTimeout(()=>{saveTask=0;if(!persistSave(save))void flushJournal().then(()=>{if(getSaveStatus().status==='error'&&!lastSaveWarning){lastSaveWarning=true;toast('保存遇到问题，请点保存状态导出恢复记录。',5000);}});},0);});
 }
 
 function toast(text:string,duration=2400):void {
@@ -119,11 +117,15 @@ function shellAccessories():string {
   return '<div id="modal-root"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>';
 }
 function updateSaveStatus():void {const value=getSaveStatus();for(const element of document.querySelectorAll<HTMLElement>('[data-save-status]')){const text=value.status==='saved'?'已保存':value.status==='saving'?'正在保存…':value.status==='local'?'恢复日志已保存':'保存异常 · 导出';if(element.textContent!==text)element.textContent=text;if(element.dataset.status!==value.status)element.dataset.status=value.status;if(element.title!==value.message)element.title=value.message;}}
-onSaveStatus(()=>updateSaveStatus());
+onSaveStatus((status)=>{
+  updateSaveStatus();
+  if(status==='error'&&!lastSaveWarning){lastSaveWarning=true;toast('保存遇到问题。请保持页面开启，并点保存状态导出恢复记录。',5000);}
+  if(status==='saved'||status==='local')lastSaveWarning=false;
+});
 
 function showHome():void {
   saveNow();
-  generation++;services.cancelHint();hintSequence++;pendingLaunch=null;
+  generation++;services.cancelHint();hintSequence++;pendingLaunch=null;clearTeachingTimers();
   artwork?.destroy();artwork=null;presenter?.cancel();presenter=null;
   view?.destroy();
   view=null;
@@ -173,7 +175,7 @@ function gameShell():void {
 }
 
 async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,version:ContentVersion=saved?.contentVersion??'v4',playMode:PlayMode=saved?.mode??(version==='v4'?(id>30?'endless':'campaign'):'legacy'),revision=saved?.contentRevision??CONTENT_REVISION):Promise<void> {
-  const token=++generation;services.cancelHint();hintSequence++;pendingLaunch=null;
+  const token=++generation;services.cancelHint();hintSequence++;pendingLaunch=null;clearTeachingTimers();
   artwork?.destroy();artwork=null;presenter?.cancel();presenter=null;view?.destroy();view=null;engine=null;level=null;
   const key=version+':'+(version==='v4'?revision+':'+playMode+':':'')+id,attempt=saved?(saved.attempt??save.currentAttempt):version==='v4'&&playMode==='campaign'?0:(forcedAttempt??save.attempts[key]??0);
   pendingStart={id,saved,attempt,version,playMode,revision};mode='game';modal=null;modalReturn=null;modalHistory=[];meltMode=false;inspecting=false;earnedThisRound=0;lastDecision='';
@@ -211,19 +213,21 @@ function updateHUD():void {
 }
 function stageInfo(){return level?.curriculum?.stages.find(stage=>!engine||engine.state.moves<stage.until)??{until:Infinity,title:'按自己的节奏拆',advice:level?.strategy??''};}
 
-function showBoardTip(text:string):void {setText('#board-tip',text||stageInfo().advice||level?.subtitle||'');window.clearTimeout(tipTimer);}
-function cueVisualTeaching(events:GameEvent[]):void {
+function showBoardTip(text:string):void {setText('#board-tip',text);window.clearTimeout(tipTimer);}
+function clearTeachingTimers():void{for(const id of teachingTimers)window.clearTimeout(id);teachingTimers=[];}
+function laterTeach(ms:number,fn:()=>void):void{teachingTimers.push(window.setTimeout(fn,ms));}
+function cueVisualTeaching(events:GameEvent[],opening=false):void {
   if(save.settings.reducedMotion)return;
   const flags=teachingFlags(events);
   const first=(name:string)=>{if(save.tutorialSeen.includes(name))return false;save.tutorialSeen.push(name);return true;};
-  if(flags.includes('refill-tip')&&first('refill-guide')){
-    document.querySelector('.buffer-area')?.classList.add('guide-refill');
-    document.querySelector('#box-tray')?.classList.add('guide-box-pulse');
-    window.setTimeout(()=>{document.querySelector('.buffer-area')?.classList.remove('guide-refill');document.querySelector('#box-tray')?.classList.remove('guide-box-pulse');},1600);
+  if((opening||flags.includes('refill-tip')||flags.includes('buffer-tip'))&&first(opening?'open-box-guide':'refill-guide')){
+    document.querySelector('#box-tray')?.classList.add('guide-box-pulse','guide-match');
+    if(!opening)document.querySelector('.buffer-area')?.classList.add('guide-refill');
+    laterTeach(opening?2200:1600,()=>{document.querySelector('.buffer-area')?.classList.remove('guide-refill');document.querySelector('#box-tray')?.classList.remove('guide-box-pulse','guide-match');});
   }
   if(flags.includes('window-tip')&&first('window-guide')){
     document.querySelector('#game-canvas')?.classList.add('guide-window');
-    window.setTimeout(()=>document.querySelector('#game-canvas')?.classList.remove('guide-window'),1800);
+    laterTeach(1800,()=>document.querySelector('#game-canvas')?.classList.remove('guide-window'));
   }
 }
 function updateTeaching(events:GameEvent[]=[],before?:GameState):void {
@@ -231,11 +235,19 @@ function updateTeaching(events:GameEvent[]=[],before?:GameState):void {
   const record=(name:string)=>{if(!save.tutorialSeen.includes(name))save.tutorialSeen.push(name);};
   for(const name of tutorialEvidence(level,before,events))record(name);
   for(const flag of teachingFlags(events))record(flag);
-  cueVisualTeaching(events);
   if(save.tutorialSeen.includes('skip')){showBoardTip('');return;}
-  const spoken=teachingTip(level,state,events,save.tutorialSeen);
-  if(spoken!==null){showBoardTip(spoken);if(level.tutorial||level.id===1)return;}
-  if(!level.tutorial){if(state.moves===0)showBoardTip(stageInfo().advice||level.strategy||'');return;}
+  const cue=teachingCue(level,state,events,save.tutorialSeen);
+  cueVisualTeaching(events,!!cue&&state.moves===0);
+  if(cue){record(cue.key);showBoardTip(cue.text);return;}
+  // 修订2以后的主线不再走旧版 l1-swing 逐句讲稿。
+  if(!level.tutorial||((level.contentRevision??0)>=2&&(level.mode??'campaign')==='campaign')){
+    const stageKey=teachingStageKey(level);
+    if(state.moves===0&&!save.tutorialSeen.includes(stageKey)){
+      const advice=stageInfo().advice||'';
+      if(advice){record(stageKey);showBoardTip(advice);}else showBoardTip('');
+    }else showBoardTip('');
+    return;
+  }
   const pins=new Map(state.screws.map(s=>[s.id,s]));
   if(state.contentVersion!=='v4'){showBoardTip('同色进盒，别的颜色先暂存。');return;}
   if(state.moves===0)showBoardTip('先看长板的红钉与棕钉，它们要先暂存。');
@@ -582,9 +594,9 @@ app.addEventListener('click',event=>{
   if(target && !target.hasAttribute('disabled'))dispatchButton(target);
 });
 app.addEventListener('pointerdown',event=>{
+  audio.unlock();
   if(event.target instanceof Element&&!event.target.closest('.board-camera')){const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu){menu.hidden=true;document.querySelector('[data-action="zoom-toggle"]')?.setAttribute('aria-expanded','false');}}
   if(!event.isPrimary||event.button!==0)return;
-  if(mode==='game'&&view)audio.unlock();
   const target=event.target instanceof Element?event.target.closest<HTMLElement>('[data-action="art-shoot"]'):null;
   artPointerClickTarget=target;
   if(target&&!target.hasAttribute('disabled')){event.preventDefault();target.setPointerCapture(event.pointerId);artwork?.start();}
@@ -621,7 +633,11 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('pagehide',()=>{presenter?.flush();artwork?.stop();saveNow();view?.setPaused(true);audio.suspend();});
 window.addEventListener('pageshow',()=>{lastClockTime=performance.now();view?.setPaused(Boolean(modal)||document.hidden);});
-window.addEventListener('resize',()=>presenter?.flush());
+window.addEventListener('resize',()=>{presenter?.flush();view?.invalidateLayout();});
+window.addEventListener('orientationchange',()=>{presenter?.flush();view?.invalidateLayout();});
+visualViewport?.addEventListener('resize',()=>{presenter?.flush();view?.invalidateLayout();});
+document.addEventListener('gesturestart',event=>event.preventDefault());
+document.addEventListener('gesturechange',event=>event.preventDefault());
 function clockFrame(time:number){tickClock(time);requestAnimationFrame(clockFrame);}
 requestAnimationFrame(clockFrame);
 window.setInterval(()=>{

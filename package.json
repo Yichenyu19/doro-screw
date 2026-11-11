@@ -10,7 +10,8 @@
     "test": "tsx --test tests/*.test.ts",
     "check-release": "node scripts/check-release.mjs",
     "measure-release": "node scripts/measure-release.mjs",
-    "difficulty": "tsx scripts/difficulty-benchmark.ts"
+    "difficulty": "tsx scripts/difficulty-benchmark.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "phaser": "^3.90.0"

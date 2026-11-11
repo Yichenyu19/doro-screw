@@ -35,7 +35,7 @@
 .starter-win{width:138px;height:138px;object-fit:contain;}.dialog .starter-note{font-size:11px;color:#68414f;margin:0 0 10px;}
 .starter-album{display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d8b7c1;}.starter-album img{width:80px;height:80px;object-fit:contain;}.starter-album strong{display:block;font-size:14px;}.starter-album small{display:block;font-size:11px;line-height:1.6;}
 * {box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body {width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none;}
+html,body {width:100%;height:100%;height:-webkit-fill-available;height:100dvh;margin:0;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;}
 body {display:flex;justify-content:center;align-items:center;}
 button,input {font:inherit;}
 button {appearance:none;border:0;background:none;color:inherit;cursor:pointer;padding:0;touch-action:manipulation;}
@@ -44,7 +44,7 @@ button:disabled {cursor:default;opacity:.5;}
 button:not(:disabled):active {transform:translateY(1px) scale(.98);}
 img {max-width:100%;user-select:none;-webkit-user-drag:none;}
 button,span,p,h1,h2 {user-select:none;-webkit-user-select:none;}
-#app {position:relative;width:100%;max-width:480px;height:100%;height:100dvh;max-height:1060px;overflow:hidden;background:var(--cream);isolation:isolate;}
+#app {position:relative;width:100%;max-width:480px;height:100%;height:-webkit-fill-available;height:100dvh;max-height:1060px;overflow:hidden;background:var(--cream);isolation:isolate;}
 .home-screen,.game-screen {position:relative;height:100%;width:100%;overflow:hidden;}
 .scene-backdrop {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none;}
 .ui-art,.doro-art {display:inline-block;vertical-align:middle;pointer-events:none;}
@@ -446,3 +446,25 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .practice-options p,.daily-practice p {font-size:13px;line-height:1.65;margin:0 0 10px;}
 .daily-practice {margin:16px 0;background:#fff4ee;}
 .daily-practice .eyebrow {display:block;margin-bottom:7px;}
+
+/* 色盲/关颜色辅助时，盒与钉仍靠角落小记号区分，不改原有贴图。 */
+.color-sign{position:absolute;z-index:3;width:11px;height:11px;pointer-events:none;color:#281e25;}
+.box-slot>.color-sign{right:2px;top:1px;width:12px;height:12px;background:#fff9ece8;border-radius:50%;}
+.buffer-slot .color-sign{right:-2px;bottom:-2px;width:10px;height:10px;background:#fff9ece8;border-radius:50%;}
+.color-sign::before{content:"";position:absolute;inset:0;margin:auto;}
+.color-sign-dot::before{width:5px;height:5px;border-radius:50%;background:currentColor;top:3px;bottom:3px;left:3px;right:3px;}
+.color-sign-bar::before{width:8px;height:3px;background:currentColor;top:4px;left:2px;}
+.color-sign-plus::before{width:8px;height:8px;top:2px;left:2px;background:
+  linear-gradient(currentColor,currentColor) center/8px 2px no-repeat,
+  linear-gradient(currentColor,currentColor) center/2px 8px no-repeat;}
+.color-sign-tri::before{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid currentColor;top:2px;left:2px;inset:auto;}
+.color-sign-dia::before{width:7px;height:7px;background:currentColor;transform:rotate(45deg);top:2px;left:2px;}
+.color-sign-ring::before{width:7px;height:7px;border:2px solid currentColor;border-radius:50%;box-sizing:border-box;top:2px;left:2px;}
+.color-sign-slash::before{width:8px;height:2px;background:currentColor;transform:rotate(-45deg);top:5px;left:2px;}
+.color-sign-sq::before{width:6px;height:6px;background:currentColor;top:3px;left:3px;}
+.color-sign-cross::before{width:8px;height:8px;top:2px;left:2px;background:
+  linear-gradient(45deg,transparent 40%,currentColor 40%,currentColor 60%,transparent 60%),
+  linear-gradient(-45deg,transparent 40%,currentColor 40%,currentColor 60%,transparent 60%);}
+.color-sign-wave::before{width:8px;height:4px;border-top:2px solid currentColor;border-radius:50% 50% 0 0;top:4px;left:2px;}
+html.color-labels .box-slot>.color-sign,html.color-labels .buffer-slot .color-sign{display:none;}
+.guide-match .box-active{box-shadow:0 0 0 2px #e07a3a,0 0 0 6px #e07a3a33;border-radius:8px;}

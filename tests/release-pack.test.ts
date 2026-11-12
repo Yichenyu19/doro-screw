@@ -41,11 +41,12 @@ test('源码里的十八个短音效都在 public/sfx，可见名称已统一为
   assert.doesNotMatch(readFileSync('index.html','utf8'),/修订3 主线十关/);
 });
 
-test('微应用打包若存在，应带修订4八关和音效，而不是修订3短桥关',()=>{
+test('微应用打包带音效，关卡留在脚本里，不把战役 JSON 或修订3再打一遍',()=>{
   if(!existsSync('scripts/pack-mapp.mjs'))return;
   const pack=readFileSync('scripts/pack-mapp.mjs','utf8');
   const assets=existsSync('scripts/mapp-assets.mjs')?readFileSync('scripts/mapp-assets.mjs','utf8'):'';
-  assert.match(pack,/campaignFiles\(\s*4\s*,\s*8\s*\)/);
-  assert.doesNotMatch(pack,/campaignFiles\(\s*3\s*,\s*10\s*\)/);
+  assert.doesNotMatch(pack,/campaignFiles\(/);
+  assert.doesNotMatch(pack,/campaign\/r3/);
   assert.match(pack+assets,/sfx/);
+  assert.match(pack,/libwebp/);
 });

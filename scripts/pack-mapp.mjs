@@ -1,8 +1,28 @@
 import {mkdir,copyFile,readFile,writeFile,stat} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pack} from '@discourse-mini-app/sdk/pack';
-import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,campaignFiles} from './mapp-assets.mjs';
+import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,isAlbumWorkingFile} from './mapp-assets.mjs';
+
+function lossyQuality(file){
+  const base=path.basename(file);
+  if(/-hd\.[0-9a-f]+\.webp$/.test(base))return 80;
+  if(/^album-\d+\.[0-9a-f]+\.webp$/.test(base))return 82;
+  if(/^album-\d+-thumb\.[0-9a-f]+\.webp$/.test(base))return 82;
+  if(base.startsWith('backdrop.'))return 82;
+  return 0;
+}
+
+async function placeAsset(file){
+  const from=path.join(root,'public',file);
+  const to=path.join(web,file);
+  await mkdir(path.dirname(to),{recursive:true});
+  const quality=lossyQuality(file);
+  if(!quality){await copyFile(from,to);return;}
+  const result=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',from,'-c:v','libwebp','-quality',String(quality),'-compression_level','6',to],{encoding:'utf8'});
+  if(result.status!==0)throw Error('压缩失败 '+file+'\n'+(result.stderr||result.error?.message||''));
+}
 
 const root=process.cwd();
 const web=path.join(root,'dist-mapp/web');
@@ -17,17 +37,13 @@ await copyFile(path.join(root,'mapp/strings.json'),path.join(web,'strings.json')
 const runtime=await listMappRuntimeFiles();
 const albumHd=await listMappAlbumHdFiles();
 const sfx=await listMappSfxFiles();
-const campaign=campaignFiles(4,8);
 const extra=['asset-list.json'];
-const assets=[...runtime,...albumHd,...sfx,...campaign,...extra];
-await writeFile(path.join(web,'asset-list.json'),JSON.stringify(runtime,null,0));
-for(const file of [...runtime,...albumHd]){
-  const from=path.join(root,'public',file);
-  const to=path.join(web,file);
-  await mkdir(path.dirname(to),{recursive:true});
-  await copyFile(from,to);
-}
-for(const file of [...sfx,...campaign]){
+// 关卡已经打进 app.js。微应用里 usePack 为假，不再把 campaign JSON 打进 ZIP。
+const startup=runtime.filter(file=>!isAlbumWorkingFile(file));
+const assets=[...runtime,...albumHd,...sfx,...extra];
+await writeFile(path.join(web,'asset-list.json'),JSON.stringify(startup,null,0));
+for(const file of [...runtime,...albumHd])await placeAsset(file);
+for(const file of sfx){
   const to=path.join(web,file);
   await mkdir(path.dirname(to),{recursive:true});
   await copyFile(path.join(root,'public',file),to);

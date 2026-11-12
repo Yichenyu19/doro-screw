@@ -471,11 +471,12 @@ function releaseArtworkHd():void{window.__DORO_MAPP__?.releaseAsset?.();}
 async function toggleArtworkHd(button:HTMLElement):Promise<void>{
   const image=document.querySelector<HTMLImageElement>('.artwork-hd'),canvas=document.querySelector<HTMLElement>('.artwork-stage canvas');
   if(!image||!canvas||!save.album.includes(artworkIndex+1))return;
+  const file='album-'+(artworkIndex+1)+'.png';
   if(artHighDefinition){
-    artHighDefinition=false;image.hidden=true;canvas.hidden=false;image.removeAttribute('src');releaseArtworkHd();
+    artHighDefinition=false;image.hidden=true;canvas.hidden=false;image.removeAttribute('src');
+    window.__DORO_MAPP__?.releaseAsset?.(resolvedAssetPath(file,'hd'));
     button.textContent='欣赏高清原图';return;
   }
-  const file='album-'+(artworkIndex+1)+'.png';
   let src=assetUrl(file,'hd');
   if(!src){
     const load=window.__DORO_MAPP__?.loadAsset;
@@ -487,7 +488,7 @@ async function toggleArtworkHd(button:HTMLElement):Promise<void>{
   if(image.getAttribute('src')!==src)image.src=src;
   image.hidden=false;canvas.hidden=true;button.textContent='看看螺丝点阵';
 }
-function showArtwork(preferred?:number):void {
+async function showArtwork(preferred?:number):Promise<void> {
   releaseArtworkHd();
   const first=ARTWORKS.findIndex((art,i)=>save.artworkProgress[i]<art.columns*art.rows),index=preferred??first;if(index<0||index>=ARTWORKS.length){showAlbum();return;}artworkIndex=index;artHighDefinition=false;
   const art=ARTWORKS[index],total=art.columns*art.rows,progress=save.artworkProgress[index];
@@ -495,6 +496,12 @@ function showArtwork(preferred?:number):void {
   const container=document.querySelector<HTMLElement>('.artwork-dialog')!;
   const stage=document.createElement('p');stage.dataset.artStage='';container.querySelector('.artwork-meter')!.insertAdjacentElement('afterend',stage);
   const update=()=>{const button=container.querySelector<HTMLButtonElement>('[data-art-launch]')!,complete=save.artworkProgress[index]>=total,busy=artwork?.busy??false;button.disabled=busy;button.dataset.action=complete?'art-claim':save.materialBalance?'art-shoot':'art-next';button.querySelector('.button-label')!.textContent=busy?'正在填入螺丝…':complete?'收下这只 Doro':save.materialBalance?'按住填入 · 越按越快':'继续拆螺丝';const fill=container.querySelector<HTMLButtonElement>('[data-action="art-fill"]')!;fill.disabled=complete||busy||!save.materialBalance;fill.hidden=complete;container.querySelector<HTMLElement>('[data-action="art-hd"]')!.hidden=!complete;container.querySelector('[data-art-balance]')!.textContent=String(save.materialBalance);};
+  const mosaicFile='album-'+(index+1)+'.png';
+  if(!assetUrl(mosaicFile)){
+    const load=window.__DORO_MAPP__?.loadAsset;
+    if(load){try{await load(resolvedAssetPath(mosaicFile));}catch{ /* 点阵会显示重试。 */ }}
+  }
+  if(!container.isConnected)return;
   artwork=new ScrewArtwork(container,save,index,update,()=>{audio.play('win');update();persistSave(save);});update();
 }
 

@@ -14,7 +14,7 @@ function mimeFor(path:string):string{
   return 'application/octet-stream';
 }
 
-async function installAssets(sdk:MiniAppSDK,paths:string[]):Promise<()=>void>{
+async function installAssets(sdk:MiniAppSDK,paths:string[]):Promise<{urls:Map<string,string>;revoke:()=>void}>{
   const urls=new Map<string,string>();
   const failed:string[]=[];
   for(const path of paths){
@@ -27,9 +27,8 @@ async function installAssets(sdk:MiniAppSDK,paths:string[]):Promise<()=>void>{
       failed.push(path);
     }
   }
-  setAssetResolver(path=>urls.get(path)??null);
   if(failed.length)console.warn('部分素材未能读取',failed.length);
-  return()=>{for(const url of urls.values())URL.revokeObjectURL(url);setAssetResolver(null);};
+  return {urls,revoke(){for(const url of urls.values())URL.revokeObjectURL(url);setAssetResolver(null);}};
 }
 
 class MappStorage implements Storage {
@@ -109,15 +108,22 @@ async function main():Promise<void>{
   }catch{
     // asset-list 本身也在 assets 中；失败时仍尝试启动，界面会提示缺图。
   }
-  const revoke=await installAssets(sdk,Array.isArray(paths)?paths:[]);
-  let held:{path:string;url:string}|null=null;
-  const releaseAsset=()=>{if(!held)return;URL.revokeObjectURL(held.url);held=null;};
+  const installed=await installAssets(sdk,Array.isArray(paths)?paths:[]);
+  const revoke=installed.revoke.bind(installed);
+  const extra=new Map<string,string>();
+  const lookup=(path:string)=>extra.get(path)??installed.urls.get(path)??null;
+  setAssetResolver(lookup);
+  const releaseAsset=(path?:string)=>{
+    const drop=(key:string)=>{const url=extra.get(key);if(!url)return;URL.revokeObjectURL(url);extra.delete(key);};
+    if(path){drop(path);return;}
+    for(const key of [...extra.keys()])drop(key);
+  };
   const loadAsset=async(path:string)=>{
-    if(held?.path===path)return held.url;
-    releaseAsset();
+    const hit=lookup(path);
+    if(hit)return hit;
     const bytes=await sdk.assets.readBytes(path);
     const url=URL.createObjectURL(new Blob([bytes],{type:mimeFor(path)}));
-    held={path,url};
+    extra.set(path,url);
     return url;
   };
   window.__DORO_MAPP__={

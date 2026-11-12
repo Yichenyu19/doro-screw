@@ -68,9 +68,24 @@ async function main(){
     consoleErrors.push(msg.text());
   });
   page.on('pageerror',err=>pageErrors.push(String(err.stack||err.message||err)));
-  page.on('response',res=>{if(res.status()>=400&&!ignoreUrl(res.url()))failed.push({url:res.url(),status:res.status()});});
+  const traffic=[];
+  const largeAsset=url=>/\/album-\d+(?:-hd)?\.[0-9a-f]+\.webp(?:$|\?)/.test(url);
+  page.on('response',res=>{
+    const url=res.url();
+    if(ignoreUrl(url))return;
+    if(res.status()>=400)failed.push({url,status:res.status()});
+    const rec={url,status:res.status(),size:0};
+    rec.done=res.finished().then(async()=>{try{rec.size=(await res.body()).length;}catch{}}).catch(()=>{});
+    traffic.push(rec);
+  });
+  const settle=()=>Promise.all(traffic.map(item=>item.done));
   await page.goto(`http://127.0.0.1:${port}/?check=1`,{waitUntil:'networkidle',timeout:60000});
   await page.waitForSelector('[data-action="start"]',{timeout:20000});
+  await settle();
+  const homeTraffic=traffic.slice();
+  const homeBytes=homeTraffic.reduce((sum,item)=>sum+(item.status<400?item.size:0),0);
+  const homeLarge=homeTraffic.filter(item=>largeAsset(item.url));
+  if(homeLarge.length)throw Error('首屏读取了大图：'+homeLarge.map(item=>item.url).join(' '));
   const banner=await page.locator('#mapp-mock-bar').textContent();
   const officialFlag=await page.evaluate(()=>window.__DORO_MAPP_MOCK__?.officialSandbox);
   const shot=async(name)=>{
@@ -105,6 +120,7 @@ async function main(){
       URL.revokeObjectURL=(url)=>{window.__doroRevoked++;orig(url);};
       window.__doroRevokePatched=true;
     });
+    const beforeHd=traffic.length;
     await page.click('[data-action="art-hd"]');
     await page.waitForFunction(()=>{
       const img=document.querySelector('.artwork-hd');
@@ -114,8 +130,11 @@ async function main(){
       const img=document.querySelector('.artwork-hd');
       return{src:img.currentSrc||img.src,width:img.naturalWidth,height:img.naturalHeight,title:document.querySelector('.artwork-dialog h2')?.textContent||''};
     });
+    await settle();
+    const hdFetches=traffic.slice(beforeHd).filter(item=>/\/album-\d+-hd\./.test(item.url));
+    if(hdFetches.length!==1)throw Error('点开大图时期望只读这一张，实际 '+hdFetches.map(item=>item.url).join(' '));
     await shot(`mapp-hd-${id}-390x844.png`);
-    hdShots.push(info);
+    hdShots.push({...info,bytes:hdFetches[0].size});
     await page.click('[data-action="art-hd"]');
     await page.waitForFunction(()=>document.querySelector('.artwork-hd')?.hidden===true);
     const released=await page.evaluate(()=>window.__doroRevoked||0);
@@ -129,8 +148,12 @@ async function main(){
     await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
   }
   await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
+  const beforePlay=traffic.length;
   await page.click('[data-action="start"]');
   await waitBoard(page);
+  await settle();
+  const playLarge=traffic.slice(beforePlay).filter(item=>largeAsset(item.url));
+  if(playLarge.length)throw Error('进游戏读取了大图：'+playLarge.map(item=>item.url).join(' '));
   const l1=await page.evaluate(()=>({id:window.__DORO__.engine.state.levelId,pins:window.__DORO__.engine.state.screws.length,phase:window.__DORO__.engine.state.phase,tip:document.querySelector('#board-tip')?.textContent||''}));
   await shot('mapp-l1-start-390x844.png');
   const l1Overflow=await overflow();
@@ -211,9 +234,9 @@ async function main(){
     await copyFile(path.join(outDir,name),path.join(artifacts,name));
   }
   if(hdShots.length!==2||hdShots.some(item=>item.width<1000))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,hdShots,end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
   await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
-  console.log(JSON.stringify({ok:report.ok,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
+  console.log(JSON.stringify({ok:report.ok,homeBytes,homeRequests:homeTraffic.length,hdShots,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
   if(problems.length){console.error(problems.join('\n'));process.exit(1);}
 }
 main().catch(error=>{console.error(error);process.exit(1);});

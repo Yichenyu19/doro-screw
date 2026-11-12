@@ -23,6 +23,11 @@ export async function listMappAlbumHdFiles(){
   return Object.entries(manifest.raw).filter(([name])=>name.endsWith(':hd')).map(([,value])=>value).sort();
 }
 
+/** 点阵用的 720 画稿。留在包里，但不进启动清单，打开那一幅时才读。 */
+export function isAlbumWorkingFile(file){
+  return /\/album-\d+\.[0-9a-f]+\.webp$/.test(file);
+}
+
 export function campaignFiles(revision=4,count=8){
   return Array.from({length:count},(_,i)=>`campaign/r${revision}/level-${i+1}.json`);
 }

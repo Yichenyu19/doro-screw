@@ -76,6 +76,7 @@
       return null;
     },
     async exportData() {
+      if (new URLSearchParams(location.search).get("fail") === "storage") throw new Error("storage denied");
       const entries = [];
       for (let i = 0; i < native.length; i++) {
         const k = native.key(i);
@@ -107,6 +108,7 @@
     lifecycle: { ready: async () => { document.documentElement.dataset.mappReady = "1"; } },
     theme: {
       async get() {
+        if (new URLSearchParams(location.search).get("fail") === "theme") throw new Error("theme denied");
         return {
           mode: "light",
           background: "#f6dae5",

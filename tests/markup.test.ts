@@ -54,6 +54,19 @@ test('标记解析不留下 style 属性，背景走样式表接口',async()=>{
   }));
 });
 
+test('脚本标签、框架、事件属性和 javascript 地址会被拒绝',async()=>{
+  await exclusive(()=>withDom(async()=>{
+    const {fill}=await import('../src/markup.ts');
+    const app=()=>new El('div');
+    assert.throws(()=>fill(app(),'<script>alert(1)</script>'));
+    assert.throws(()=>fill(app(),'<iframe src="https://example.com"></iframe>'));
+    assert.throws(()=>fill(app(),'<object data="x"></object>'));
+    assert.throws(()=>fill(app(),'<button onclick="alert(1)">坏</button>'));
+    assert.throws(()=>fill(app(),'<a href="javascript:alert(1)">坏</a>'));
+    assert.throws(()=>fill(app(),'<embed src="https://example.com"></embed>'));
+  }));
+});
+
 test('事件属性会被拒绝',async()=>{
   await exclusive(()=>withDom(async()=>{
     const {fill}=await import('../src/markup.ts');

@@ -41,6 +41,7 @@ function applyAttributes(element:HTMLElement|SVGElement,attrs:Array<[string,stri
   for(const [name,value] of attrs){
     const lower=name.toLowerCase();
     if(lower.startsWith('on'))throw Error('界面不能带事件属性：'+name);
+    if((lower==='href'||lower==='src'||lower==='xlink:href')&&/^\s*javascript:/i.test(value))throw Error('界面不能带脚本地址');
     if(lower==='style'||lower==='data-css'){
       const css=lower==='style'?value:value;
       for(const part of css.split(';')){

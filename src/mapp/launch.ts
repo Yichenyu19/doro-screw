@@ -94,17 +94,19 @@ class MappStorage implements Storage {
   }
 }
 
-async function installStorage(sdk:MiniAppSDK):Promise<void>{
+async function installStorage(sdk:MiniAppSDK):Promise<string|null>{
   let entries:Array<[string,string]>=[];
   if(sdk.permissions.has('storage.read')){
     try{
       const snapshot=await sdk.localStorage.exportData();
       if(snapshot?.format===1&&Array.isArray(snapshot.entries))entries=snapshot.entries.map(([k,v])=>[String(k),String(v)]);
-    }catch{ /* 读不到存档也继续。 */ }
+    }catch{return '存档没有读到，先从新的一局开始。';}
   }
   const storage=new MappStorage(sdk,entries);
-  try{Object.defineProperty(globalThis,'localStorage',{configurable:true,value:storage});}catch{ /* 替换失败时仍用平台存档。 */ }
+  try{Object.defineProperty(globalThis,'localStorage',{configurable:true,value:storage});}
+  catch{return '存档接口没有打开，这一局可能留不住。';}
   try{Object.defineProperty(globalThis,'indexedDB',{configurable:true,value:undefined});}catch{ /* 关不掉也不要中断启动。 */ }
+  return null;
 }
 
 function applyTheme(theme:MiniAppTheme):void{
@@ -135,14 +137,19 @@ export async function launchMiniApp(sdk:MiniAppSDK,boot:()=>Promise<void>=defaul
       paintShell();
       await tellHost();
     }
-    try{await installStorage(sdk);}catch{ /* 存档层失败不中断。 */ }
+    const notices:string[]=[];
+    try{
+      const storageNote=await installStorage(sdk);
+      if(storageNote)notices.push(storageNote);
+    }catch{notices.push('存档接口没有打开，这一局可能留不住。');}
     let unsubscribe:(()=>void)|undefined;
     try{
       if(sdk.permissions.has('theme.read')){
         unsubscribe=sdk.theme.onChange(applyTheme);
         applyTheme(await sdk.theme.get());
       }
-    }catch{ /* 主题失败不阻断。 */ }
+    }catch{notices.push('主题没有读到，先用默认外观。');}
+    (window as Window & {__DORO_MAPP_NOTICES?:string[]}).__DORO_MAPP_NOTICES=notices;
     let paths:string[]=[];
     try{paths=await sdk.assets.readJson(ASSET_LIST_URL) as string[];}catch{ /* 清单失败时仍尝试进游戏。 */ }
     const installed=await installAssets(sdk,Array.isArray(paths)?paths:[]);

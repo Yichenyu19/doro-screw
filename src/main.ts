@@ -161,7 +161,7 @@ function showHome():void {
     <img class="scene-backdrop" src="${assetUrl('backdrop.png')}" alt="" fetchpriority="high">
     <nav class="home-top"><span class="club-label">Doro · 打个螺丝</span><button class="icon-button" data-action="settings" aria-label="设置">${icon(save.settings.sound?5:6)}</button></nav>
     <header class="home-title"><h1><img class="home-logo" src="${assetUrl('logo.png')}" alt="DORO 打个螺丝" fetchpriority="high"></h1></header>
-    <div class="home-character" aria-label="一只准备拆螺丝的 Doro">${doro(1,'home-doro')}${sprite('fx',2,'home-heart')}${sprite('heads',0,'floating-screw screw-one')}${sprite('heads',4,'floating-screw screw-two')}<span class="character-note">你先拆，我看着。</span></div>
+    <div class="home-character" aria-label="一只准备拆螺丝的 Doro">${doro(1,'home-doro')}${sprite('fx',2,'home-heart')}${sprite('heads',0,'floating-screw screw-one')}${sprite('heads',4,'floating-screw screw-two')}</div>
     <section class="home-actions" aria-label="开始游戏">
       ${artButton(save.current?'continue':progress===CAMPAIGN_COUNT?'random-menu':'start',save.current?'继续拆！':progress===CAMPAIGN_COUNT?'来一局主题挑战':'开始拆！',{className:'start-button',icon:12})}
       ${save.current?`<p class="continue-note">${modeName(save.current.mode)}</p>`:''}
@@ -357,14 +357,14 @@ function closeModal():void {
 }
 
 function showPause():void {
-  modalReturn=null;saveNow();openModal('pause',`${doro(0,'dialog-doro')}<h2>我帮你盯着。</h2><p>已拆 ${engine?.state.moves??0} 颗</p><button class="save-message" data-action="save-status" data-save-status>正在保存…</button>${artButton('resume','继续拆',{icon:12})}<div class="dialog-button-grid">${artButton('help','怎么玩',{secondary:true})}${artButton('settings','设置',{secondary:true})}${artButton('challenge','挑战码',{secondary:true})}${artButton('records','记录',{secondary:true})}${artButton('artwork','画册',{secondary:true})}</div><div class="pause-links"><button data-action="retry-same">重来</button><button data-action="restart">主题挑战</button><button data-action="levels">关卡</button><button data-action="home">退出</button></div>`);updateSaveStatus();
+  modalReturn=null;saveNow();openModal('pause',`${doro(0,'dialog-doro')}<p>已拆 ${engine?.state.moves??0} 颗</p><button class="save-message" data-action="save-status" data-save-status>正在保存…</button>${artButton('resume','继续拆',{icon:12})}<div class="dialog-button-grid">${artButton('help','怎么玩',{secondary:true})}${artButton('settings','设置',{secondary:true})}${artButton('challenge','挑战码',{secondary:true})}${artButton('records','记录',{secondary:true})}${artButton('artwork','画册',{secondary:true})}</div><div class="pause-links"><button data-action="retry-same">重来</button><button data-action="restart">主题挑战</button><button data-action="levels">关卡</button><button data-action="home">退出</button></div>`);updateSaveStatus();
 }
 function confirmLaunch(launch:()=>void):void {
   const current=engine?.state.phase==='playing'||engine?.state.phase==='stuck'?engine.state:save.current;
   if(current&&current.moves>0){pendingLaunch=launch;if(modal)modalHistory.push(modal);navigatingBack=true;openModal('restart-confirm',`<h2>开始选择的盘面？</h2><p>已经拆了 ${current.moves} 颗。继续会重置这局未完成的盘面，记录仍保留。</p>${artButton('cancel-launch','保留盘面，返回')}${artButton('confirm-launch','确定，开始选择的局面',{secondary:true})}`,{closable:false});}else launch();
 }
 function showHelp():void {
-  openModal('help',`<h2>怎么玩</h2><ul class="help-cards"><li class="help-card"><div class="help-fig help-fig-box" aria-hidden="true">${sprite('cases',1,'help-case')}<span class="help-pins">${sprite('heads',1,'help-pin')}${sprite('heads',1,'help-pin')}${sprite('heads',1,'help-pin')}</span></div><p>同色三颗。</p></li><li class="help-card"><div class="help-fig help-fig-buffer" aria-hidden="true">${sprite('screws',8,'help-hole')}${sprite('screws',8,'help-hole')}${sprite('heads',0,'help-fill')}${sprite('screws',8,'help-hole')}${sprite('screws',8,'help-hole')}</div><p>对不上，先占一个孔。</p></li><li class="help-card"><div class="help-fig help-fig-hold" aria-hidden="true"><span class="hf-plate"></span><span class="hf-finger"></span></div><p>按住，看压着谁。</p></li><li class="help-card"><div class="help-fig help-fig-hinge" aria-hidden="true"><span class="hf-plate"></span>${sprite('heads',5,'help-pin')}</div><p>留一颗，玻璃会转。</p></li><li class="help-card"><div class="help-fig help-fig-zoom" aria-hidden="true"><span class="hf-lens"></span><span class="hf-handle"></span></div><p>双指放大。</p></li></ul>${artButton('close-modal','好')}${level?.tutorial?artButton('skip-tutorial','跳过',{secondary:true}):''}`);
+  openModal('help',`<h2>怎么玩</h2><ul class="help-cards"><li class="help-card"><div class="help-fig help-fig-box" aria-hidden="true">${sprite('cases',1,'help-case')}<span class="help-pins">${sprite('heads',1,'help-pin')}${sprite('heads',1,'help-pin')}${sprite('heads',1,'help-pin')}</span></div></li><li class="help-card"><div class="help-fig help-fig-buffer" aria-hidden="true">${sprite('screws',8,'help-hole')}${sprite('screws',8,'help-hole')}${sprite('heads',0,'help-fill')}${sprite('screws',8,'help-hole')}${sprite('screws',8,'help-hole')}</div></li><li class="help-card"><div class="help-fig help-fig-hold" aria-hidden="true"><span class="hf-plate"></span><span class="hf-finger"></span></div></li><li class="help-card"><div class="help-fig help-fig-hinge" aria-hidden="true"><span class="hf-plate"></span>${sprite('heads',5,'help-pin')}</div></li><li class="help-card"><div class="help-fig help-fig-zoom" aria-hidden="true"><span class="hf-lens"></span><span class="hf-handle"></span></div></li></ul>${artButton('close-modal','好')}${level?.tutorial?artButton('skip-tutorial','跳过',{secondary:true}):''}`);
 }
 function showPocket():void {
   if(!engine)return;const counts=COLORS.map(color=>({color,n:engine!.state.pocket.filter(id=>engine!.state.screws.find(s=>s.id===id)?.color===color).length})).filter(x=>x.n);
@@ -435,8 +435,8 @@ function chooseRecovery():void {
 function showSettings():void {
   const returnTo=modal==='pause'?'pause':modal==='settings'?modalReturn:null;
   openModal('settings',`<h2>玩得舒服一点</h2><div class="settings-list">${[
-    ['sound','音效','拧出、入盒、回流、落板和通关的小声音'],['reducedMotion','轻柔动效','减少庆祝、飞行和界面动效'],['colorLabels','颜色辅助','钉头内显示清晰字标，盒子和暂存显示色名'],
-  ].map(([key,name,description])=>`<button class="setting-row" data-action="setting" data-key="${key}" aria-pressed="${save.settings[key as keyof typeof save.settings]}"><span><strong>${name}</strong><small>${description}</small></span><span class="setting-state">${save.settings[key as keyof typeof save.settings]?'开启':'关闭'}</span></button>`).join('')}</div><p class="small-note">进度自动保存在这个浏览器里。</p>${artButton('close-settings','设置好了',{secondary:true})}`);
+    ['sound','音效',''],['reducedMotion','轻柔动效',''],['colorLabels','颜色字标',''],
+  ].map(([key,name])=>`<button class="setting-row" data-action="setting" data-key="${key}" aria-pressed="${save.settings[key as keyof typeof save.settings]}"><span><strong>${name}</strong></span><span class="setting-state">${save.settings[key as keyof typeof save.settings]?'开启':'关闭'}</span></button>`).join('')}</div><p class="small-note">进度自动保存在这个浏览器里。</p>${artButton('close-settings','设置好了',{secondary:true})}`);
   modalReturn=returnTo;
 }
 
@@ -459,7 +459,7 @@ function showAlbum():void {
   const nextArt=visible.findIndex((art,index)=>save.artworkProgress[index]<art.columns*art.rows);
   const volumeDone=volumeCompleted(save.artworkProgress);
   const note=save.album.length===ARTWORKS.length?'画都收齐了。':volumeDone?'这一卷收齐了。':save.materialBalance?'还存着 '+save.materialBalance+' 颗。':'先拆出材料，再把画填上。';
-  openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong><small>完成第一关得到的小纪念。</small></div></div>':''}${stampRow(save.titles)}<p class="small-note">${note}</p><div class="album-grid">${visible.map((art,index)=>{
+  openModal('album',`<h2>Doro 的螺丝画册</h2>${save.starterSticker?'<div class="starter-album"><img src="'+starterImage()+'" alt="开工纪念Doro贴纸"><div><strong>开工纪念</strong></div></div>':''}${stampRow(save.titles)}<p class="small-note">${note}</p><div class="album-grid">${visible.map((art,index)=>{
     const unlocked=save.album.includes(art.id),amount=save.artworkProgress[index],total=art.columns*art.rows;
     const encoreHead=index===ALBUM_VOLUME_COUNT?'<p class="album-encore-label">后来</p>':'';
     return `${encoreHead}<button class="album-card ${unlocked?'':'album-in-progress'}${index>=ALBUM_VOLUME_COUNT?' album-encore':''}" data-action="album-card" data-album="${art.id}" ${unlocked||index===nextArt?'':'disabled'}>${unlocked?`<img src="${assetUrl(`album-${art.id}.png`,'thumb')}" alt="${art.title}" loading="lazy">`:doro(index%6,'locked-doro')}<strong>${art.title}</strong><span>${unlocked?'已经收好':index===nextArt?`${amount} / ${total}`:'下一幅'}</span></button>`;
@@ -550,7 +550,7 @@ function showWin(celebrate=true):void {
   const nextGoal=`<section class="next-goal"><span class="eyebrow">${goal.volumeComplete?'画册':'下一幅'}</span><strong>${goalTitle}</strong><p>${earnedThisRound?'这局收好 '+earnedThisRound+' 颗。':''}${goal.summary}</p>${showEncoreMeter&&goal.index>=0?`<p class="next-goal-meter">${goal.filled} / ${goal.total}${goal.volumeComplete?'': ' · '+goal.stageName}</p>`:''}</section>`;
   const quiet=`<div class="quiet-rating" aria-label="${rating.moves} 步，暂存最高 ${rating.peakBuffer} / ${rating.capacity}"><span class="rating-moves">${rating.moves} 步${rating.improvedMoves?'<small>新</small>':''}</span>${bufferDots(rating.peakBuffer,rating.capacity)}</div>`;
   modalHistory=[];
-  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${starter?'第一颗小成就，收好。':finished?'主线拆完了。':'这一局，全拆完了。'}</h2>${starter?'<p class="starter-note">开工纪念贴纸已收入画册</p>':''}${finished?'<p>主线收好了。</p>':''}${stampRow(newStamps)}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}</p>${quiet}${markRow(rankMarks(rankId),rank)}${nextGoal}${finished?artButton('artwork','去画册收下这一卷',{icon:15}):canPaint?artButton('artwork','先填进画册',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('share-card','收下成绩卡',{secondary:true})}${artButton('challenge','挑战码',{secondary:true})}</div>${finished?artButton('home','回到首页',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
+  openModal('win',`<div class="win-character">${starter?'<img class="starter-win" src="'+starterImage()+'" alt="抱着金色螺丝的开工纪念Doro">':sprite('fx',5,'win-burst')+doro(5,'dialog-doro')}</div><span class="eyebrow">${rank}</span><h2>${finished?'主线拆完了。':'这一局，全拆完了。'}</h2>${finished?'<p>主线收好了。</p>':''}${stampRow(newStamps)}<p class="win-stats">${level.mode==='rescue'?'本局新拆 ':''}${count} 颗 · ${time}</p>${quiet}${markRow(rankMarks(rankId),rank)}${nextGoal}${finished?artButton('artwork','去画册收下这一卷',{icon:15}):canPaint?artButton('artwork','先填进画册',{icon:15}):artButton('next',nextText,{icon:12})}<div class="dialog-button-grid">${artButton('share-card','收下成绩卡',{secondary:true})}${artButton('challenge','挑战码',{secondary:true})}</div>${finished?artButton('home','回到首页',{secondary:true}):artButton('home','回到首页',{secondary:true})}`,{closable:false});
 }
 
 function rewindToLastSolvable():void {
@@ -747,6 +747,8 @@ export async function bootGame():Promise<void> {
   applySettings();
   showHome();
   if(loaded.warning)toast(loaded.warning,5500);
+  const hostNotes=import.meta.env.DORO_MAPP?(window as Window & {__DORO_MAPP_NOTICES?:string[]}).__DORO_MAPP_NOTICES:[];
+  if(hostNotes?.length)toast(hostNotes[0],6000);
   if(import.meta.env.DEV||import.meta.env.MODE==='verification'||import.meta.env.DORO_MAPP&&new URLSearchParams(location.search).has('check')||new URLSearchParams(location.search).has('check')) {
     Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,pick,showHome,showAlbum,showLevels,showRecords,showWin,showShareCard,showRandomMenu,showChallenge,get save(){return save;},get artwork(){return artwork;},delight},configurable:true});
   }

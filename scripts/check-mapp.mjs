@@ -93,11 +93,14 @@ async function main(){
     });
   });
   const consoleErrors=[],pageErrors=[],failed=[],violations=[];
+  let capturing=false;
   const ignoreUrl=url=>/\/(?:favicon\.ico|apple-touch-icon[^/]*\.png)$/i.test(url||'');
   page.on('console',msg=>{
     if(msg.type()!=='error')return;
     const loc=msg.location()?.url||'';
     if(ignoreUrl(loc))return;
+    // WebKit 截图时会往页面里塞一段样式，严格 CSP 把它记进控制台，但不会产生 securitypolicyviolation。
+    if(capturing&&msg.text().includes('Refused to apply a stylesheet'))return;
     consoleErrors.push(msg.text());
   });
   page.on('pageerror',err=>pageErrors.push(String(err.stack||err.message||err)));
@@ -131,9 +134,14 @@ async function main(){
   if(homeLarge.length)throw Error('首屏读取了大图：'+homeLarge.map(item=>item.url).join(' '));
   const banner=await page.locator('#mapp-mock-bar').textContent();
   const officialFlag=await page.evaluate(()=>window.__DORO_MAPP_MOCK__?.officialSandbox);
+  const snap=async(name,fullPage=false)=>{
+    capturing=true;
+    try{await page.screenshot({path:path.join(outDir,name),fullPage});}
+    finally{capturing=false;}
+  };
   const shot=async(name)=>{
     await page.evaluate(()=>{const bar=document.querySelector('#mapp-mock-bar');if(bar)bar.style.display='none';document.body.style.paddingTop='0';});
-    await page.screenshot({path:path.join(outDir,name)});
+    await snap(name);
     await page.evaluate(()=>{const bar=document.querySelector('#mapp-mock-bar');if(bar)bar.style.display='';document.body.style.paddingTop='';});
   };
   const overflow=()=>page.evaluate(()=>{
@@ -193,7 +201,13 @@ async function main(){
   await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
   await page.click('.home-character');
   const beforePlay=traffic.length;
-  await page.click('[data-action="start"]');
+  let homeStart=false;
+  for(let i=0;i<20&&!homeStart;i++){
+    await page.keyboard.press('Tab');
+    homeStart=await page.evaluate(()=>['start','continue'].includes(document.activeElement?.getAttribute?.('data-action')||''));
+  }
+  if(!homeStart)throw Error('首页 Tab 没有走到开始');
+  await page.keyboard.press('Enter');
   await waitBoard(page);
   await settle();
   const playLarge=traffic.slice(beforePlay).filter(item=>largeAsset(item.url));
@@ -205,16 +219,34 @@ async function main(){
   // 声音开关（平台 mock）
   await page.click('#mock-sound');
   const muted=await page.evaluate(()=>({flag:window.__DORO_MAPP_MOCK__.isMuted(),gain:window.__DORO_MAPP_MOCK__.muteGain()}));
-  await page.screenshot({path:path.join(outDir,'mapp-sound-muted-390x844.png'),fullPage:true});
+  await snap('mapp-sound-muted-390x844.png',true);
   await page.click('#mock-sound'); // 恢复有声，避免影响可玩性
 
-  const picks=await clickOfficial(page,8);
-  await page.click('[data-action="undo"]');
-  await page.click('[data-action="tools"]');
-  await page.waitForSelector('[data-action="use-melt"],[data-action="close-modal"]');
-  if(await page.$('[data-action="use-melt"]'))await page.click('[data-action="use-melt"]');
-  await page.click('[data-action="help"]').catch(()=>{});
-  if(await page.$('[data-action="close-modal"]'))await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[data-action="resume"]');
+  let pauseResume=false;
+  for(let i=0;i<16&&!pauseResume;i++){
+    await page.keyboard.press('Tab');
+    pauseResume=await page.evaluate(()=>document.activeElement?.getAttribute?.('data-action')==='resume');
+  }
+  if(!pauseResume)throw Error('暂停页 Tab 没有走到继续');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Tab');
+  const keyReach=await page.evaluate(()=>({tag:document.activeElement?.tagName||'',action:document.activeElement?.getAttribute?.('data-action')||''}));
+  const picks=[];
+  let won=false;
+  for(let i=0;i<40&&!won;i++){
+    picks.push(...await clickOfficial(page,1));
+    won=await page.evaluate(()=>window.__DORO__.engine.state.phase==='won');
+  }
+  if(!won)throw Error('第一关没有按解法走完');
+  await page.waitForSelector('.dialog h2');
+  const winTitle=await page.evaluate(()=>document.querySelector('.dialog h2')?.textContent||'');
   const end=await page.evaluate(()=>({phase:window.__DORO__?.engine?.state?.phase,moves:window.__DORO__?.engine?.state?.moves,levelId:window.__DORO__?.engine?.state?.levelId}));
   await page.evaluate(async()=>{await window.__DORO__.startLevel(2);});
   await waitBoard(page);
@@ -231,7 +263,7 @@ async function main(){
   await page.click('#mock-hide');
   await page.waitForTimeout(400);
   const paused=await page.evaluate(()=>({hidden:window.__DORO_MAPP_MOCK__.isHidden(),modal:!!document.querySelector('.dialog'),title:document.querySelector('.dialog h2')?.textContent||'',viewPaused:true}));
-  await page.screenshot({path:path.join(outDir,'mapp-hidden-pause-390x844.png'),fullPage:true});
+  await snap('mapp-hidden-pause-390x844.png',true);
 
   // 隐藏已弹出暂停页，直接从这里打开本局挑战码；不要先关掉再找按钮。
   await page.click('[data-action="challenge"]');
@@ -243,7 +275,7 @@ async function main(){
     const toast=document.querySelector('#toast')?.textContent||'';
     return{value:input?.value||'',selected:(input?.selectionEnd||0)-(input?.selectionStart||0),toast};
   });
-  await page.screenshot({path:path.join(outDir,'mapp-challenge-copy-390x844.png'),fullPage:true});
+  await snap('mapp-challenge-copy-390x844.png',true);
 
   // 刷新恢复
   await page.reload({waitUntil:'networkidle'});
@@ -255,7 +287,18 @@ async function main(){
   const restored=await page.evaluate(()=>({moves:window.__DORO__.engine.state.moves,runId:window.__DORO__.engine.state.runId,levelId:window.__DORO__.engine.state.levelId,phase:window.__DORO__.engine.state.phase}));
   await page.evaluate(()=>window.__DORO_MAPP_MOCK__.setTheme({mode:'dark',reducedMotion:true,background:'#24181c',text:'#fff6f8'}));
   const themed=await page.evaluate(()=>({dark:document.documentElement.classList.contains('mapp-dark'),reduced:document.documentElement.classList.contains('reduced-motion')}));
-  await page.screenshot({path:path.join(outDir,'mapp-restored-390x844.png'),fullPage:true});
+  await snap('mapp-restored-390x844.png',true);
+  await page.click('[data-action="undo"]');
+  await page.click('[data-action="tools"]');
+  await page.waitForSelector('[data-action="use-melt"],[data-action="close-modal"]');
+  if(await page.$('[data-action="use-melt"]'))await page.click('[data-action="use-melt"]');
+  if(await page.$('.modal-shade'))await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
+  await page.goto(`http://127.0.0.1:${port}/?check=1&fail=theme`,{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>(document.querySelector('#toast')?.textContent||'').includes('主题'),null,{timeout:20000});
+  const themeFail=await page.evaluate(()=>document.querySelector('#toast')?.textContent||'');
+  await page.goto(`http://127.0.0.1:${port}/?check=1&fail=storage`,{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>(document.querySelector('#toast')?.textContent||'').includes('存档'),null,{timeout:20000});
+  const storageFail=await page.evaluate(()=>document.querySelector('#toast')?.textContent||'');
   const csp=await page.evaluate(()=>window.__DORO_CSP||[]);
   const device=await page.evaluate(()=>({ua:navigator.userAgent,engine:navigator.vendor||'',ios:/iPhone|iPad/.test(navigator.userAgent)}));
 
@@ -281,6 +324,10 @@ async function main(){
   if(!copy.value||!String(copy.toast).includes('长按')||copy.selected===0)problems.push('挑战码复制降级不符合预期：'+JSON.stringify(copy));
   if(restored.runId!==mid.runId||restored.moves!==mid.moves)problems.push('刷新后未恢复中途存档：'+JSON.stringify({mid,restored}));
   if(!themed?.dark||!themed?.reduced)problems.push('深色或减少动效没有跟上主题：'+JSON.stringify(themed));
+  if(!['BUTTON','A','INPUT'].includes(keyReach.tag))problems.push('键盘没有落到可操作控件：'+JSON.stringify(keyReach));
+  if(end.phase!=='won'||!winTitle)problems.push('第一关没有走到通关页：'+JSON.stringify({end,winTitle}));
+  if(!themeFail.includes('主题'))problems.push('主题失败没有可见反馈：'+themeFail);
+  if(!storageFail.includes('存档'))problems.push('存档失败没有可见反馈：'+storageFail);
   if(csp.length||violations.length)problems.push('内容安全策略违规：'+JSON.stringify(csp.concat(violations)));
   if(!device.ios)problems.push('没有走到 iPhone 路径：'+device.ua);
 

@@ -55,7 +55,7 @@ Doro 是《胜利女神：妮姬》（NIKKE）角色 Dorothy 的同人形象，�
 1. 首页：标题「Doro · 打个螺丝」和「开始拆！」。
 2. 第 1 关开局盘面（窄屏，能看到盒子与螺丝）。
 3. 第 1 关通关结算。
-4. 对局中切换到其他页再回来：应看到暂停页「我帮你盯着。」
+4. 对局中切换到其他页再回来：应看到暂停页，上面有已拆颗数和「继续拆」。
 5. 挑战码页：输入框里的挑战码可长按全选；不要声称一键写入系统剪贴板。
 6. 刷新或关闭再打开后，从「继续这一局」回到中途盘面。
 7. （可选）平台声音开关开/关时的界面；以及系统深色背景下的首页。
@@ -84,7 +84,7 @@ Doro 是《胜利女神：妮姬》（NIKKE）角色 Dorothy 的同人形象，�
 ## 作者上传步骤（本助手到此停止）
 
 1. 在社区个人资料的应用页创建应用，填写上面的名称、简介，上传方形图标，复制应用 ID。
-2. 确认 `dist-mapp/package/BUILD.json` 的 `id` 是 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，且 `placeholderId` 为 `false`。需要重打时用 `MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.4 npm run build:mapp`。
+2. 确认 `dist-mapp/package/BUILD.json` 的 `id` 是 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，且 `placeholderId` 为 `false`。需要重打时用 `MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.5 npm run build:mapp`。
 3. 只上传 `dist-mapp/package/app.zip`，等待沙箱构建完成的系统私信。
 4. 打开 `/apps-sandbox/<app-id>/<version>-<8-char-sha>`，按「可重复步骤」自检，并重拍提审截图。
 5. 在正式页新建发布，选择该构建，粘贴版本说明、权限用途和版权声明。审核期间可以撤回。

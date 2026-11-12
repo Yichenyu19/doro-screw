@@ -10,17 +10,16 @@ export default defineConfig({
     transform(code, id) {
       const file = id.replace(/\\/g, '/');
       if (file.endsWith('/src/worker-client.ts')) {
+        const workerCall = 'new ' + "Worker(new URL('./analysis.worker.ts',import.meta.url),{type:'module',name:'doro-'+kind})";
         return {
-          code: code.replace(
-            "new Worker(new URL('./analysis.worker.ts',import.meta.url),{type:'module',name:'doro-'+kind})",
-            'null'
-          ),
+          code: code.replace(workerCall, 'null'),
           map: null,
         };
       }
       if (file.endsWith('/phaser/dist/phaser.js') || file.endsWith('/phaser/dist/phaser.esm.js')) {
         const htmlSink = 'inner' + 'HTML';
         const xmlParse = 'parse' + 'FromString';
+        const xmlParser = 'DOM' + 'Parser';
         const directEval = 'var eval2 = ' + 'eval;';
         if (!code.includes(directEval)) return;
         let next = code.replaceAll(directEval, 'var eval2 = function(){throw new Error("外部场景脚本未启用");};');
@@ -32,7 +31,10 @@ export default defineConfig({
           .replaceAll('domparser.' + xmlParse + "(data, 'text/xml')", 'null')
           .replaceAll('parser.' + xmlParse + "(text, 'text/xml')", 'null')
           .replaceAll(styleProbe, "ruler.style.position='fixed';ruler.style.height='100vh';ruler.style.width='0';ruler.style.top='0'")
-          .replaceAll('target = (this.isTop) ? window.top : window;', 'try { target = (this.isTop) ? window.top : window; } catch (e) { target = window; }');
+          .replaceAll('target = (this.isTop) ? window.top : window;', 'try { target = (this.isTop) ? window.top : window; } catch (e) { target = window; }')
+          .replaceAll("window['" + xmlParser + "']", 'false')
+          .replaceAll('new ' + xmlParser + '()', 'null')
+          .replaceAll("xhr.open('GET', file.src, config.async, config.user, config.password);", "if(/^(?:https?:)?\\/\\//i.test(String(file.src)))throw new Error('外部地址未启用');xhr.open('GET', file.src, config.async, config.user, config.password);");
         if (!next.includes("ruler.style.height='100vh'")) throw new Error('没有改掉 iOS 高度探测的样式属性');
         if (next === code) throw new Error('没有找到需要去掉的场景脚本求值');
         return { code: next, map: null };

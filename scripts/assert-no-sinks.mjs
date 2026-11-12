@@ -1,7 +1,7 @@
 import {readdir,readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-const pattern=/innerHTML|outerHTML|insertAdjacentHTML|document\.write|createContextualFragment|parseFromString|setHTMLUnsafe|\beval\s*\(|new Function|style="|setAttribute\(["']style["']/;
+const pattern=/innerHTML|outerHTML|insertAdjacentHTML|document\.write|createContextualFragment|\bDOMParser\b|parseFromString|setHTMLUnsafe|srcdoc|\beval\s*\(|new Function|style="|setAttribute\(["']style["']|@font-face|url\(\s*['\"][^'\"]+\.(?:woff2?|ttf|otf)|fetch\(\s*['"`](?:https?:)?\/\/|\.open\(\s*['"][^'"]*['"]\s*,\s*['"](?:https?:)?\/\/|window\.parent|window\.top\s*\.\s*(?:document|querySelector|querySelectorAll|getElementById|body|head)|new Worker\s*\(/;
 
 export async function assertNoSinks(dir){
   const files=[];
@@ -34,7 +34,9 @@ async function walk(dir,out=[]){
 export async function assertSourceClean(root='src'){
   const problems=[];
   for(const file of await walk(root)){
-    const text=await readFile(file,'utf8');
+    let text=await readFile(file,'utf8');
+    // 网站关卡分析仍用 Worker。微应用构建把它换成空值，打包时再扫分包。
+    if(file.endsWith('worker-client.ts')||file.endsWith('analysis.worker.ts'))text=text.replace(/new Worker\s*\(/g,'');
     if(pattern.test(text))problems.push(path.relative(root,file)+' 含受禁写入：'+(text.match(pattern)?.[0]||''));
   }
   if(problems.length)throw Error(problems.join('\n'));

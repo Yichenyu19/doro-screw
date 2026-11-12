@@ -14,7 +14,7 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
   const boxes=document.querySelector<HTMLElement>('#box-tray')!,buffer=document.querySelector<HTMLElement>('#buffer-tray')!;
   const columns=`repeat(${state.boxes.length},minmax(0,1fr))${state.boxes.length<4?' 44px':''}`;if(boxes.style.gridTemplateColumns!==columns)boxes.style.gridTemplateColumns=columns;
   if(boxes.dataset.count!==String(state.boxes.length)){
-    boxes.dataset.count=String(state.boxes.length);fill(boxes,state.boxes.map(b=>`<div class="box-slot" data-box-id="${b.id}"></div>`).join('')+(state.boxes.length<4?'<button class="add-box-compact" data-action="tools" aria-label="免费增加辅助收集盒"><b>+</b><small>辅助盒</small></button>':''));
+    boxes.dataset.count=String(state.boxes.length);fill(boxes,state.boxes.map(b=>`<div class="box-slot" data-box-id="${b.id}"></div>`).join('')+(state.boxes.length<4?'<button class="add-box-compact" data-action="tools" aria-label="免费辅助"><b>+</b></button>':''));
   }
   for(const [index,box]of state.boxes.entries()){
     const node=boxes.children[index] as HTMLElement,color=box.color;

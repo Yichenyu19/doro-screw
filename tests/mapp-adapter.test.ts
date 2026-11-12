@@ -19,9 +19,9 @@ test('微应用清单使用应用页分配的 UUID v7',async()=>{
   assert.match(manifest.id,/^[a-f0-9]{8}-[a-f0-9]{4}-7[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
   assert.equal(manifest.id,'01a1cddd-b6e3-70d1-8132-f37aceee7d9c');
   assert.match(manifest.version,/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/);
-  assert.deepEqual(manifest.permissions,['theme.read','storage.read','storage.write','audio.webAudio','files.save','code.load']);
-  assert.deepEqual(manifest.code,{scripts:['chunks/game.js']});
-  assert.equal(manifest.version,'1.0.6');
+  assert.deepEqual(manifest.permissions,['theme.read','storage.read','storage.write','audio.webAudio','files.save']);
+  assert.equal(manifest.code,undefined);
+  assert.equal(manifest.version,'1.0.7');
   assert.equal(manifest.entry,'index.html');
   assert.ok(!manifest.permissions.includes('links.open'));
   assert.ok(!manifest.permissions.includes('clipboard.write'));

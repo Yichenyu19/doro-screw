@@ -80,7 +80,7 @@ export default defineConfig({
       entry: fileURLToPath(new URL('../src/mapp/entry.ts', import.meta.url)),
       name: 'DoroScrew',
       formats: ['iife'],
-      fileName: () => 'chunks/game.js',
+      fileName: () => 'app.js',
       cssFileName: 'app',
     },
     rollupOptions: {

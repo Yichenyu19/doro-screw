@@ -21,10 +21,10 @@ import { ScrewArtwork } from './collection';
 import { COLORS, COLOR_NAMES, type Action, type GameEvent, type GameState, type LevelDef } from './types';
 import { createDelight } from './delight';
 
-const app=document.querySelector<HTMLDivElement>('#app')!;
+let app!:HTMLDivElement;
 let loaded:{data:ProgressSave;warning:string|null;run:import('./types').RunCheckpoint|null};
 let save:ProgressSave;
-const services=new GameServices();
+let services!:GameServices;
 let pendingLaunch:(()=>void)|null=null;
 let pendingStart:{id:number;saved?:GameState;attempt?:number;version:ContentVersion;playMode:PlayMode;revision:number}|null=null;
 let hintSequence=0;
@@ -46,7 +46,7 @@ let lastFocus:HTMLElement|null=null;
 let presenter:PresentationDirector|null=null;
 let artwork:ScrewArtwork|null=null;
 let earnedThisRound=0;
-let lastClockTime=performance.now();
+let lastClockTime=0;
 let tipTimer=0;
 let inspecting=false;
 let recordFilter:'campaign'|'random'|'legacy'='campaign';
@@ -59,7 +59,8 @@ let saveFrame=0,saveTask=0;
 let rulesPrepared=false;
 let teachingTimers:number[]=[];
 const htmlCache=new WeakMap<Element,string>();
-const delight=createDelight({get audio(){return audio;},reduced:()=>save.settings.reducedMotion,canIdle:()=>mode==='game'&&!!engine&&!!view&&engine.state.phase==='playing'&&!modal&&!inspecting&&!document.hidden,react:index=>react(index)});
+let delight!:ReturnType<typeof createDelight>;
+let shellBound=false;
 const occupied=(state:GameState)=>state.buffer.filter(id=>id!==null).length;
 function setHtml(selector:string,html:string):void {const target=document.querySelector(selector);if(target&&htmlCache.get(target)!==html){fill(target,html);htmlCache.set(target,html);}}
 function setText(selector:string,value:string):void{const target=document.querySelector(selector);if(target&&target.textContent!==value)target.textContent=value;}
@@ -675,7 +676,15 @@ function dispatchButton(button:HTMLElement):void {
 
 }
 
-app.addEventListener('click',event=>{
+function bindShell():void{
+  if(shellBound)return;
+  const found=document.querySelector<HTMLDivElement>('#app');
+  if(!found)throw Error('缺少应用容器');
+  app=found;
+  services=new GameServices();
+  delight=createDelight({get audio(){return audio;},reduced:()=>save.settings.reducedMotion,canIdle:()=>mode==='game'&&!!engine&&!!view&&engine.state.phase==='playing'&&!modal&&!inspecting&&!document.hidden,react:index=>react(index)});
+  lastClockTime=performance.now();
+  app.addEventListener('click',event=>{
   const target=event.target instanceof Element?event.target.closest<HTMLElement>('[data-action]'):null;
   // 发射手势的合成 click 不再领取刚完成的作品，也不在松手后补射。
   const consumedPointer=artPointerClickTarget!==null&&target===artPointerClickTarget&&event.detail>0;
@@ -734,13 +743,16 @@ window.addEventListener('orientationchange',()=>{presenter?.flush();view?.invali
 visualViewport?.addEventListener('resize',()=>{presenter?.flush();view?.invalidateLayout();});
 document.addEventListener('gesturestart',event=>event.preventDefault());
 document.addEventListener('gesturechange',event=>event.preventDefault());
-function clockFrame(time:number){tickClock(time);requestAnimationFrame(clockFrame);}
-requestAnimationFrame(clockFrame);
-window.setInterval(()=>{
-  if(save&&mode==='game'&&engine&&!document.hidden)saveNow();
-},5000);
+  function clockFrame(time:number){tickClock(time);requestAnimationFrame(clockFrame);}
+  requestAnimationFrame(clockFrame);
+  window.setInterval(()=>{
+    if(save&&mode==='game'&&engine&&!document.hidden)saveNow();
+  },5000);
+  shellBound=true;
+}
 
 export async function bootGame():Promise<void> {
+  bindShell();
   loaded=await loadSaveAsync();
   save=loaded.data;
   audio=new GameAudio(save.settings.sound);

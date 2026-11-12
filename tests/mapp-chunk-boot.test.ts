@@ -2,19 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-import {assertChunkShape,assertGameChunkSource,finalizeGameSource} from '../scripts/assert-game-chunk.mjs';
+import {assertPackedApp,finalizeGameSource} from '../scripts/assert-game-chunk.mjs';
 
-test('打包后的游戏分包只定义 boot，两种时序都不会提前启动',async()=>{
+test('单一 app.js 用 new Function 不启动，调用启动函数后才进首页',async()=>{
   const built=spawnSync(process.execPath,['node_modules/vite/bin/vite.js','build','--config','mapp/vite.config.ts'],{stdio:'inherit'});
   assert.equal(built.status,0);
-  const raw=readFileSync('dist-mapp/web/chunks/game.js','utf8');
+  const raw=readFileSync('dist-mapp/web/app.js','utf8');
   const code=finalizeGameSource(raw);
-  assertChunkShape(code);
-  const result=await assertGameChunkSource(code);
-  assert.equal(result.sync.booted,false);
-  assert.equal(result.micro.booted,false);
-  assert.equal(result.sync.boot,'function');
-  assert.equal(result.micro.boot,'function');
-  assert.match(result.tail,/globalThis\.DoroGame=Object\.freeze\(\{boot:/);
-  assert.doesNotMatch(code,/DoroGame\.boot\s*\(/);
+  const manifest=JSON.parse(readFileSync('mapp/manifest.json','utf8'));
+  const result=await assertPackedApp(code,manifest);
+  assert.equal(result.bare.booted,false);
+  assert.equal(result.bare.listenerFailures,0);
+  assert.equal(result.home.home,true);
+  assert.doesNotMatch(code,/<\/script/);
+  assert.doesNotMatch(code,/\bnew Function\b|\beval\s*\(|innerHTML/);
 });

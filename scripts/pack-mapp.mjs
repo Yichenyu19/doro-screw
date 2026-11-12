@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {pack} from '@discourse-mini-app/sdk/pack';
 import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,isAlbumWorkingFile} from './mapp-assets.mjs';
 import {assertNoSinks} from './assert-no-sinks.mjs';
-import {finalizeGameSource,assertGameChunkSource} from './assert-game-chunk.mjs';
+import {finalizeGameSource,assertPackedApp} from './assert-game-chunk.mjs';
 
 function compressPlan(file){
   const base=path.basename(file);
@@ -44,8 +44,8 @@ await copyFile(path.join(root,'mapp/strings.json'),path.join(web,'strings.json')
 const runtime=await listMappRuntimeFiles();
 const albumHd=await listMappAlbumHdFiles();
 const sfx=await listMappSfxFiles();
-const extra=['asset-list.json','chunks/game.js'];
-// 关卡已经打进游戏分包。微应用里 usePack 为假，不再把 campaign JSON 打进 ZIP。
+const extra=['asset-list.json'];
+// 关卡已经打进 app.js。微应用里 usePack 为假，不再把 campaign JSON 打进 ZIP。
 const startup=runtime.filter(file=>!isAlbumWorkingFile(file));
 const assets=[...runtime,...albumHd,...sfx,...extra];
 await writeFile(path.join(web,'asset-list.json'),JSON.stringify(startup,null,0));
@@ -56,23 +56,15 @@ for(const file of sfx){
   await copyFile(path.join(root,'public',file),to);
 }
 
-manifest.permissions=[...new Set([...(manifest.permissions||[]),'code.load'])];
-manifest.code={...(manifest.code||{}),scripts:['chunks/game.js']};
+manifest.permissions=(manifest.permissions||[]).filter(item=>item!=='code.load');
+delete manifest.code;
 manifest.assets=assets;
-const shell=await readFile(path.join(root,'mapp/shell.js'),'utf8');
-if(shell.length>4096)throw Error('入口 app.js 超过 4096 字节，宿主还要先解析完才能收到 ready。');
-if(/\beval\b|new Function|new Worker/.test(shell))throw Error('入口 app.js 含 eval、new Function 或 new Worker。');
-const readyAt=shell.indexOf('lifecycle.ready');
-const loadAt=shell.indexOf('scripts.load');
-const paintAt=shell.indexOf('正在打开');
-if(paintAt<0||readyAt<0||loadAt<0||!(paintAt<readyAt&&readyAt<loadAt))throw Error('入口没有在加载分包之前画出加载壳并调用 lifecycle.ready。');
-await writeFile(path.join(web,'app.js'),shell);
-const gamePath=path.join(web,'chunks/game.js');
-let gameJs=await readFile(gamePath,'utf8');
-const rewritten=finalizeGameSource(gameJs);
-await writeFile(gamePath,rewritten);
-const chunkCheck=await assertGameChunkSource(rewritten);
-console.log('game chunk',JSON.stringify(chunkCheck.sync),JSON.stringify(chunkCheck.micro));
+const appPath=path.join(web,'app.js');
+let appJs=await readFile(appPath,'utf8');
+const rewritten=finalizeGameSource(appJs);
+await writeFile(appPath,rewritten);
+const appCheck=await assertPackedApp(rewritten,manifest);
+console.log('packed app',JSON.stringify(appCheck));
 const files={};
 for(const name of ['index.html','app.js','app.css','strings.json',...assets]){
   files[name]=await readFile(path.join(web,name));

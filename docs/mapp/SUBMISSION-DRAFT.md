@@ -84,7 +84,7 @@ Doro 是《胜利女神：妮姬》（NIKKE）角色 Dorothy 的同人形象，�
 ## 作者上传步骤（本助手到此停止）
 
 1. 在社区个人资料的应用页创建应用，填写上面的名称、简介，上传方形图标，复制应用 ID。
-2. 确认 `dist-mapp/package/BUILD.json` 的 `id` 是 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，且 `placeholderId` 为 `false`。需要重打时用 `MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.6 npm run build:mapp`。
+2. 确认 `dist-mapp/package/BUILD.json` 的 `id` 是 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，且 `placeholderId` 为 `false`。需要重打时用 `MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.7 npm run build:mapp`。
 3. 只上传 `dist-mapp/package/app.zip`，等待沙箱构建完成的系统私信。
 4. 打开 `/apps-sandbox/<app-id>/<version>-<8-char-sha>`，按「可重复步骤」自检，并重拍提审截图。
 5. 在正式页新建发布，选择该构建，粘贴版本说明、权限用途和版权声明。审核期间可以撤回。

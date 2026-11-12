@@ -233,3 +233,163 @@ export async function assertGameChunkFile(file){
   const code=await readFile(file,'utf8');
   return assertGameChunkSource(code);
 }
+
+function nullDocument(){
+  const failures=[];
+  const listen=(target,name)=>{
+    try{
+      if(target==null)throw new TypeError('addEventListener on null');
+    }catch(error){failures.push(String(error));}
+    return function(){};
+  };
+  const doc={
+    currentScript:null,
+    hidden:false,
+    visibilityState:'visible',
+    readyState:'complete',
+    documentElement:{classList:{add(){},remove(){},toggle(){}},style:{}},
+    body:null,
+    head:{appendChild(){},removeChild(){}},
+    querySelector(){return null;},
+    querySelectorAll(){return [];},
+    getElementById(){return null;},
+    getElementsByTagName(){return [];},
+    createElement(){
+      const node={style:{},classList:{add(){},remove(){},toggle(){},contains:()=>false},setAttribute(){},appendChild(){},removeChild(){},addEventListener(){},removeEventListener(){},width:300,height:150,childNodes:[],children:[]};
+      node.getContext=()=>({canvas:node,fillRect(){},clearRect(){},getImageData:()=>({data:new Uint8Array(4)}),putImageData(){},createImageData:()=>({}),setTransform(){},drawImage(){},save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},translate(){},scale(){},rotate(){},arc(){},fill(){},measureText:()=>({width:0}),transform(){},rect(){},clip(){},createLinearGradient:()=>({addColorStop(){}})});
+      node.getBoundingClientRect=()=>({width:0,height:0,top:0,left:0,right:0,bottom:0});
+      return node;
+    },
+    createElementNS(){return {style:{},setAttribute(){},appendChild(){}};},
+    createTextNode(text){return {textContent:text};},
+    createDocumentFragment(){return {appendChild(){},children:[]};},
+    addEventListener:listen({}),
+    removeEventListener(){},
+    hasFocus(){return false;},
+  };
+  return {doc,failures};
+}
+
+export function executePackedAppBare(code){
+  const {doc,failures}=nullDocument();
+  const sandbox={
+    console,setTimeout,clearTimeout,setInterval:()=>0,clearInterval(){},
+    document:doc,
+    addEventListener(){},
+    removeEventListener(){},
+    requestAnimationFrame:()=>1,
+    cancelAnimationFrame(){},
+    navigator:{userAgent:'vm',language:'zh-CN'},
+    location:{href:'http://127.0.0.1/',search:'',pathname:'/'},
+    performance:{now:()=>0},
+    devicePixelRatio:1,
+    getComputedStyle:()=>({}),
+    matchMedia:()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}}),
+    HTMLElement:class{},Element:class{},Node:class{},HTMLCanvasElement:class{},SVGElement:class{},
+    Image:class{set src(_value){}},
+    Audio:class{},
+    AudioContext:class{constructor(){throw Error('加载时不能创建 AudioContext');}},
+    __code:code,
+  };
+  sandbox.window=sandbox;
+  sandbox.self=sandbox;
+  sandbox.globalThis=sandbox;
+  vm.runInContext('new Function(__code)()',vm.createContext(sandbox),{timeout:15000});
+  if(failures.length)throw Error('addEventListener 失败：'+failures.join(' | '));
+  if(sandbox.__DORO__||sandbox.__DORO_GAME_CHUNK__)throw Error('new Function 执行时已经启动了游戏');
+  if(typeof sandbox.DoroGame?.boot!=='function')throw Error('new Function 执行后没有启动函数');
+  return {booted:false,boot:'function',listenerFailures:failures.length};
+}
+
+export async function executePackedAppWithApp(code){
+  const {JSDOM}=await import('jsdom');
+  const dom=new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>',{url:'http://127.0.0.1/?check=1',pretendToBeVisual:true});
+  const win=dom.window;
+  win.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
+  if(!win.requestAnimationFrame)win.requestAnimationFrame=()=>1;
+  const fakeContext=()=>new Proxy({canvas:{}},{
+    get(target,key){if(key in target)return target[key];return ()=>fakeContext();},
+    set(target,key,value){target[key]=value;return true;},
+  });
+  win.HTMLCanvasElement.prototype.getContext=()=>fakeContext();
+  const sdk={
+    ready:Promise.resolve(),
+    permissions:{has:()=>true},
+    lifecycle:{ready:async()=>{}},
+    theme:{async get(){return {mode:'light',background:'#fff',text:'#111',reducedMotion:false,locale:'zh_CN',accent:'#000',border:'#ccc'};},onChange:()=>()=>{}},
+    localStorage:{exportData:async()=>({format:1,entries:[]}),setItem:async()=>{},removeItem:async()=>{},clear:async()=>{}},
+    assets:{readJson:async()=>[],readBytes:async()=>new Uint8Array(),readText:async()=>'[]'},
+    files:{save:async()=>{}},
+  };
+  const timers=new Set();
+  const sandbox={
+    console,
+    setTimeout:(fn,ms,...args)=>{const id=setTimeout(fn,ms,...args);id.unref?.();return id;},
+    clearTimeout,
+    setInterval:(fn,ms,...args)=>{const id=setInterval(fn,ms,...args);id.unref?.();timers.add(id);return id;},
+    clearInterval:(id)=>{timers.delete(id);clearInterval(id);},
+    document:win.document,navigator:win.navigator,localStorage:win.localStorage,location:win.location,history:win.history,
+    performance:win.performance,HTMLElement:win.HTMLElement,Element:win.Element,Node:win.Node,Image:win.Image,Audio:win.Audio,
+    SVGElement:win.SVGElement,HTMLCanvasElement:win.HTMLCanvasElement,MutationObserver:win.MutationObserver,
+    ResizeObserver:win.ResizeObserver||class{observe(){}disconnect(){}},
+    requestAnimationFrame:callback=>win.requestAnimationFrame(callback),
+    cancelAnimationFrame:id=>win.cancelAnimationFrame?.(id),
+    addEventListener:(...args)=>win.addEventListener(...args),
+    removeEventListener:(...args)=>win.removeEventListener(...args),
+    getComputedStyle:element=>win.getComputedStyle(element),
+    matchMedia:query=>win.matchMedia(query),
+    devicePixelRatio:1,
+    innerWidth:390,innerHeight:844,
+    URL,URLSearchParams,Blob,TextEncoder,TextDecoder,atob,btoa,crypto,fetch,Headers,Request,Response,queueMicrotask,structuredClone,
+    FormData:globalThis.FormData||class FormData{},
+    File:globalThis.File||class File{},
+    FileReader:globalThis.FileReader||class FileReader{},
+    DOMParser:globalThis.DOMParser||class DOMParser{parseFromString(){return null;}},
+    XMLHttpRequest:globalThis.XMLHttpRequest||class XMLHttpRequest{},
+    WebSocket:globalThis.WebSocket||class WebSocket{},
+    Worker:globalThis.Worker||class Worker{},
+    visualViewport:{width:390,height:844,addEventListener(){},removeEventListener(){}},
+    miniApp:sdk,
+    __code:code,
+  };
+  sandbox.window=sandbox;
+  sandbox.self=sandbox;
+  sandbox.globalThis=sandbox;
+  try{
+    vm.runInContext('new Function(__code)()',vm.createContext(sandbox),{timeout:15000});
+    const loaded=win.document.querySelector('#app')?.textContent||'';
+    if(/开始拆|继续拆/.test(loaded))throw Error('加载本身已经进入首页');
+    if(typeof sandbox.DoroGame?.boot!=='function')throw Error('jsdom 执行后没有启动函数');
+    await sandbox.DoroGame.boot();
+    const home=win.document.querySelector('#app')?.textContent||'';
+    if(!/开始拆|继续拆/.test(home))throw Error('调用启动函数后没有首页：'+home.slice(0,120));
+    return {loaded:loaded.slice(0,40),home:true};
+  }finally{
+    for(const id of timers)clearInterval(id);
+    win.close();
+  }
+}
+
+export function assertAppStatic(code,manifest){
+  if(manifest?.permissions?.includes('code.load'))throw Error('清单仍申请了 code.load');
+  if(manifest?.code?.scripts?.length)throw Error('清单仍声明了 code.scripts');
+  if(JSON.stringify(manifest?.assets||[]).includes('chunks/game.js'))throw Error('清单资源仍包含 chunks/game.js');
+  if(code.includes('</script'))throw Error('app.js 含有 </script');
+  if(/\bnew Function\b|\beval\s*\(|innerHTML|outerHTML|insertAdjacentHTML/.test(code))throw Error('app.js 仍有 innerHTML、eval 或 new Function');
+  if(/Promise\.resolve\(\)\.then\(\(\)\s*=>\s*[A-Za-z_$]/.test(code)){
+    const re=/Promise\.resolve\(\)\.then\(\(\)\s*=>\s*([A-Za-z_$][\w$]*)\s*\)/g;
+    const forward=[];
+    for(let match=re.exec(code);match;match=re.exec(code)){
+      const decl=code.search(new RegExp(`\\b(?:const|let|var|function)\\s+${match[1]}\\b`));
+      if(decl<0||decl>match.index)forward.push(match[1]);
+    }
+    if(forward.length)throw Error('app.js 仍有前向引用：'+forward.join(','));
+  }
+}
+
+export async function assertPackedApp(code,manifest){
+  assertAppStatic(code,manifest);
+  const bare=executePackedAppBare(code);
+  const home=await executePackedAppWithApp(code);
+  return {bare,home,head:code.slice(0,180),tail:code.slice(-300)};
+}

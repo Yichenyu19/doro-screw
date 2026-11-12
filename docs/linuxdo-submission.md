@@ -1,7 +1,7 @@
 # Doro个螺丝 · Linux DO 提审说明
 
 应用 ID：`01a1cddd-b6e3-70d1-8132-f37aceee7d9c`  
-版本：`1.0.6`  
+版本：`1.0.7`  
 对照表：[上架合规对照](linuxdo-compliance.md)  
 这是一款单机拆螺丝游戏。没有广告，没有联网，没有账号。
 
@@ -30,7 +30,6 @@
 - `storage.read` / `storage.write`：把关卡进度、撤回和画册存在这个应用自己的存档里。
 - `audio.webAudio`：拆螺丝的短音效。静音由平台开关控制，游戏不会抢着出声。
 - `files.save`：玩家主动保存成绩卡或恢复记录时，交给系统保存文件。
-- `code.load`：入口脚本很短，先告诉宿主已经打开，再加载游戏分包 `chunks/game.js`。
 
 没有申请联网、外链、剪贴板、定位、摄像头或 `code.eval`。
 

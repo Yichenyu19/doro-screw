@@ -8,7 +8,7 @@ import {createServer} from 'node:net';
 import {copyFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {assemblePreview,servePreview} from './serve-mapp-preview.mjs';
+import {assemblePreview,servePreview,MAPP_CSP} from './serve-mapp-preview.mjs';
 
 const require=createRequire(import.meta.url);
 const {chromium}=require('playwright');
@@ -52,7 +52,7 @@ async function main(){
   if(!skipBuild)run(process.execPath,['scripts/build-mapp.mjs']);
   const preview=await assemblePreview();
   const port=await freePort();
-  const server=await servePreview(preview,port);
+  const server=await servePreview(preview,port,{'Content-Security-Policy':MAPP_CSP});
   const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const context=await browser.newContext({
     viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,
@@ -84,7 +84,7 @@ async function main(){
       get(){return current;},
     });
   });
-  const consoleErrors=[],pageErrors=[],failed=[];
+  const consoleErrors=[],pageErrors=[],failed=[],violations=[];
   const ignoreUrl=url=>/\/(?:favicon\.ico|apple-touch-icon[^/]*\.png)$/i.test(url||'');
   page.on('console',msg=>{
     if(msg.type()!=='error')return;
@@ -93,6 +93,11 @@ async function main(){
     consoleErrors.push(msg.text());
   });
   page.on('pageerror',err=>pageErrors.push(String(err.stack||err.message||err)));
+  await page.addInitScript(()=>{
+    document.addEventListener('securitypolicyviolation',event=>{
+      (window.__DORO_CSP=window.__DORO_CSP||[]).push(event.violatedDirective+' '+event.effectiveDirective+' '+event.blockedURI);
+    });
+  });
   const traffic=[];
   const largeAsset=url=>/\/album-\d+(?:-hd)?\.[0-9a-f]+\.webp(?:$|\?)/.test(url);
   page.on('response',res=>{
@@ -178,6 +183,7 @@ async function main(){
     await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
   }
   await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
+  await page.click('.home-character');
   const beforePlay=traffic.length;
   await page.click('[data-action="start"]');
   await waitBoard(page);
@@ -194,7 +200,13 @@ async function main(){
   await page.screenshot({path:path.join(outDir,'mapp-sound-muted-390x844.png'),fullPage:true});
   await page.click('#mock-sound'); // 恢复有声，避免影响可玩性
 
-  const picks=await clickOfficial(page,3);
+  const picks=await clickOfficial(page,8);
+  await page.click('[data-action="undo"]');
+  await page.click('[data-action="tools"]');
+  await page.waitForSelector('[data-action="use-melt"],[data-action="close-modal"]');
+  if(await page.$('[data-action="use-melt"]'))await page.click('[data-action="use-melt"]');
+  await page.click('[data-action="help"]').catch(()=>{});
+  if(await page.$('[data-action="close-modal"]'))await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
   const end=await page.evaluate(()=>({phase:window.__DORO__?.engine?.state?.phase,moves:window.__DORO__?.engine?.state?.moves,levelId:window.__DORO__?.engine?.state?.levelId}));
   await page.evaluate(async()=>{await window.__DORO__.startLevel(2);});
   await waitBoard(page);
@@ -233,7 +245,10 @@ async function main(){
   else await page.click('[data-action="start"]');
   await waitBoard(page);
   const restored=await page.evaluate(()=>({moves:window.__DORO__.engine.state.moves,runId:window.__DORO__.engine.state.runId,levelId:window.__DORO__.engine.state.levelId,phase:window.__DORO__.engine.state.phase}));
+  await page.evaluate(()=>window.__DORO_MAPP_MOCK__.setTheme({mode:'dark',reducedMotion:true,background:'#24181c',text:'#fff6f8'}));
+  const themed=await page.evaluate(()=>({dark:document.documentElement.classList.contains('mapp-dark'),reduced:document.documentElement.classList.contains('reduced-motion')}));
   await page.screenshot({path:path.join(outDir,'mapp-restored-390x844.png'),fullPage:true});
+  const csp=await page.evaluate(()=>window.__DORO_CSP||[]);
 
   await context.close();
   await browser.close();
@@ -256,6 +271,8 @@ async function main(){
   if(!paused.modal)problems.push('页面隐藏后未出现暂停界面：'+JSON.stringify(paused));
   if(!copy.value||!String(copy.toast).includes('长按')||copy.selected===0)problems.push('挑战码复制降级不符合预期：'+JSON.stringify(copy));
   if(restored.runId!==mid.runId||restored.moves!==mid.moves)problems.push('刷新后未恢复中途存档：'+JSON.stringify({mid,restored}));
+  if(!themed?.dark||!themed?.reduced)problems.push('深色或减少动效没有跟上主题：'+JSON.stringify(themed));
+  if(csp.length||violations.length)problems.push('内容安全策略违规：'+JSON.stringify(csp.concat(violations)));
 
   const videos=(await import('node:fs')).readdirSync(outDir).filter(f=>f.endsWith('.webm'));
   const artifacts='/opt/cursor/artifacts';
@@ -264,7 +281,7 @@ async function main(){
     await copyFile(path.join(outDir,name),path.join(artifacts,name));
   }
   if(hdShots.length!==2||hdShots.some(item=>item.width<800))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',csp:MAPP_CSP,violations:csp.concat(violations),banner,muted,l1,l2,themed,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
   await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
   console.log(JSON.stringify({ok:report.ok,homeBytes,homeRequests:homeTraffic.length,hdShots,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
   if(problems.length){console.error(problems.join('\n'));process.exit(1);}

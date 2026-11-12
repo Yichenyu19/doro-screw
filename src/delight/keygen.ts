@@ -1,3 +1,4 @@
+import {fill} from '../markup';
 /** 「免费辅助」的破解版身份：注册机小铭牌 + 打补丁动效。纯装饰，不改任何规则。 */
 export const SERIAL_FINAL='D0R0-FREE-NOAD-0000';
 const GLYPHS='0123456789ABCDEFX#$%&@';
@@ -35,7 +36,7 @@ export function patchSweep(host:HTMLElement|null,reduced:boolean,onDone:()=>void
   if(!host){onDone();return;}
   host.querySelector('.dl-patch')?.remove();
   const bar=document.createElement('div');bar.className='dl-patch';bar.setAttribute('aria-hidden','true');
-  bar.innerHTML='<span class="dl-patch-cells">'+'<i></i>'.repeat(8)+'</span>';
+  fill(bar,'<span class="dl-patch-cells">'+'<i></i>'.repeat(8)+'</span>');
   host.appendChild(bar);
   if(reduced){bar.classList.add('dl-patch-static');window.setTimeout(()=>{bar.remove();onDone();},500);return;}
   const cells=[...bar.querySelectorAll('i')];

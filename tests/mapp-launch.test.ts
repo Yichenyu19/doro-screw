@@ -19,11 +19,20 @@ test('启动清单把首页图排到前面，并跳过战役 JSON',()=>{
   assert.equal(order.at(-1),'runtime/screws-atlas.24e06b5501.webp');
 });
 
+async function exclusive(run){
+  const previous=globalThis.__doroDomLock||Promise.resolve();
+  let release;
+  globalThis.__doroDomLock=new Promise(resolve=>{release=resolve;});
+  await previous;
+  try{return await run();}
+  finally{release();}
+}
 test('lifecycle.ready 不等待素材读取和 bootGame',async()=>{
+  await exclusive(async()=>{
   const events:string[]=[];
   let readsAtReady=0;
   let reads=0;
-  const app={innerHTML:'',textContent:''};
+  const app={text:'',replaceChildren(node){this.text=node.textContent;}};
   const element={
     classList:{add(){},toggle(){}},
     style:{setProperty(){},background:''},
@@ -40,6 +49,7 @@ test('lifecycle.ready 不等待素材读取和 bootGame',async()=>{
       documentElement:element,
       body:element,
       querySelector:(selector:string)=>selector==='#app'?app:null,
+      createElement:()=>({className:'',textContent:'',setAttribute(){}}),
     },
     window:{addEventListener(){}},
   });
@@ -67,7 +77,7 @@ test('lifecycle.ready 不等待素材读取和 bootGame',async()=>{
     assert.deepEqual(events,['ready','boot']);
     assert.equal(readsAtReady,0);
     assert.ok(reads>=2);
-    assert.match(app.innerHTML,/正在打开/);
+    assert.equal(app.text,'正在打开…');
   }finally{
     setAssetResolver(null);
     globalThis.document=previous.document;
@@ -77,4 +87,5 @@ test('lifecycle.ready 不等待素材读取和 bootGame',async()=>{
     if(previous.indexedDB)Object.defineProperty(globalThis,'indexedDB',previous.indexedDB);
     else delete (globalThis as {indexedDB?:unknown}).indexedDB;
   }
+  });
 });

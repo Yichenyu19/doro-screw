@@ -522,7 +522,7 @@ export function mountGame(container: HTMLElement, engine: GameEngine, settings: 
     game = new Phaser.Game({ type: webKit||canvasProbe ? Phaser.CANVAS : Phaser.AUTO, parent: container, transparent: true,
       width: Math.max(1, container.clientWidth * pixelRatio), height: Math.max(1, container.clientHeight * pixelRatio),
       antialias: true,
-      input:{mouse:false,touch:false,keyboard:false,gamepad:false},
+      input:{mouse:false,touch:false,keyboard:false,gamepad:false,windowEvents:false},
       render: { antialias: true, antialiasGL:false, roundPixels: false, transparent: true, premultipliedAlpha: true },
       scale: { mode: Phaser.Scale.NONE, zoom: 1 / pixelRatio, autoCenter: Phaser.Scale.CENTER_BOTH },
       physics: { default: 'matter', matter: { gravity: { x: 0, y: .75 }, enableSleeping: false, autoUpdate: false, positionIterations: 8, velocityIterations: 8, constraintIterations: 4 } },

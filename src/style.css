@@ -5,6 +5,7 @@
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
 }
 
+.art{display:inline-block;background-size:100% 100%;background-repeat:no-repeat;}
 /* V4：棋盘保留空间；镜头控制按需展开，记录和恢复状态直接可达。 */
 .board-camera{position:absolute;right:44px;bottom:0;z-index:12;height:44px;}
 .board-camera button{min-width:44px;min-height:44px;font-size:12px;font-weight:800;}

@@ -4,6 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pack} from '@discourse-mini-app/sdk/pack';
 import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,isAlbumWorkingFile} from './mapp-assets.mjs';
+import {assertNoSinks} from './assert-no-sinks.mjs';
 
 function compressPlan(file){
   const base=path.basename(file);
@@ -77,6 +78,7 @@ const files={};
 for(const name of ['index.html','app.js','app.css','strings.json',...assets]){
   files[name]=await readFile(path.join(web,name));
 }
+await assertNoSinks(web);
 const result=await pack({manifest,files,outputDirectory:out});
 const sha=result.zipSha256||createHash('sha256').update(await readFile(result.file)).digest('hex');
 const info={

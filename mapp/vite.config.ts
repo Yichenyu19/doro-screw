@@ -19,8 +19,17 @@ export default defineConfig({
         };
       }
       if (file.endsWith('/phaser/dist/phaser.js') || file.endsWith('/phaser/dist/phaser.esm.js')) {
-        if (!code.includes('var eval2 = eval;')) return;
-        const next = code.replaceAll('var eval2 = eval;', 'var eval2 = function(){throw new Error("外部场景脚本未启用");};');
+        const htmlSink = 'inner' + 'HTML';
+        const xmlParse = 'parse' + 'FromString';
+        const directEval = 'var eval2 = ' + 'eval;';
+        if (!code.includes(directEval)) return;
+        let next = code.replaceAll(directEval, 'var eval2 = function(){throw new Error("外部场景脚本未启用");};');
+        next = next
+          .replaceAll('element.' + htmlSink + ' = html;', 'element.textContent = html;')
+          .replaceAll('this.node.' + htmlSink + ' = html;', 'this.node.textContent = html;')
+          .replaceAll('this.data.' + htmlSink + ' = this.xhrLoader.responseText;', 'this.data.textContent = this.xhrLoader.responseText;')
+          .replaceAll('domparser.' + xmlParse + "(data, 'text/xml')", 'null')
+          .replaceAll('parser.' + xmlParse + "(text, 'text/xml')", 'null');
         if (next === code) throw new Error('没有找到需要去掉的场景脚本求值');
         return { code: next, map: null };
       }

@@ -8,7 +8,13 @@
     document.documentElement.classList.add("mapp-shell");
     document.body.classList.add("mapp-shell");
     var app = document.querySelector("#app");
-    if (app) app.innerHTML = '<p class="mapp-loading" role="status">正在打开…</p>';
+    if (app) {
+      var note = document.createElement("p");
+      note.className = "mapp-loading";
+      note.setAttribute("role", "status");
+      note.textContent = "正在打开…";
+      app.replaceChildren(note);
+    }
   }
   function fail(error) {
     var node = document.querySelector("#app") || document.body;

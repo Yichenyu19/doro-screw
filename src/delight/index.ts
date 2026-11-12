@@ -1,5 +1,6 @@
 import './delight.css';
 import {sprite} from '../art';
+import {appendMarkup,fill} from '../markup';
 import type {GameAudio} from '../audio';
 import {assistCount} from '../run';
 import type {GameEvent,GameState,LevelDef,Vec2} from '../types';
@@ -36,29 +37,29 @@ export function createDelight(host:DelightHost){
     const wasDozing=idleAct==='doze';
     if(node){node.classList.remove('dl-peek','dl-sneak','dl-doze','dl-sneak-lean','dl-sneak-bitten','dl-sneak-away');node.querySelector('.dl-z')?.remove();}
     document.querySelectorAll('.dl-bite,.dl-bite-warn').forEach(node=>node.classList.remove('dl-bite','dl-bite-warn'));
-    if(idleAct){idleAct=null;if(node)node.innerHTML=doroFrame(wake&&wasDozing?3:0);if(wake&&wasDozing&&node){node.classList.add('dl-wake');idleTimers.push(window.setTimeout(()=>{node.classList.remove('dl-wake');node.innerHTML=doroFrame(0);},420));}}
+    if(idleAct){idleAct=null;if(node)fill(node,doroFrame(wake&&wasDozing?3:0));if(wake&&wasDozing&&node){node.classList.add('dl-wake');idleTimers.push(window.setTimeout(()=>{node.classList.remove('dl-wake');fill(node,doroFrame(0));},420));}}
   }
   function perform(act:IdleAct):void{
     const node=reactionNode();if(!node||host.reduced())return;
     idleAct=act;log.push('idle:'+act);
     const later=(ms:number,fn:()=>void)=>idleTimers.push(window.setTimeout(()=>{if(idleAct===act)fn();},ms));
     if(act==='peek'){
-      node.innerHTML=doroFrame(0);node.classList.add('dl-peek');
+      fill(node,doroFrame(0));node.classList.add('dl-peek');
       later(1800,()=>{node.classList.remove('dl-peek');idleAct=null;});
     }else if(act==='sneak'){
       // 想要：从口袋里顺点东西。以为：口袋不会管。落空：口袋先抖一下警告，它更贪，再伸手被「咬」。余波：扭头装没事。
       // 对手就是紧挨着它的「口袋」按钮：想从口袋里摸点什么，口袋先抖一下，再「咬」回去。
       const target=document.querySelector<HTMLElement>('#pocket-count');
       if(!target){idleAct=null;return;}
-      node.innerHTML=doroFrame(1);node.classList.add('dl-sneak','dl-sneak-lean');
+      fill(node,doroFrame(1));node.classList.add('dl-sneak','dl-sneak-lean');
       later(650,()=>target.classList.add('dl-bite-warn'));
       later(1000,()=>{target.classList.remove('dl-bite-warn');node.classList.add('dl-sneak-reach');});
-      later(1380,()=>{target.classList.add('dl-bite');node.classList.remove('dl-sneak-lean','dl-sneak-reach');node.classList.add('dl-sneak-bitten');node.innerHTML=doroFrame(3);});
-      later(2100,()=>{target.classList.remove('dl-bite');node.classList.remove('dl-sneak-bitten');node.classList.add('dl-sneak-away');node.innerHTML=doroFrame(1);});
-      later(3300,()=>{node.classList.remove('dl-sneak','dl-sneak-away');node.innerHTML=doroFrame(0);idleAct=null;});
+      later(1380,()=>{target.classList.add('dl-bite');node.classList.remove('dl-sneak-lean','dl-sneak-reach');node.classList.add('dl-sneak-bitten');fill(node,doroFrame(3));});
+      later(2100,()=>{target.classList.remove('dl-bite');node.classList.remove('dl-sneak-bitten');node.classList.add('dl-sneak-away');fill(node,doroFrame(1));});
+      later(3300,()=>{node.classList.remove('dl-sneak','dl-sneak-away');fill(node,doroFrame(0));idleAct=null;});
     }else{
-      node.innerHTML=doroFrame(1);node.classList.add('dl-doze');
-      node.insertAdjacentHTML('beforeend','<span class="dl-z" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span>');
+      fill(node,doroFrame(1));node.classList.add('dl-doze');
+      appendMarkup(node,'<span class="dl-z" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span>');
     }
   }
   const idleClock=window.setInterval(()=>{
@@ -93,7 +94,7 @@ export function createDelight(host:DelightHost){
     };
     const pop=()=>{
       stage.classList.remove('dl-inflate');replay('dl-pop',900);sound('pop');log.push('poke:pop');
-      const heart=document.createElement('span');heart.className='dl-pop-heart';heart.innerHTML=sprite('fx',2);stage.appendChild(heart);window.setTimeout(()=>heart.remove(),1200);
+      const heart=document.createElement('span');heart.className='dl-pop-heart';fill(heart,sprite('fx',2));stage.appendChild(heart);window.setTimeout(()=>heart.remove(),1200);
     };
     stage.addEventListener('pointerup',release);
     stage.addEventListener('pointercancel',()=>{pressing=false;window.clearTimeout(pressTimer);window.clearTimeout(popTimer);stage.classList.remove('dl-inflate');});
@@ -105,7 +106,7 @@ export function createDelight(host:DelightHost){
     streak=0;patchedThisRun=state.stats?assistCount(state.stats)>0:false;idleIndex=0;lastInput=performance.now();clearIdle(false);
     document.querySelector('.dl-wall-tally')?.remove();
     if(isWall(level)&&ledger.wallBumps>0&&!ledger.wallBroken){
-      document.querySelector('.buffer-area')?.insertAdjacentHTML('beforeend',`<span class="dl-wall-tally" aria-hidden="true">${tallyHtml(ledger.wallBumps)}</span>`);
+      const tray=document.querySelector('.buffer-area');if(tray)appendMarkup(tray,`<span class="dl-wall-tally" aria-hidden="true">${tallyHtml(ledger.wallBumps)}</span>`);
     }
   }
   function onLeave():void{clearIdle(false);stopKeygen();}
@@ -118,7 +119,7 @@ export function createDelight(host:DelightHost){
       log.push('streak:'+result.cue+':'+streak);
       const node=reactionNode();
       if(result.cue==='hop'){host.react(4);node?.classList.add('dl-hop');window.setTimeout(()=>node?.classList.remove('dl-hop'),520);}
-      else{host.react(5);const heart=document.createElement('span');heart.className='dl-streak-heart'+(result.cue==='sparkle'?' sparkle':'');heart.innerHTML=sprite('fx',result.cue==='sparkle'?0:2);node?.parentElement?.appendChild(heart);window.setTimeout(()=>heart.remove(),1100);}
+      else{host.react(5);const heart=document.createElement('span');heart.className='dl-streak-heart'+(result.cue==='sparkle'?' sparkle':'');fill(heart,sprite('fx',result.cue==='sparkle'?0:2));node?.parentElement?.appendChild(heart);window.setTimeout(()=>heart.remove(),1100);}
     }
     void events;return result.cue;
   }

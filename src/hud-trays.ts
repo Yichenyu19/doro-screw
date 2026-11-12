@@ -1,10 +1,11 @@
 import {sprite} from './art';
+import {fill} from './markup';
 import {COLORS,COLOR_NAMES,type GameState,type Settings} from './types';
 import {colorSignHtml} from './color-signs';
 import type {PresentationDirector} from './presentation';
 
 const content=new WeakMap<Element,string>();
-const replace=(node:Element,html:string)=>{if(content.get(node)!==html){node.innerHTML=html;content.set(node,html);}};
+const replace=(node:Element,html:string)=>{if(content.get(node)!==html){fill(node,html);content.set(node,html);}};
 const text=(node:Element,value:string)=>{if(node.textContent!==value)node.textContent=value;};
 const attr=(node:Element,key:string,value:string)=>{if(node.getAttribute(key)!==value)node.setAttribute(key,value);};
 const cls=(node:Element,name:string,value:boolean)=>{if(node.classList.contains(name)!==value)node.classList.toggle(name,value);};
@@ -13,13 +14,13 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
   const boxes=document.querySelector<HTMLElement>('#box-tray')!,buffer=document.querySelector<HTMLElement>('#buffer-tray')!;
   const columns=`repeat(${state.boxes.length},minmax(0,1fr))${state.boxes.length<4?' 44px':''}`;if(boxes.style.gridTemplateColumns!==columns)boxes.style.gridTemplateColumns=columns;
   if(boxes.dataset.count!==String(state.boxes.length)){
-    boxes.dataset.count=String(state.boxes.length);boxes.innerHTML=state.boxes.map(b=>`<div class="box-slot" data-box-id="${b.id}"></div>`).join('')+(state.boxes.length<4?'<button class="add-box-compact" data-action="tools" aria-label="免费增加辅助收集盒"><b>+</b><small>辅助盒</small></button>':'');
+    boxes.dataset.count=String(state.boxes.length);fill(boxes,state.boxes.map(b=>`<div class="box-slot" data-box-id="${b.id}"></div>`).join('')+(state.boxes.length<4?'<button class="add-box-compact" data-action="tools" aria-label="免费增加辅助收集盒"><b>+</b><small>辅助盒</small></button>':''));
   }
   for(const [index,box]of state.boxes.entries()){
     const node=boxes.children[index] as HTMLElement,color=box.color;
     if(node.dataset.color!==(color??'')){
       node.dataset.color=color??'';
-      node.innerHTML=(color?sprite('cases',COLORS.indexOf(color),'box-art')+'<div class="box-screws">'+Array.from({length:3},()=>'<span class="box-hole">'+sprite('screws',8,'box-empty-hole')+'<span data-head></span></span>').join('')+'</div>'+colorSignHtml(color):'')+'<span class="box-caption"></span><span class="box-next" hidden></span>';
+      fill(node,(color?sprite('cases',COLORS.indexOf(color),'box-art')+'<div class="box-screws">'+Array.from({length:3},()=>'<span class="box-hole">'+sprite('screws',8,'box-empty-hole')+'<span data-head></span></span>').join('')+'</div>'+colorSignHtml(color):'')+'<span class="box-caption"></span><span class="box-next" hidden></span>');
     }
     attr(node,'data-generation',String(box.completed));cls(node,'box-packing',presenter?.closing.has(box.id)??false);cls(node,'box-finished',!color);cls(node,'box-active',!!color);
     attr(node,'aria-label',color?COLOR_NAMES[color]+'盒，已接收'+box.screws.length+'颗':'收集盒已完成');
@@ -33,7 +34,7 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
     if(next)replace(label,sprite('heads',COLORS.indexOf(next),'next-head')+(pending?String(pending):''));
   }
   if(buffer.dataset.count!==String(state.capacity)){
-    buffer.dataset.count=String(state.capacity);buffer.innerHTML=state.buffer.map((_,i)=>`<div class="buffer-slot" data-buffer-slot="${i}">${sprite('screws',8,'hole-art')}<span data-head></span><small hidden></small></div>`).join('');
+    buffer.dataset.count=String(state.capacity);fill(buffer,state.buffer.map((_,i)=>`<div class="buffer-slot" data-buffer-slot="${i}">${sprite('screws',8,'hole-art')}<span data-head></span><small hidden></small></div>`).join(''));
   }
   for(const [index,id]of state.buffer.entries()){
     const node=buffer.children[index] as HTMLElement,screw=id?state.screws.find(s=>s.id===id):null,arrived=!!id&&(presenter?.isArrived(id)??false);

@@ -31,7 +31,11 @@ function paintShell():void{
   document.body.classList.add('mapp-shell');
   const app=document.querySelector('#app');
   if(!app)return;
-  app.innerHTML='<p class="mapp-loading" role="status">正在打开…</p>';
+  const note=document.createElement('p');
+  note.className='mapp-loading';
+  note.setAttribute('role','status');
+  note.textContent='正在打开…';
+  app.replaceChildren(note);
 }
 
 function showFailure(error:unknown):void{

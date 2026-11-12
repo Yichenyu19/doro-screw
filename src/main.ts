@@ -5,6 +5,7 @@ import {observeVisible} from './visible-analysis';
 import {tutorialEvidence,teachingCue,teachingFlags} from './teaching';
 import { GameAudio } from './audio';
 import { assetUrl, resolvedAssetPath, sprite, PANEL_SLICE, preloadFrames } from './art';
+import {appendMarkup,fill} from './markup';
 import {R2_TITLES,CAMPAIGN_TITLES,CAMPAIGN_COUNT,dailyPractice,practiceCampaignId} from './r2-catalog';
 import { GameServices } from './worker-client';
 import { assistCount, challengeCode, clearRank, readChallengeCode, RANK_NAMES, CONTENT_REVISION } from './run';
@@ -60,7 +61,7 @@ let teachingTimers:number[]=[];
 const htmlCache=new WeakMap<Element,string>();
 const delight=createDelight({get audio(){return audio;},reduced:()=>save.settings.reducedMotion,canIdle:()=>mode==='game'&&!!engine&&!!view&&engine.state.phase==='playing'&&!modal&&!inspecting&&!document.hidden,react:index=>react(index)});
 const occupied=(state:GameState)=>state.buffer.filter(id=>id!==null).length;
-function setHtml(selector:string,html:string):void {const target=document.querySelector(selector);if(target&&htmlCache.get(target)!==html){target.innerHTML=html;htmlCache.set(target,html);}}
+function setHtml(selector:string,html:string):void {const target=document.querySelector(selector);if(target&&htmlCache.get(target)!==html){fill(target,html);htmlCache.set(target,html);}}
 function setText(selector:string,value:string):void{const target=document.querySelector(selector);if(target&&target.textContent!==value)target.textContent=value;}
 function tickClock(now=performance.now()):void {
   const time=Math.max(lastClockTime,now);
@@ -156,7 +157,7 @@ function showHome():void {
   meltMode=false;
   const progress=save.completed.length;
   const daily=dailyPractice(),dailyReady=themeUnlocked(daily.theme);
-  app.innerHTML=`<main class="home-screen">
+  fill(app,`<main class="home-screen">
     <img class="scene-backdrop" src="${assetUrl('backdrop.png')}" alt="" fetchpriority="high">
     <nav class="home-top"><span class="club-label">Doro · 打个螺丝</span><button class="icon-button" data-action="settings" aria-label="设置">${icon(save.settings.sound?5:6)}</button></nav>
     <header class="home-title"><h1><img class="home-logo" src="${assetUrl('logo.png')}" alt="DORO 打个螺丝" fetchpriority="high"></h1></header>
@@ -176,12 +177,12 @@ function showHome():void {
       <button type="button" class="home-code text-tool" data-action="challenge">挑战码</button>
     </section>
     <footer class="home-footer"><span>Doro · 打个螺丝 · 修订4 · ${progress} / ${CAMPAIGN_COUNT}</span><button data-action="save-status" data-save-status>已保存</button></footer>
-  </main>${shellAccessories()}`;
+  </main>${shellAccessories()}`);
   updateSaveStatus();delight.onLeave();delight.attachHome(app);
 }
 
 function gameShell():void {
-  app.innerHTML=`<main class="game-screen">
+  fill(app,`<main class="game-screen">
     <img class="scene-backdrop game-backdrop" src="${assetUrl('backdrop.png')}" alt="">
     <header class="game-top"><button class="icon-button" data-action="pause" aria-label="暂停游戏">${icon(4)}</button><div class="game-heading"><span id="level-number" class="eyebrow">正在准备</span><h1 id="level-name">这一局</h1></div><button class="icon-button sound-toggle" data-action="sound" aria-label="切换音效">${icon(save.settings.sound?5:6)}</button></header>
     <section class="collection-area" aria-label="同色收集盒"><div class="collection-label"><span id="collection-progress"></span></div><div id="box-tray" class="box-tray"></div></section>
@@ -189,7 +190,7 @@ function gameShell():void {
     <section class="buffer-area" aria-label="螺丝暂存区"><div id="buffer-tray" class="buffer-tray"></div><button id="pocket-count" class="pocket-button" data-action="pocket" data-pocket-target aria-label="口袋"></button><div id="doro-reaction" class="doro-reaction" aria-hidden="true">${doro(0)}</div></section>
     <section class="board-wrap" aria-label="玻璃拆解棋盘"><div id="game-canvas" class="game-canvas"></div><div id="board-loading" class="board-loading">${doro(0)}<span role="status">正在把玻璃摆好…</span></div><div class="board-camera" aria-label="棋盘视图"><button data-action="zoom-toggle" aria-expanded="false" aria-label="调整棋盘视图">视图</button><div class="camera-menu" hidden><button data-action="zoom-out" aria-label="缩小棋盘">−</button><button data-action="zoom-reset" aria-label="复位棋盘视图"><span id="zoom-value">100%</span><small>复位</small></button><button data-action="zoom-in" aria-label="放大棋盘">+</button></div></div><div id="board-inspect" class="board-inspect" hidden role="status"></div><div class="board-guide"><div id="board-tip" class="board-tip" aria-live="polite"></div><button data-action="help" class="guide-help" aria-label="查看玩法说明">?</button></div></section>
     <footer class="game-tools"><div class="play-toolbar"><button class="text-tool" data-action="undo">${icon(7)}撤回</button><button class="text-tool" data-action="hint">${icon(8)}看一看</button><button class="text-tool" data-action="tools">${icon(9)}免费辅助</button></div><div class="run-line"><span id="round-assists"></span><button data-action="save-status" data-save-status>已保存</button><span id="run-detail" hidden></span></div></footer>
-  </main>${shellAccessories()}`;
+  </main>${shellAccessories()}`);
 }
 
 async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,version:ContentVersion=saved?.contentVersion??'v4',playMode:PlayMode=saved?.mode??(version==='v4'?(id>30?'endless':'campaign'):'legacy'),revision=saved?.contentRevision??CONTENT_REVISION):Promise<void> {
@@ -199,7 +200,7 @@ async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,versi
   pendingStart={id,saved,attempt,version,playMode,revision};mode='game';modal=null;modalReturn=null;modalHistory=[];meltMode=false;inspecting=false;earnedThisRound=0;lastDecision='';
   const starting=document.querySelector<HTMLButtonElement>('[data-action="start"],[data-action="continue"]');
   if(starting){starting.setAttribute('aria-busy','true');starting.disabled=true;const label=starting.querySelector('.button-label');if(label)label.textContent='正在准备…';}
-  else app.insertAdjacentHTML('beforeend','<div class="toast visible" role="status">正在准备这一局…</div>');
+  else appendMarkup(app,'<div class="toast visible" role="status">正在准备这一局…</div>');
   // 先让加载状态完成一次绘制，再加载引擎并在后台准备关卡。
   await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>window.setTimeout(resolve,0))));
   if(token!==generation)return;
@@ -273,10 +274,10 @@ function updateTeaching(events:GameEvent[]=[],before?:GameState):void {
 function react(index:number):void {
   window.clearTimeout(reactionTimer);
   const element=document.querySelector('#doro-reaction');
-  if (element) element.innerHTML=doro(index);
+  if (element) fill(element,doro(index));
   reactionTimer=window.setTimeout(()=>{
     const target=document.querySelector('#doro-reaction');
-    if (target) target.innerHTML=doro(engine&&occupied(engine.state)>=engine.state.capacity-1?2:0);
+    if (target) fill(target,doro(engine&&occupied(engine.state)>=engine.state.capacity-1?2:0));
   },1300);
 }
 
@@ -336,7 +337,7 @@ function openModal(name:string,content:string,options:{wide?:boolean;closable?:b
   view?.capturePhysics();
   view?.setPaused(true);
   const target=document.querySelector('#modal-root')!;
-  target.innerHTML=`<div class="modal-shade"><section class="dialog ${options.wide?'dialog-wide':''}" role="dialog" aria-modal="true" aria-label="${name}">${icon(2,'dialog-surface')}<div class="dialog-content">${options.closable===false?'':`<button class="icon-button dialog-close" data-action="close-modal" aria-label="关闭"><span class="close-mark" aria-hidden="true"></span></button>`}${content}</div></section></div>`;
+  fill(target,`<div class="modal-shade"><section class="dialog ${options.wide?'dialog-wide':''}" role="dialog" aria-modal="true" aria-label="${name}">${icon(2,'dialog-surface')}<div class="dialog-content">${options.closable===false?'':`<button class="icon-button dialog-close" data-action="close-modal" aria-label="关闭"><span class="close-mark" aria-hidden="true"></span></button>`}${content}</div></section></div>`);
   window.setTimeout(()=>target.querySelector<HTMLElement>('button:not([disabled]),input')?.focus({preventScroll:true}),30);
 }
 
@@ -347,7 +348,7 @@ function closeModal():void {
   const returnTo=modalHistory.pop()??modalReturn;
   modal=null;
   modalReturn=null;
-  document.querySelector('#modal-root')!.innerHTML='';
+  document.querySelector('#modal-root')!.replaceChildren();
   view?.setPaused(document.hidden);
   lastClockTime=performance.now();
   lastFocus?.focus({preventScroll:true});
@@ -557,7 +558,7 @@ function rewindToLastSolvable():void {
   tickClock();
   const result=engine.rewindToSolvable();
   modal=null;modalHistory=[];modalReturn=null;lastDecision='';
-  document.querySelector('#modal-root')!.innerHTML='';
+  document.querySelector('#modal-root')!.replaceChildren();
   meltMode=false;view?.setMeltMode(false);view?.sync([],true);view?.setPaused(document.hidden);
   presenter?.reset(engine.snapshot());
   lastClockTime=performance.now();saveNow();updateTeaching();
@@ -571,7 +572,7 @@ function undo():void {
   audio.play('undo');
   modal=null;
   modalHistory=[];modalReturn=null;lastDecision='';
-  document.querySelector('#modal-root')!.innerHTML='';
+  document.querySelector('#modal-root')!.replaceChildren();
   meltMode=false;
   view?.setMeltMode(false);
   view?.sync([],true);
@@ -664,7 +665,7 @@ function dispatchButton(button:HTMLElement):void {
   if (action==='undo' || action==='undo-rescue') {undo();return;}
   if (action==='rewind-solvable') {rewindToLastSolvable();return;}
   if(action?.startsWith('use-')){
-    const type=action.slice(4);modal=null;modalReturn=null;document.querySelector('#modal-root')!.innerHTML='';view.setPaused(document.hidden);lastClockTime=performance.now();
+    const type=action.slice(4);modal=null;modalReturn=null;document.querySelector('#modal-root')!.replaceChildren();view.setPaused(document.hidden);lastClockTime=performance.now();
     if(type==='melt'){meltMode=true;view.setMeltMode(true);view.setHint(null);closeModal();return;}
     if(type==='expand-box'||type==='expand-buffer'||type==='clear-buffer'){runAction({type});react(4);delight.onAssist();return;}
   }

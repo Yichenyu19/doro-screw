@@ -6,6 +6,7 @@
  * 用法：node scripts/check-release.mjs [--skip-build] [dist]
  */
 import {spawn} from 'node:child_process';
+import {assertNoSinks,assertSourceClean} from './assert-no-sinks.mjs';
 import {mkdir,writeFile,stat,access} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
@@ -138,6 +139,9 @@ async function assertPack(distDir){
 async function main(){
   await mkdir(shots,{recursive:true});
   if(!skipBuild)await run(process.execPath,['scripts/build.mjs'],{env:process.env});
+  await assertSourceClean('src');
+  await assertSourceClean('mapp');
+  try{await assertNoSinks('dist-mapp/web');}catch(error){if(!String(error).includes('ENOENT'))throw error;}
   const pack=await assertPack(dist);
   const port=await freePort();
   const server=spawn(process.execPath,['scripts/serve-release.mjs',dist,String(port)],{stdio:['ignore','pipe','pipe']});

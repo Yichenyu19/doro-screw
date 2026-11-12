@@ -1,0 +1,3 @@
+#mapp-mock-bar{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:#3b1d28;color:#fff;font:12px/1.3 sans-serif;}
+#mapp-mock-bar button{background:#fff;color:#3b1d28;border:0;border-radius:999px;padding:4px 8px;font-weight:700;}
+body{padding-top:52px;box-sizing:border-box;}

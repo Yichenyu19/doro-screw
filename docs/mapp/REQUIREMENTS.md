@@ -6,10 +6,10 @@
 | --- | --- | --- | --- |
 | 1 | 五个基础文件在 ZIP 根目录：`manifest.json`、`index.html`、`app.js`、`app.css`、`strings.json`；其他文件必须列入 `assets` 或 `media`。用 SDK `pack()` 打包，不要手搓或上传开发目录 / 旁边的 `package.json`。 | `scripts/pack-mapp.mjs` 调用 `@discourse-mini-app/sdk/pack`。本参考包 156 个文件，根目录六项为基础五件套加已声明的 `asset-list.json`。 | 满足 |
 | 2 | `index.html` 是正文片段：不带脚本入口、内联样式、事件属性、资源预连接、嵌套 iframe/object 等浏览上下文。 | `mapp/template.html` 只有 `<div id="app"></div>`。 | 满足 |
-| 3 | 脚本为单个 IIFE `app.js`，样式为 `app.css`。版本号必须是 `x.x.x` 三段数字，最长 64 字符，不带前导零或后缀。 | 入口 `mapp/shell.js` 是很小的 IIFE；游戏在 `chunks/game.js`。版本 `1.0.2`。 | 满足 |
+| 3 | 脚本为单个 IIFE `app.js`，样式为 `app.css`。版本号必须是 `x.x.x` 三段数字，最长 64 字符，不带前导零或后缀。 | 入口 `mapp/shell.js` 是很小的 IIFE；游戏在 `chunks/game.js`。版本 `1.0.3`。 | 满足 |
 | 4 | `id` 必须是社区应用页分配的 UUID v7，原样复制，不要自行生成。 | 清单 ID 是应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`（「Doro个螺丝」）。构建仍可用 `MINI_APP_ID` 覆盖。 | 满足 |
-| 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。上传 ZIP 在 SDK 里还受 32 MiB 加密封套限制。 | 画册六张大图是 960×960、质量 70 的有损 WebP，合计 544 822 字节。未打入 campaign JSON、favicon、og。本包 2 896 754 字节，解压 4 095 220 字节。 | 满足 |
-| 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 沙箱上传页写明上限 4 096 KiB（4 194 304 字节）。本包 2 896 754 字节，低于该上限，也低于建议的 3 900 KiB。 | 满足 |
+| 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。上传 ZIP 在 SDK 里还受 32 MiB 加密封套限制。 | 画册六张大图是 960×960、质量 70 的有损 WebP，合计 544 822 字节。未打入 campaign JSON、favicon、og。本包 2 898 229 字节，解压 4 098 456 字节。 | 满足 |
+| 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 沙箱上传页写明上限 4 096 KiB（4 194 304 字节）。本包 2 898 229 字节，低于该上限，也低于建议的 3 900 KiB。 | 满足 |
 | 7 | 只申请实际需要的权限；未声明不得使用对应能力。 | 申请：`theme.read`、`storage.read`、`storage.write`、`audio.webAudio`、`files.save`、`code.load`。未申请：`user.read`、`clipboard.write`、`links.open`、`network.*`、`assets.remote`、`workers.create`、`cookies.*`、`fullscreen`、`code.eval`、`code.modules`。 | 满足 |
 | 8 | 网络必须在 manifest 声明端点；不能未声明联网，也不能把秘密放进包内。 | 无 `endpoints` / `websockets` / `remote_assets`。关卡不按 URL 拉取。包内无令牌或密钥。网站统计、noindex、favicon、og 未进入微应用包。 | 满足 |
 | 9 | 原生 `new Worker()` / `importScripts()` 不是加载入口；Worker 须声明并申请 `workers.create`。 | 微应用构建用 Vite 插件去掉 Worker 构造，提示/预分析改在主线程（`src/mapp/inline-services.ts`）。网站版仍用原来的 Worker。 | 满足 |
@@ -33,6 +33,6 @@
 - `campaign/r1` 旧关卡资源：未包含。修订 4 关卡已经打进 `app.js`，微应用不再另附 campaign JSON。`public/sfx` 短音效仍按路径从包内加载，没有再压。
 - 网站用 favicon、og 图、以及任何 noindex / 统计相关页面头：未包含。`index.html` 没有 meta。
 
-当前 ZIP 2 896 754 字节。沙箱上传页上限是 4 096 KiB。入口 `app.js` 只有 1 164 字节，画出「正在打开…」后立刻调用 `lifecycle.ready()`，再加载 `chunks/game.js`。
+当前 ZIP 2 898 229 字节。沙箱上传页上限是 4 096 KiB。入口 `app.js` 只有 1 300 字节，画出「正在打开…」后立刻调用 `lifecycle.ready()`，再加载 `chunks/game.js`。界面用元素节点组装，不写需要 TrustedHTML 的属性。
 
 打包时会把 Phaser 运行时里唯一的 `new Function("return this")` 换成 `globalThis`，并去掉默认的 `phaser.io` 地址字符串。打进 ZIP 的 `app.js` 不再含 `eval`、`new Function` 或该地址。SVG 命名空间 `http://www.w3.org/2000/svg` 仍在，它是标记，不会发起请求。

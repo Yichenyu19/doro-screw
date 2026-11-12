@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {pack} from '@discourse-mini-app/sdk/pack';
 import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,isAlbumWorkingFile} from './mapp-assets.mjs';
 import {assertNoSinks} from './assert-no-sinks.mjs';
+import {finalizeGameSource,assertGameChunkSource} from './assert-game-chunk.mjs';
 
 function compressPlan(file){
   const base=path.basename(file);
@@ -68,12 +69,10 @@ if(paintAt<0||readyAt<0||loadAt<0||!(paintAt<readyAt&&readyAt<loadAt))throw Erro
 await writeFile(path.join(web,'app.js'),shell);
 const gamePath=path.join(web,'chunks/game.js');
 let gameJs=await readFile(gamePath,'utf8');
-const rewritten=gameJs
-  .replaceAll('new Function("return this")()','globalThis')
-  .replaceAll('https://phaser.io','');
-if(rewritten===gameJs)throw Error('没有找到需要去掉的运行时求值或默认外链，打包中止。');
-if(/\beval\b|new Function\b/.test(rewritten))throw Error('游戏分包仍含 eval 或 new Function。');
+const rewritten=finalizeGameSource(gameJs);
 await writeFile(gamePath,rewritten);
+const chunkCheck=await assertGameChunkSource(rewritten);
+console.log('game chunk',JSON.stringify(chunkCheck.sync),JSON.stringify(chunkCheck.micro));
 const files={};
 for(const name of ['index.html','app.js','app.css','strings.json',...assets]){
   files[name]=await readFile(path.join(web,name));

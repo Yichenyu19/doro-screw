@@ -54,17 +54,34 @@ async function main(){
   const preview=await assemblePreview();
   const port=await freePort();
   const server=await servePreview(preview,port,{'Content-Security-Policy':MAPP_CSP});
-  let browser; let deviceEngine='chromium-ios-ua';
-  try{
-    browser=await webkit.launch({headless:true});
-    deviceEngine='webkit-iphone';
-  }catch{
-    browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  const reports=[];
+  for(const deviceEngine of ['webkit-iphone','chromium-iphone']){
+    const browser=deviceEngine.startsWith('webkit')
+      ?await webkit.launch({headless:true})
+      :await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+    try{reports.push(await checkEngine(browser,deviceEngine,port));}
+    finally{await browser.close();}
   }
+  server.close();
+  const problems=reports.flatMap(item=>item.problems.map(problem=>item.deviceEngine+'：'+problem));
+  const artifacts='/opt/cursor/artifacts';
+  await mkdir(artifacts,{recursive:true});
+  const webkitDir=path.join(outDir,'webkit-iphone');
+  for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png','mapp-hd-1-390x844.png','mapp-hd-2-390x844.png']){
+    await copyFile(path.join(webkitDir,name),path.join(artifacts,name));
+  }
+  await writeFile(path.join(outDir,'report.json'),JSON.stringify({ok:problems.length===0,reports},null,2));
+  console.log(JSON.stringify({ok:problems.length===0,reports:reports.map(item=>({ok:item.ok,deviceEngine:item.deviceEngine,device:item.device,violations:item.violations,end:item.end,problems:item.problems}))},null,2));
+  if(problems.length){console.error(problems.join('\n'));process.exit(1);}
+}
+
+async function checkEngine(browser,deviceEngine,port){
+  const shotRoot=path.join(outDir,deviceEngine);
+  await mkdir(shotRoot,{recursive:true});
   const {defaultBrowserType:unusedBrowserType,...iphoneContext}=iphone;
   const context=await browser.newContext({
     ...iphoneContext,
-    recordVideo:{dir:outDir,size:{width:iphone.viewport.width,height:iphone.viewport.height}},
+    recordVideo:{dir:shotRoot,size:{width:iphone.viewport.width,height:iphone.viewport.height}},
   });
   const page=await context.newPage();
   await page.addInitScript(()=>{
@@ -136,7 +153,7 @@ async function main(){
   const officialFlag=await page.evaluate(()=>window.__DORO_MAPP_MOCK__?.officialSandbox);
   const snap=async(name,fullPage=false)=>{
     capturing=true;
-    try{await page.screenshot({path:path.join(outDir,name),fullPage});}
+    try{await page.screenshot({path:path.join(shotRoot,name),fullPage});}
     finally{capturing=false;}
   };
   const shot=async(name)=>{
@@ -303,8 +320,6 @@ async function main(){
   const device=await page.evaluate(()=>({ua:navigator.userAgent,engine:navigator.vendor||'',ios:/iPhone|iPad/.test(navigator.userAgent)}));
 
   await context.close();
-  await browser.close();
-  server.close();
 
   const problems=[];
   if(officialFlag!==false)problems.push('未标明这是 mock 而非官方沙箱');
@@ -331,16 +346,10 @@ async function main(){
   if(csp.length||violations.length)problems.push('内容安全策略违规：'+JSON.stringify(csp.concat(violations)));
   if(!device.ios)problems.push('没有走到 iPhone 路径：'+device.ua);
 
-  const videos=(await import('node:fs')).readdirSync(outDir).filter(f=>f.endsWith('.webm'));
-  const artifacts='/opt/cursor/artifacts';
-  await mkdir(artifacts,{recursive:true});
-  for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png','mapp-hd-1-390x844.png','mapp-hd-2-390x844.png']){
-    await copyFile(path.join(outDir,name),path.join(artifacts,name));
-  }
+  const videos=(await import('node:fs')).readdirSync(shotRoot).filter(f=>f.endsWith('.webm'));
   if(hdShots.length!==2||hdShots.some(item=>item.width<800))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',deviceEngine,device,csp:MAPP_CSP,violations:csp.concat(violations),banner,muted,l1,l2,themed,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
-  await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
-  console.log(JSON.stringify({ok:report.ok,deviceEngine,device,violations:report.violations,homeBytes,homeRequests:homeTraffic.length,hdShots,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
-  if(problems.length){console.error(problems.join('\n'));process.exit(1);}
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',deviceEngine,device,csp:MAPP_CSP,violations:csp.concat(violations),banner,muted,l1,l2,themed,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:shotRoot,video:videos[0]?path.join(shotRoot,videos[0]):null};
+  console.log(JSON.stringify({ok:report.ok,deviceEngine,device,violations:report.violations,end,problems},null,2));
+  return report;
 }
 main().catch(error=>{console.error(error);process.exit(1);});

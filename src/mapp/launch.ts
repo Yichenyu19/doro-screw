@@ -118,13 +118,8 @@ function applyTheme(theme:MiniAppTheme):void{
   document.body.style.background=theme.background;
 }
 
-async function defaultBoot():Promise<void>{
-  const {bootGame}=await import('../main');
-  await bootGame();
-}
-
-/** 入口脚本已经通知宿主时，分包只负责读素材和进入游戏。 */
-export async function launchMiniApp(sdk:MiniAppSDK,boot:()=>Promise<void>=defaultBoot,options:{skipHostReady?:boolean}={}):Promise<void>{
+/** 入口脚本已经通知宿主时，分包只负责读素材和进入游戏。boot 由调用方传入，这里不再动态导入。 */
+export async function launchMiniApp(sdk:MiniAppSDK,boot:()=>Promise<void>,options:{skipHostReady?:boolean}={}):Promise<void>{
   await sdk.ready;
   let toldHost=false;
   const tellHost=async()=>{

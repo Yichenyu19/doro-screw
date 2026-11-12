@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | 1 | 五个基础文件在 ZIP 根目录：`manifest.json`、`index.html`、`app.js`、`app.css`、`strings.json`；其他文件必须列入 `assets` 或 `media`。用 SDK `pack()` 打包，不要手搓或上传开发目录 / 旁边的 `package.json`。 | `scripts/pack-mapp.mjs` 调用 `@discourse-mini-app/sdk/pack`。本参考包 156 个文件，根目录六项为基础五件套加已声明的 `asset-list.json`。 | 满足 |
 | 2 | `index.html` 是正文片段：不带脚本入口、内联样式、事件属性、资源预连接、嵌套 iframe/object 等浏览上下文。 | `mapp/template.html` 只有 `<div id="app"></div>`。 | 满足 |
-| 3 | 脚本为单个 IIFE `app.js`，样式为 `app.css`。版本号必须是 `x.x.x` 三段数字，最长 64 字符，不带前导零或后缀。 | 入口 `mapp/shell.js` 是很小的 IIFE；游戏在 `chunks/game.js`。版本 `1.0.5`。 | 满足 |
+| 3 | 脚本为单个 IIFE `app.js`，样式为 `app.css`。版本号必须是 `x.x.x` 三段数字，最长 64 字符，不带前导零或后缀。 | 入口 `mapp/shell.js` 是很小的 IIFE；游戏在 `chunks/game.js`。版本 `1.0.6`。 | 满足 |
 | 4 | `id` 必须是社区应用页分配的 UUID v7，原样复制，不要自行生成。 | 清单 ID 是应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`（「Doro个螺丝」）。构建仍可用 `MINI_APP_ID` 覆盖。 | 满足 |
 | 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。上传 ZIP 在 SDK 里还受 32 MiB 加密封套限制。 | 画册六张大图是 960×960、质量 70 的有损 WebP，合计 544 822 字节。未打入 campaign JSON、favicon、og。本包 2 898 241 字节。 | 满足 |
 | 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 沙箱上传页写明上限 4 096 KiB（4 194 304 字节）。本包 2 898 241 字节，低于该上限，也低于建议的 3 900 KiB。 | 满足 |

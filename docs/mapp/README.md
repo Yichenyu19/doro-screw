@@ -15,7 +15,7 @@ npm run build:mapp
 清单里的应用 ID 已是「Doro个螺丝」应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`。要改 ID 或版本时：
 
 ```sh
-MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.5 npm run build:mapp
+MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.6 npm run build:mapp
 ```
 
 需要带 source map 的调试包时用 `npm run build:mapp:debug`。官方要求正式发布去掉 source map；调试包只用于沙箱。
@@ -25,11 +25,11 @@ MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.5 npm run build:mapp
 | 项 | 值 |
 | --- | --- |
 | 路径 | `dist-mapp/package/app.zip`（需本地执行 `npm run build:mapp` 生成，不入库） |
-| 体积 | 2 898 134 字节（约 2.76 MiB，低于 3 900 KiB） |
-| SHA-256 | `24c572810c1c1f6b38459f9daa4d2176f227c4125581b3d75153ec4831cb4d5e` |
-| 解压总量 / 文件数 | 4 098 412 字节（约 3.91 MiB） / 157 个文件 |
+| 体积 | 2 895 531 字节（约 2.76 MiB，低于 3 900 KiB） |
+| SHA-256 | `fc9b706916776a921e8d7ce0d1524d6a768dab74153d1a0a91809a41859e5a42` |
+| 解压总量 / 文件数 | 4 097 760 字节（约 3.91 MiB） / 157 个文件 |
 | 应用 ID | `01a1cddd-b6e3-70d1-8132-f37aceee7d9c` |
-| 版本 | `1.0.5` |
+| 版本 | `1.0.6` |
 | 入口 `app.js` | 1 300 字节。游戏在 `chunks/game.js` |
 
 同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。

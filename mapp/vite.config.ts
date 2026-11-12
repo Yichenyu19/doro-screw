@@ -1,10 +1,34 @@
 import {fileURLToPath} from 'node:url';
 import {defineConfig} from 'vite';
 
+/** 把 import('字面量') 改成静态引入，避免打进同一个 IIFE 后留下指向后方 const 的 Promise.then。类型位置的 import('./x').T 不动。 */
+function staticImportCalls() {
+  return {
+    name: 'doro-static-import',
+    enforce: 'pre',
+    transform(code, id) {
+      const file = id.split('?')[0].replace(/\\/g, '/');
+      if (!file.includes('/src/') || !/\.[cm]?tsx?$/.test(file) || !code.includes('import(')) return null;
+      const specs = [];
+      const next = code.replace(/import\(\s*(['"])([^'"\n]+)\1\s*\)(?=\s*\.then\b|(?!\s*\.))/g, (_match, _quote, spec) => {
+        let index = specs.indexOf(spec);
+        if (index < 0) {
+          index = specs.length;
+          specs.push(spec);
+        }
+        return `Promise.resolve(__doroDyn${index})`;
+      });
+      if (!specs.length || next === code) return null;
+      const header = specs.map((spec, index) => `import * as __doroDyn${index} from ${JSON.stringify(spec)};`).join('\n');
+      return { code: `${header}\n${next}`, map: null };
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
   publicDir: false,
-  plugins: [{
+  plugins: [staticImportCalls(), {
     name: 'doro-skip-worker',
     enforce: 'pre',
     transform(code, id) {

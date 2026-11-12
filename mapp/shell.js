@@ -28,6 +28,7 @@
     try { await sdk.lifecycle.ready(); told = true; } catch (error) {}
     try {
       await sdk.scripts.load("chunks/game.js");
+      await globalThis.DoroGame.boot();
     } catch (error) {
       fail(error);
       if (!told) { try { await sdk.lifecycle.ready(); } catch (ignored) {} }

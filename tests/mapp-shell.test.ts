@@ -10,7 +10,8 @@ test('入口脚本很小，先画加载壳并通知宿主，再加载游戏分�
   const paint=shell.indexOf('正在打开');
   const ready=shell.indexOf('lifecycle.ready');
   const load=shell.indexOf('scripts.load("chunks/game.js")');
-  assert.ok(paint>=0&&ready>paint&&load>ready);
+  const boot=shell.indexOf('globalThis.DoroGame.boot()');
+  assert.ok(paint>=0&&ready>paint&&load>ready&&boot>load);
   assert.match(shell,/globalThis\.miniApp/);
 });
 

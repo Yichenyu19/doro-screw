@@ -1,10 +1,11 @@
 import {getSDK} from '@discourse-mini-app/sdk';
 import './shell.css';
 import {launchMiniApp} from './launch';
+import {bootGame} from '../main';
 
-window.__DORO_GAME_CHUNK__=true;
-void launchMiniApp(getSDK(),undefined,{skipHostReady:true}).catch(error=>{
-  const app=document.querySelector('#app')||document.body;
-  const message=error instanceof Error?error.message:String(error);
-  app.textContent='微应用未能启动：'+message;
-});
+async function boot():Promise<void>{
+  globalThis.__DORO_GAME_CHUNK__=true;
+  await launchMiniApp(getSDK(),bootGame,{skipHostReady:true});
+}
+
+globalThis.DoroGame=Object.freeze({boot});

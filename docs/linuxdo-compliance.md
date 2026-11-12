@@ -6,7 +6,7 @@
 
 | 规则 | 我们怎么做 | 怎么验证 | 结果 |
 | --- | --- | --- | --- |
-| ZIP 由 SDK pack 生成，ID、版本、权限、资源一致，无秘密 | `scripts/pack-mapp.mjs` 的 `pack()`。清单 ID `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，版本 `1.0.5` | `npm run check:mapp` 日志；`tests/mapp-shell.test.ts` 断言引用了官方 pack | 通过。官方沙箱是否接受这一份 zip：未验证 |
+| ZIP 由 SDK pack 生成，ID、版本、权限、资源一致，无秘密 | `scripts/pack-mapp.mjs` 的 `pack()`。清单 ID `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，版本 `1.0.6` | `npm run check:mapp` 日志；`tests/mapp-shell.test.ts` 断言引用了官方 pack | 1.0.5 已在官方沙箱启动失败，见下面一行。1.0.6 是否被沙箱接受：未验证 |
 | 首屏或报错之后调用 lifecycle.ready | `mapp/shell.js` 先画出「正在打开…」，再 `sdk.lifecycle.ready()`，然后才 `scripts.load` | `tests/mapp-shell.test.ts`；`scripts/check-mapp.mjs` 记录 ready 时素材读取为 0、分包尚未执行 | 通过（本地 mock） |
 | 游客、拒绝权限、API 失败有反馈 | 主题读失败提示「主题没有读到…」；存档读失败提示「存档没有读到…」。没有申请用户身份 | `scripts/check-mapp.mjs` 打开 `?fail=theme` 和 `?fail=storage`，看 `#toast` | 通过（本地 mock）。官方宿主拒绝权限：未验证 |
 | 手机、键盘、深浅主题、存储恢复、离开再打开 | 390×844 触控；Esc 暂停/关闭；方向键移动镜头；主题类 `mapp-dark`、`reduced-motion`；刷新恢复存档；隐藏后暂停 | `scripts/check-mapp.mjs` | 通过（本地）。真机离开再打开：未验证 |
@@ -15,16 +15,16 @@
 | Trusted Types 和 CSP；字体只走 FontFace 字节 | 界面用 `src/markup.ts` 的 `parseMarkup` / `fill`。没有 `@font-face` 和字体文件 URL | 打包禁令；`tests/markup.test.ts`；严格 CSP 下 `check:mapp` 违规为 0 | 通过（本地）。官方 CSP 是否与本地一致：未验证 |
 | 资源只经 sdk.assets 读取 | 启动图 `launchMiniApp` 里 `readBytes`。大图点开才读。音效用 `loadAsset` | `scripts/check-mapp.mjs` 断言首屏和进关不读大图 | 通过（本地 mock 的 readBytes） |
 | 每个权限都用到，没有多申请 | `theme.read` 读主题；`storage.read/write` 存进度；`audio.webAudio` 短音效；`files.save` 导出；`code.load` 加载 `chunks/game.js` | 清单 `mapp/manifest.json`；`tests/mapp-adapter.test.ts` | 代码用到了这些权限。官方是否全部批准：未验证 |
-| 体积小于 4096 KiB | 沙箱页上限 4 096 KiB。打包后用字节数硬性失败 | `npm run check:mapp` 日志：2 898 134 字节，SHA-256 `24c572810c1c1f6b38459f9daa4d2176f227c4125581b3d75153ec4831cb4d5e` | 通过。上传页若改限额：未验证 |
+| 体积小于 4096 KiB | 沙箱页上限 4 096 KiB。打包后用字节数硬性失败 | `npm run check:mapp` 日志：2 895 531 字节，SHA-256 `fc9b706916776a921e8d7ce0d1524d6a768dab74153d1a0a91809a41859e5a42` | 通过。上传页若改限额：未验证 |
 | index.html 是正文片段，无脚本、内联样式、事件属性 | `mapp/template.html` 只有应用容器。入口脚本是单独的 `app.js` | 源码阅读 | 通过 |
-| 分包用 code.load，并在 code.scripts 声明 | `mapp/shell.js` 调用 `sdk.scripts.load("chunks/game.js")` | `tests/mapp-adapter.test.ts` | 通过（本地 mock 用 script 标签加载）。官方 scripts.load：未验证 |
+| 分包用 code.load，并在 code.scripts 声明。Classic 分包执行时只定义，不自己启动；入口在 `scripts.load` 之后调用 `globalThis.DoroGame.boot()` | `mapp/shell.js` 先 `sdk.scripts.load("chunks/game.js")`，再 `await globalThis.DoroGame.boot()`。`src/mapp/entry.ts` 静态引入 `bootGame`，文件末尾只写 `globalThis.DoroGame=Object.freeze({boot})`。1.0.5 在官方沙箱启动即失败，页面是「微应用未能启动：Cannot access 'cu' before initialization」。原因是 Vite 把动态 `import()` 内联进同一个 IIFE 后，留下 `Promise.resolve().then(()=>cu)`，而 `const cu` 写在文件后部。本地 script 标签把 `then` 排进微任务，等初始化结束才跑，所以没测出来；官方宿主包一层执行且 `then` 会同步跑，读到了还没初始化的 `cu` | `tests/mapp-chunk-boot.test.ts`；打包时 `scripts/assert-game-chunk.mjs` 用 `node:vm` 按同步 `then` 和正常微任务各执行原文；WebKit 与 Chromium 的 `check:mapp` | 1.0.5 官方沙箱：失败。1.0.6：`assertGameChunkSource` 同步 then 与微任务都是 `booted:false` 且 `boot` 为 function；WebKit 与 Chromium 的 `check:mapp` 都是 `ok:true`、违规 `[]`、第一关 30 步 `phase:won`。这份 1.0.6 还没上传：未验证 |
 | 不使用 eval / new Function | 构建时去掉场景脚本求值和 `new Function("return this")` | `scripts/assert-no-sinks.mjs` | 通过 |
 | 无外部网络、无秘密、无 CDN | 清单没有 endpoints、remote_assets | `tests/mapp-adapter.test.ts` | 通过 |
 | 剪贴板、全屏、外链须由明确操作触发 | 未申请这些权限。挑战码改为选中后长按 | 清单权限列表 | 通过 |
 | HTTP、JWT、CDN 素材 | 没有这些能力 | 清单 | 不适用 |
 | 沙箱里检查的是本次申请的同一份 ZIP | 发布页附带 zip 和 SHA-256 | 人工上传 | 未验证。本助手不能登录 Linux DO |
 | 图标圆形裁切、名称说明 | 名称「Doro个螺丝」。图标在应用页，不在 zip 里 | 应用页由用户填写 | 未验证 |
-| WebKit / 真 iPhone | `scripts/check-mapp.mjs` 优先启动 Playwright WebKit，设备配置是 iPhone 13 | `npm run check:mapp`：`deviceEngine` 为 `webkit-iphone`，违规 `[]`，第一关 30 步走到通关页 | 通过（Playwright WebKit）。手里的 iPhone：未验证 |
+| WebKit / 真 iPhone | `scripts/check-mapp.mjs` 用 Playwright WebKit 和 Chromium 各跑一遍，设备配置都是 iPhone 13 | `npm run check:mapp`：`webkit-iphone`（Apple）和 `chromium-iphone`（Google Inc.）都是违规 `[]`，第一关 30 步 `phase:won` | 通过（两个引擎）。手里的 iPhone：未验证 |
 
 `parseMarkup` 拒绝 `script`、`iframe`、`object`、`embed`、`on*` 属性和 `javascript:` 地址，见 `tests/markup.test.ts`。
 

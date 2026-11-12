@@ -10,7 +10,10 @@ declare global {
     };
     miniApp?: unknown;
     __DORO_GAME_CHUNK__?: boolean;
+    DoroGame?: {readonly boot:()=>Promise<void>};
   }
+  var DoroGame: {readonly boot:()=>Promise<void>} | undefined;
+  var __DORO_GAME_CHUNK__: boolean | undefined;
 }
 
 interface ImportMetaEnv {

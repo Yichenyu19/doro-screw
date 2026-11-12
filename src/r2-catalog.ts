@@ -4,15 +4,15 @@ export const R2_TITLES=R2_NAMES.map((name,index)=>({id:index+1,name,total:R2_TOT
 export const R3_TOTALS=[15,24,48,48,129,135,141,156,156,168] as const;
 export const R3_NAMES=['先装满一盒','先拆一座桥','桥下还有一层','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局'] as const;
 export const R3_TITLES=R3_NAMES.map((name,index)=>({id:index+1,name,total:R3_TOTALS[index]}));
-export const CAMPAIGN_TOTALS=[15,120,129,135,141,156,156,168] as const;
-export const CAMPAIGN_NAMES=['先装满一盒','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局'] as const;
+export const CAMPAIGN_TOTALS=[30,120,129,135,141,156,156,168] as const;
+export const CAMPAIGN_NAMES=['夹层','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局'] as const;
 export const CAMPAIGN_TITLES=CAMPAIGN_NAMES.map((name,index)=>({id:index+1,name,total:CAMPAIGN_TOTALS[index]}));
 export const CAMPAIGN_COUNT=CAMPAIGN_TOTALS.length;
 export const CAMPAIGN_TOTAL_PINS=CAMPAIGN_TOTALS.reduce((n,value)=>n+value,0);
 export const PRACTICE_THEMES=[2,3,4,5,6,7,8] as const;
 export const PRACTICE_VARIANTS=6;
 export function practiceCampaignId(theme:number):number{return theme;}
-/** 线上修订 2 的主线编号与修订 4 一一对应（第一关内容已换成「先装满一盒」，通关记录仍记第 1 关）。 */
+/** 线上修订 2 的主线编号与修订 4 一一对应（第一关内容已换成夹层，通关记录仍记第 1 关）。 */
 export function remapR2Completed(completed:number[]):number[]{
   return [...new Set(completed.filter(id=>id>=1&&id<=8))].sort((a,b)=>a-b);
 }

@@ -360,7 +360,7 @@ class PuzzleScene extends Phaser.Scene {
     this.capture();this.inspected=target?.id??null;this.inspectedBoards.clear();
     if(!target){this.callbacks.onInspect?.(null);this.accumulator=0;this.dirty=true;return;}
     if(target.kind==='board'){this.inspectedBoards.add(target.id);this.callbacks.onInspect?.('这块玻璃正在高亮。松手结束检查，轻点才会执行融化。');}
-    else {const screw=this.engine.state.screws.find(s=>s.id===target.id);if(!screw)return;const blockers=blockingBoards(this.engine.state,target.id);this.inspectedBoards.add(screw.boardId);for(const id of blockers)this.inspectedBoards.add(id);this.callbacks.onInspect?.(`${COLOR_NAMES[screw.color]}钉 · ${this.engine.canPick(target.id)?'当前可以拆':blockers.length?'被 '+blockers.length+' 块上层玻璃遮挡':'等待玻璃露出'}。相关玻璃已高亮，松手结束检查。`);}
+    else {const screw=this.engine.state.screws.find(s=>s.id===target.id);if(!screw)return;const blockers=blockingBoards(this.engine.state,target.id);this.inspectedBoards.add(screw.boardId);for(const id of blockers)this.inspectedBoards.add(id);this.callbacks.onInspect?.(COLOR_NAMES[screw.color]);}
     this.accumulator=0;this.dirty=true;
   }
 

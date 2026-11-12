@@ -94,7 +94,7 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .game-heading .eyebrow {font-size:11px;letter-spacing:.02em;}
 .game-heading h1 {font-size:14px;letter-spacing:0;font-weight:800;line-height:1.25;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;margin:0;}
 .collection-area {height:82px;padding:0 5px;flex-shrink:0;}
-.collection-label {display:flex;justify-content:space-between;align-items:center;font-size:11px;line-height:17px;color:var(--muted);font-weight:700;padding:0 4px;height:17px;letter-spacing:0;}
+.collection-label {display:flex;justify-content:flex-end;align-items:center;font-size:11px;line-height:17px;color:var(--muted);font-weight:700;padding:0 4px;height:17px;letter-spacing:0;}
 .collection-label>span:last-child {font-variant-numeric:tabular-nums;}
 .box-tray {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;height:65px;}
 .box-slot {position:relative;min-width:0;height:65px;text-align:center;}
@@ -135,9 +135,8 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .board-loading {position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:12px;background:#fff9ece8;z-index:3;}
 .board-loading .doro-art {width:104px;height:94px;}
 .board-tip,.hint-reason {position:relative;flex:0 0 auto;left:auto;right:auto;bottom:auto;padding:4px 13px 5px;margin:0;pointer-events:none;text-align:center;min-height:0;color:var(--ink);font-size:12px;line-height:1.4;letter-spacing:0;overflow-wrap:anywhere;}
-/* 提示有无文字都占两行空间，避免取钉时画布尺寸变化和触点跳动。 */
-.board-tip {display:flex;align-items:center;justify-content:center;height:44px;min-height:44px;max-height:44px;overflow:hidden;}
-.board-tip:empty {display:flex;}
+.board-tip {display:flex;align-items:center;justify-content:center;height:auto;min-height:0;max-height:40px;overflow:hidden;}
+.board-tip:empty {display:none;}
 .hint-reason:empty {display:none;}
 .game-tools {flex-shrink:0;padding:0 4px;}
 .primary-tools {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;height:48px;}
@@ -153,7 +152,11 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .tool-divider {display:none;}
 
 /* 生成面板只拉伸中间和边段，16px边框保留原图圆角。 */
-.modal-shade {position:absolute;inset:0;z-index:20;background:#40302b68;display:flex;align-items:center;justify-content:center;padding:calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));}
+#modal-root{position:absolute;inset:0;z-index:40;pointer-events:none;}
+#modal-root:not(:empty){pointer-events:auto;}
+#app:has(.modal-shade) .home-screen > :not(.scene-backdrop),
+#app:has(.modal-shade) .game-tools{visibility:hidden;}
+.modal-shade {position:absolute;inset:0;z-index:20;background:#2a211ed4;display:flex;align-items:center;justify-content:center;padding:calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));}
 .dialog {position:relative;width:100%;max-width:384px;max-height:100%;isolation:isolate;transform:translateZ(0);border:16px solid transparent;border-image:var(--panel-art) var(--panel-slice,72) fill stretch;animation:dialog-in .18s ease both;}
 .dialog-surface {display:none!important;}
 .dialog-content {position:relative;padding:20px;max-height:calc(100dvh - 56px - var(--safe-top) - var(--safe-bottom));overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c995a7 transparent;text-align:center;}
@@ -350,9 +353,9 @@ button.art-button.secondary>.button-surface {display:none!important;}
 .box-next {font-size:10px;gap:2px;}
 .expand-slot .box-art {opacity:.33;filter:saturate(.25);}
 .expand-caption {font-size:10px;}
-.board-guide {position:relative;height:44px;flex-shrink:0;padding-right:32px;}
+.board-guide {position:absolute;left:8px;right:8px;bottom:2px;height:auto;z-index:6;pointer-events:none;padding-right:0;}
 .board-tip {padding:2px 3px 3px 11px;line-height:1.4;font-size:12px;}
-.guide-help {position:absolute;right:1px;top:0;width:36px;min-height:44px;font-size:16px;color:#8d5b72;font-weight:800;}
+.guide-help {position:absolute;right:0;bottom:0;width:44px;min-height:44px;pointer-events:auto;font-size:16px;color:#8d5b72;font-weight:800;}
 .pause-links {display:flex;flex-wrap:wrap;justify-content:center;margin-top:10px;gap:0 10px;}
 .pause-links button {min-height:44px;font-size:12px;color:var(--muted);}
 .help-list {padding-left:20px;text-align:left;font-size:13px;line-height:1.6;margin:8px 0 15px;}
@@ -817,7 +820,7 @@ button.art-button.secondary>.button-surface {display:none!important;}
   box-shadow:0 0 0 1px #c9a08a, 0 4px 10px #503b2630;
 }
 
-.modal-shade {background:#4a322c52;}
+.modal-shade {background:#2a211ed4;}
 .dialog h2 {letter-spacing:-.02em;}
 .dialog p {font-weight:500;}
 .pause-links button {

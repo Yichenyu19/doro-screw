@@ -30,7 +30,7 @@ export function renderTrays(state:GameState,presenter:PresentationDirector|null,
     }
     text(node.querySelector('.box-caption')!,color?(settings.colorLabels?COLOR_NAMES[color]+' ':'')+box.screws.length+'/3':'已收好');
     const next=presenter?.nextColor(box.id),pending=presenter?.pendingCount(box.id)??0,label=node.querySelector<HTMLElement>('.box-next')!;label.hidden=!next;
-    if(next)replace(label,`下盒 ${sprite('heads',COLORS.indexOf(next),'next-head')}${pending?' 已接'+pending:''}`);
+    if(next)replace(label,sprite('heads',COLORS.indexOf(next),'next-head')+(pending?String(pending):''));
   }
   if(buffer.dataset.count!==String(state.capacity)){
     buffer.dataset.count=String(state.capacity);buffer.innerHTML=state.buffer.map((_,i)=>`<div class="buffer-slot" data-buffer-slot="${i}">${sprite('screws',8,'hole-art')}<span data-head></span><small hidden></small></div>`).join('');

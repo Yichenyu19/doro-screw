@@ -49,4 +49,5 @@ test('微应用打包带音效，关卡留在脚本里，不把战役 JSON 或�
   assert.doesNotMatch(pack,/campaign\/r3/);
   assert.match(pack+assets,/sfx/);
   assert.match(pack,/libwebp/);
+  assert.match(pack,/960:960/);
 });

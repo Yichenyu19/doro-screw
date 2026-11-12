@@ -14,10 +14,10 @@ test('网站版默认仍用运行路径，微应用注入解析器后才改走 B
   assert.match(assetUrl('logo.png'),/runtime\/logo/);
 });
 
-test('微应用清单占位 ID 符合官方 UUID v7 校验，提审前必须替换',async()=>{
+test('微应用清单使用应用页分配的 UUID v7',async()=>{
   const manifest=JSON.parse(await readFile(new URL('../mapp/manifest.json',import.meta.url),'utf8'));
   assert.match(manifest.id,/^[a-f0-9]{8}-[a-f0-9]{4}-7[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
-  assert.equal(manifest.id,'019a0d0d-0000-7000-8000-00000000d0d0');
+  assert.equal(manifest.id,'01a1cddd-b6e3-70d1-8132-f37aceee7d9c');
   assert.match(manifest.version,/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/);
   assert.deepEqual(manifest.permissions,['theme.read','storage.read','storage.write','audio.webAudio','files.save']);
   assert.equal(manifest.entry,'index.html');

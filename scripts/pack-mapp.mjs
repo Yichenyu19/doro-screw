@@ -5,22 +5,27 @@ import {createHash} from 'node:crypto';
 import {pack} from '@discourse-mini-app/sdk/pack';
 import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,isAlbumWorkingFile} from './mapp-assets.mjs';
 
-function lossyQuality(file){
+function compressPlan(file){
   const base=path.basename(file);
-  if(/-hd\.[0-9a-f]+\.webp$/.test(base))return 80;
-  if(/^album-\d+\.[0-9a-f]+\.webp$/.test(base))return 82;
-  if(/^album-\d+-thumb\.[0-9a-f]+\.webp$/.test(base))return 82;
-  if(base.startsWith('backdrop.'))return 82;
-  return 0;
+  if(!base.endsWith('.webp'))return null;
+  if(/-hd\.[0-9a-f]+\.webp$/.test(base))return {quality:70,scale:'960:960'};
+  if(/^album-\d+-thumb\.[0-9a-f]+\.webp$/.test(base))return {quality:70,scale:'160:160'};
+  if(/^album-\d+\.[0-9a-f]+\.webp$/.test(base))return {quality:68};
+  if(/^plate[ABC]-/.test(base))return {quality:82};
+  if(/atlas/.test(base)||/^(screws|heads|fx|assistHeads)-/.test(base))return {quality:80};
+  return {quality:72};
 }
 
 async function placeAsset(file){
   const from=path.join(root,'public',file);
   const to=path.join(web,file);
   await mkdir(path.dirname(to),{recursive:true});
-  const quality=lossyQuality(file);
-  if(!quality){await copyFile(from,to);return;}
-  const result=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',from,'-c:v','libwebp','-quality',String(quality),'-compression_level','6',to],{encoding:'utf8'});
+  const plan=compressPlan(file);
+  if(!plan){await copyFile(from,to);return;}
+  const args=['-y','-hide_banner','-loglevel','error','-i',from,'-c:v','libwebp','-compression_level','6','-quality',String(plan.quality)];
+  if(plan.scale)args.push('-vf',`scale=${plan.scale}:flags=lanczos`);
+  args.push(to);
+  const result=spawnSync('ffmpeg',args,{encoding:'utf8'});
   if(result.status!==0)throw Error('压缩失败 '+file+'\n'+(result.stderr||result.error?.message||''));
 }
 
@@ -73,5 +78,7 @@ const info={
   assets:assets.length,
   placeholderId:manifest.id==='019a0d0d-0000-7000-8000-00000000d0d0',
 };
+const hardLimit=4096*1024;
+if(result.size>=hardLimit)throw Error(`app.zip ${result.size} 字节，达到或超过沙箱上限 ${hardLimit} 字节。`);
 await writeFile(path.join(out,'BUILD.json'),JSON.stringify(info,null,2));
 console.log(`Created ${result.file} (${result.size} bytes), SHA-256 ${sha}, app ${manifest.id}, version ${manifest.version}${info.placeholderId?'；清单 ID 仍是占位符，提审前须换成应用页分配的 ID。':''}`);

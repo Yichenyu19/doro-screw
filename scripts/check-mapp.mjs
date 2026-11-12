@@ -124,7 +124,7 @@ async function main(){
     await page.click('[data-action="art-hd"]');
     await page.waitForFunction(()=>{
       const img=document.querySelector('.artwork-hd');
-      return img&&!img.hidden&&img.complete&&img.naturalWidth>=1000;
+      return img&&!img.hidden&&img.complete&&img.naturalWidth>=800;
     },null,{timeout:20000});
     const info=await page.evaluate(()=>{
       const img=document.querySelector('.artwork-hd');
@@ -233,7 +233,7 @@ async function main(){
   for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png','mapp-hd-1-390x844.png','mapp-hd-2-390x844.png']){
     await copyFile(path.join(outDir,name),path.join(artifacts,name));
   }
-  if(hdShots.length!==2||hdShots.some(item=>item.width<1000))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
+  if(hdShots.length!==2||hdShots.some(item=>item.width<800))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
   const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
   await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
   console.log(JSON.stringify({ok:report.ok,homeBytes,homeRequests:homeTraffic.length,hdShots,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));

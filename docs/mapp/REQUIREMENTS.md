@@ -7,9 +7,9 @@
 | 1 | 五个基础文件在 ZIP 根目录：`manifest.json`、`index.html`、`app.js`、`app.css`、`strings.json`；其他文件必须列入 `assets` 或 `media`。用 SDK `pack()` 打包，不要手搓或上传开发目录 / 旁边的 `package.json`。 | `scripts/pack-mapp.mjs` 调用 `@discourse-mini-app/sdk/pack`。本参考包 156 个文件，根目录六项为基础五件套加已声明的 `asset-list.json`。 | 满足 |
 | 2 | `index.html` 是正文片段：不带脚本入口、内联样式、事件属性、资源预连接、嵌套 iframe/object 等浏览上下文。 | `mapp/template.html` 只有 `<div id="app"></div>`。 | 满足 |
 | 3 | 脚本为单个 IIFE `app.js`，样式为 `app.css`。版本号必须是 `x.x.x` 三段数字，最长 64 字符，不带前导零或后缀。 | `mapp/vite.config.ts` 输出 IIFE `DoroScrew`；版本 `1.0.0`。 | 满足 |
-| 4 | `id` 必须是社区应用页分配的 UUID v7，原样复制，不要自行生成。 | 清单里是符合官方 v7 正则的占位符 `019a0d0d-0000-7000-8000-00000000d0d0`。构建读取 `MINI_APP_ID`。未替换前 `BUILD.json` 的 `placeholderId` 为 `true`。 | 待用户操作 |
-| 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。上传 ZIP 在 SDK 里还受 32 MiB 加密封套限制。 | 画册六张大图是 1254×1254、质量 80 的有损 WebP，合计 975 568 字节。未打入 campaign JSON、favicon、og。本包 7 616 266 字节，解压 8 813 816 字节，低于 32 MiB 封套。 | 满足 |
-| 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 本包 7 616 266 字节（约 7.26 MiB），低于 SDK 写出的 32 MiB 封套。上传页若另有更小上限，文档没有写死，本助手没有打开上传页。 | 待用户操作 |
+| 4 | `id` 必须是社区应用页分配的 UUID v7，原样复制，不要自行生成。 | 清单 ID 是应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`（「Doro个螺丝」）。构建仍可用 `MINI_APP_ID` 覆盖。 | 满足 |
+| 5 | 解压总量 ≤ 128 MiB，单文件 ≤ 32 MiB，文件数 ≤ 1024，manifest JSON ≤ 1 MiB。上传 ZIP 在 SDK 里还受 32 MiB 加密封套限制。 | 画册六张大图是 960×960、质量 70 的有损 WebP，合计 544 822 字节。未打入 campaign JSON、favicon、og。本包 2 895 628 字节，解压 4 093 006 字节。 | 满足 |
+| 6 | 上传 ZIP 大小「以上传页面显示的大小限制为准」。 | 沙箱上传页写明上限 4 096 KiB（4 194 304 字节）。本包 2 895 628 字节，低于该上限，也低于建议的 3 900 KiB。 | 满足 |
 | 7 | 只申请实际需要的权限；未声明不得使用对应能力。 | 申请：`theme.read`、`storage.read`、`storage.write`、`audio.webAudio`、`files.save`。未申请：`user.read`、`clipboard.write`、`links.open`、`network.*`、`assets.remote`、`workers.create`、`cookies.*`、`fullscreen`、`code.*`。 | 满足 |
 | 8 | 网络必须在 manifest 声明端点；不能未声明联网，也不能把秘密放进包内。 | 无 `endpoints` / `websockets` / `remote_assets`。关卡不按 URL 拉取。包内无令牌或密钥。网站统计、noindex、favicon、og 未进入微应用包。 | 满足 |
 | 9 | 原生 `new Worker()` / `importScripts()` 不是加载入口；Worker 须声明并申请 `workers.create`。 | 微应用构建用 Vite 插件去掉 Worker 构造，提示/预分析改在主线程（`src/mapp/inline-services.ts`）。网站版仍用原来的 Worker。 | 满足 |
@@ -28,11 +28,11 @@
 
 未打入微应用包、从而减小体积的内容：
 
-- 画册大图：六张压成 1254×1254、质量 80 的有损 WebP，合计 975 568 字节，已列入 `assets`，不在启动时预读。点「欣赏高清原图」才读取这一张，关掉就释放。网站版仍直接使用原来的无损文件。
-- 点阵用的 720 画稿也不进启动清单，打开那一幅时才读。背景和画册缩略图在打进微应用包时改成质量 82 的有损 WebP。螺丝、玻璃这些对局图保持原文件。
-- `campaign/r1` 旧关卡资源：未包含。修订 4 关卡已经打进 `app.js`，微应用不再另附 campaign JSON。`public/sfx` 短音效仍按路径从包内加载，合计 96 124 字节，没有再压。
+- 画册大图：打进微应用包时缩到 960×960、质量 70，六张合计 544 822 字节。不在启动时预读。点「欣赏高清原图」才读取这一张，关掉就释放。网站版仍直接使用原来的 1254×1254 无损文件。
+- 点阵用的 720 画稿质量 68，缩略图缩到 160 且质量 70，都不进启动清单里的大图路径；缩略图仍随常驻图预读。背景、标题和立绘用质量 72。玻璃单张质量 82，螺丝和玻璃图集质量 80，为的是边缘还能点。这些只改微应用包里的副本。
+- `campaign/r1` 旧关卡资源：未包含。修订 4 关卡已经打进 `app.js`，微应用不再另附 campaign JSON。`public/sfx` 短音效仍按路径从包内加载，没有再压。
 - 网站用 favicon、og 图、以及任何 noindex / 统计相关页面头：未包含。`index.html` 没有 meta。
 
-当前 ZIP 7 616 266 字节，解压 8 813 816 字节，低于 128 MiB，也低于 SDK 的 32 MiB 封套。最大单文件是 `app.js` 1 626 350 字节。上传页是否另有更小上限，须用户在上传页查看。
+当前 ZIP 2 895 628 字节，解压 4 093 006 字节。沙箱上传页上限是 4 096 KiB。最大单文件仍是 `app.js`。
 
 打包时会把 Phaser 运行时里唯一的 `new Function("return this")` 换成 `globalThis`，并去掉默认的 `phaser.io` 地址字符串。打进 ZIP 的 `app.js` 不再含 `eval`、`new Function` 或该地址。SVG 命名空间 `http://www.w3.org/2000/svg` 仍在，它是标记，不会发起请求。

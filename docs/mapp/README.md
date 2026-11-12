@@ -12,7 +12,7 @@
 npm run build:mapp
 ```
 
-将官方应用页分配的 ID 写入清单后再打一次包（占位符 ID 不能用于上传）：
+清单里的应用 ID 已是「Doro个螺丝」应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`。要改 ID 或版本时：
 
 ```sh
 MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.0 npm run build:mapp
@@ -20,18 +20,19 @@ MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.0 npm run build:mapp
 
 需要带 source map 的调试包时用 `npm run build:mapp:debug`。官方要求正式发布去掉 source map；调试包只用于沙箱。
 
-本分支打出的参考包（清单仍是占位符 ID `019a0d0d-0000-7000-8000-00000000d0d0`）：
+本分支打出的包（沙箱 ZIP 上限 4 096 KiB，即 4 194 304 字节）：
 
 | 项 | 值 |
 | --- | --- |
 | 路径 | `dist-mapp/package/app.zip`（需本地执行 `npm run build:mapp` 生成，不入库） |
-| 体积 | 7 616 266 字节（约 7.26 MiB） |
-| SHA-256 | `8756baf338bfa7694820828d6df4381e581f9ad33f9e122d9ac3a68364a26969` |
-| 解压总量 / 文件数 | 8 813 816 字节（约 8.41 MiB） / 156 个文件 |
+| 体积 | 2 895 628 字节（约 2.76 MiB，低于 3 900 KiB） |
+| SHA-256 | `5cc9e87919dbd4b59d95f49d7c6a1e2d5eab2eb1227e57274501bc084f3796fd` |
+| 解压总量 / 文件数 | 4 093 006 字节（约 3.90 MiB） / 156 个文件 |
+| 应用 ID | `01a1cddd-b6e3-70d1-8132-f37aceee7d9c` |
 | 版本 | `1.0.0` |
-| 最大单文件 | `app.js` 1 626 350 字节（约 1.55 MiB） |
+| 最大单文件 | `app.js` 1 626 350 字节（约 1.55 MiB，打进 ZIP 后约 472 KiB） |
 
-换成真实应用 ID 后，ZIP 的 SHA-256 会变。同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。
+同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。
 
 ## 本地预览（自写 SDK mock，不是官方沙箱）
 

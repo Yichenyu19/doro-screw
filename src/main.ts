@@ -72,7 +72,7 @@ const randomUnlocked=()=>save.completed.includes(2)||save.legacyCompleted.includ
 const endlessUnlocked=()=>save.r1Campaign.completed.length===30||save.legacyCompleted.length===30;
 const themeUnlocked=(id:number)=>save.completed.includes(practiceCampaignId(id));
 const modeName=(playMode?:PlayMode)=>playMode==='mastery'?'主题精修':playMode==='rescue'?'残局解围':playMode==='random'?'旧版随机':playMode==='endless'?'旧版无尽':playMode==='legacy'?'旧版关卡':'精品主线';
-const starterImage=()=>new URL('runtime/starter-sticker-v4.webp',document.baseURI).href;
+const starterImage=()=>import.meta.env.DORO_MAPP?assetUrl('runtime/starter-sticker-v4.webp'):new URL('runtime/starter-sticker-v4.webp',document.baseURI).href;
 
 const ALBUM_NAMES=['睡到螺丝松','今天也摸鱼','草莓补给站','螺丝小宇宙','花田休息日','今日螺丝王'];
 const escapeText=(value:string)=>value.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));

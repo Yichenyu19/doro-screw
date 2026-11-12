@@ -15,7 +15,7 @@ npm run build:mapp
 清单里的应用 ID 已是「Doro个螺丝」应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`。要改 ID 或版本时：
 
 ```sh
-MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.0 npm run build:mapp
+MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.1 npm run build:mapp
 ```
 
 需要带 source map 的调试包时用 `npm run build:mapp:debug`。官方要求正式发布去掉 source map；调试包只用于沙箱。
@@ -25,11 +25,11 @@ MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.0 npm run build:mapp
 | 项 | 值 |
 | --- | --- |
 | 路径 | `dist-mapp/package/app.zip`（需本地执行 `npm run build:mapp` 生成，不入库） |
-| 体积 | 2 895 628 字节（约 2.76 MiB，低于 3 900 KiB） |
-| SHA-256 | `5cc9e87919dbd4b59d95f49d7c6a1e2d5eab2eb1227e57274501bc084f3796fd` |
-| 解压总量 / 文件数 | 4 093 006 字节（约 3.90 MiB） / 156 个文件 |
+| 体积 | 2 895 957 字节（约 2.76 MiB，低于 3 900 KiB） |
+| SHA-256 | `21b8a8b51e3d3d9df0b9503bd5093023914170d9c2cb662f3ca00b2907982627` |
+| 解压总量 / 文件数 | 4 093 874 字节（约 3.90 MiB） / 156 个文件 |
 | 应用 ID | `01a1cddd-b6e3-70d1-8132-f37aceee7d9c` |
-| 版本 | `1.0.0` |
+| 版本 | `1.0.1` |
 | 最大单文件 | `app.js` 1 626 350 字节（约 1.55 MiB，打进 ZIP 后约 472 KiB） |
 
 同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。

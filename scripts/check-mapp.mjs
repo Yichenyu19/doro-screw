@@ -59,6 +59,31 @@ async function main(){
     recordVideo:{dir:outDir,size:{width:390,height:844}},
   });
   const page=await context.newPage();
+  await page.addInitScript(()=>{
+    let current;
+    Object.defineProperty(window,'miniApp',{
+      configurable:true,
+      set(sdk){
+        current=sdk;
+        let reads=0;
+        const count=async(run)=>{reads++;return run();};
+        const assets=sdk.assets;
+        const readBytes=assets.readBytes.bind(assets);
+        const readText=assets.readText.bind(assets);
+        const readJson=assets.readJson.bind(assets);
+        assets.readBytes=path=>count(()=>readBytes(path));
+        assets.readText=path=>count(()=>readText(path));
+        assets.readJson=path=>count(()=>readJson(path));
+        const ready=sdk.lifecycle.ready.bind(sdk.lifecycle);
+        sdk.lifecycle.ready=async()=>{
+          window.__DORO_READY_STATS={assetReadsBeforeReady:reads,booted:!!window.__DORO__};
+          return ready();
+        };
+        Object.defineProperty(window,'miniApp',{configurable:true,writable:true,value:sdk});
+      },
+      get(){return current;},
+    });
+  });
   const consoleErrors=[],pageErrors=[],failed=[];
   const ignoreUrl=url=>/\/(?:favicon\.ico|apple-touch-icon[^/]*\.png)$/i.test(url||'');
   page.on('console',msg=>{
@@ -81,6 +106,10 @@ async function main(){
   const settle=()=>Promise.all(traffic.map(item=>item.done));
   await page.goto(`http://127.0.0.1:${port}/?check=1`,{waitUntil:'networkidle',timeout:60000});
   await page.waitForSelector('[data-action="start"]',{timeout:20000});
+  const readyStats=await page.evaluate(()=>window.__DORO_READY_STATS||null);
+  if(!readyStats)throw Error('没有记录 lifecycle.ready');
+  if(readyStats.assetReadsBeforeReady!==0)throw Error('lifecycle.ready 等到了素材读取：'+readyStats.assetReadsBeforeReady);
+  if(readyStats.booted)throw Error('lifecycle.ready 等到了 bootGame');
   await settle();
   const homeTraffic=traffic.slice();
   const homeBytes=homeTraffic.reduce((sum,item)=>sum+(item.status<400?item.size:0),0);

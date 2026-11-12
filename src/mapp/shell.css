@@ -12,3 +12,4 @@ body.mapp-shell{display:flex;justify-content:center;align-items:stretch;}
   box-sizing:border-box;
 }
 .mapp-dark #app{outline:1px solid color-mix(in srgb,var(--mapp-text,#fff) 25%,transparent);}
+.mapp-loading{margin:0;min-height:100%;display:flex;align-items:center;justify-content:center;color:var(--mapp-text,#5a2e3e);font:600 16px/1.4 sans-serif;}

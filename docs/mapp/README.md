@@ -11,13 +11,13 @@
 ```sh
 cd mapp
 bun install --frozen-lockfile
-MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.11 bun run build
+MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.12 bun run build
 ```
 
 清单里的应用 ID 已是「Doro个螺丝」应用页上的 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`。要改 ID 或版本时：
 
 ```sh
-cd mapp && MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.11 bun run build
+cd mapp && MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.12 bun run build
 ```
 
 需要带 source map 的调试包时在 `mapp/` 里用 `MINI_APP_DEBUG=1 bun run build`。官方要求正式发布去掉 source map；调试包只用于排查。
@@ -27,11 +27,11 @@ cd mapp && MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.11 bun run
 | 项 | 值 |
 | --- | --- |
 | 路径 | `mapp/dist/package/app.zip`（本地执行上面的命令生成，不入库） |
-| 体积 | 3 714 954 字节（约 3.54 MiB，低于 3 900 KiB） |
-| SHA-256 | `d64e3a576d00ad985478d32e3b3d84c6d872daf4ef4ef6766c7b17b8b95851dd` |
+| 体积 | 3 714 976 字节（约 3.54 MiB，低于 3 900 KiB） |
+| SHA-256 | `4eba02321bee91ec50f2444bd69ecdc1ad7ab883d6150f321748da3334941b33` |
 | 解压总量 / 文件数 | 见 `mapp/dist/package/app.zip`，156 个文件 |
 | 应用 ID | `01a1cddd-b6e3-70d1-8132-f37aceee7d9c` |
-| 版本 | `1.0.11` |
+| 版本 | `1.0.12` |
 | 入口 | 单一 IIFE `app.js`，没有 `chunks/game.js` |
 
 同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。

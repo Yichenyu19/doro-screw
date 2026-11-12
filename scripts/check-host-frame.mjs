@@ -197,6 +197,35 @@ async function runScenario(){
   return {steps:steps,snapshot:snapshot,entries:seed.slice()};
 }
 window.addEventListener('message',function(event){
+  if(event.data&&event.data.type==='doro-home-busy'){
+    var failed='';
+    try{
+      var api=window.__DORO__;
+      if(!api)throw new Error('没有检查接口');
+      api.save.current={mode:'campaign'};
+      api.showHome();
+    }catch(error){
+      failed=String(error&&error.message||error);
+      var label=document.querySelector('[data-action="start"] .button-label');
+      if(label)label.textContent='继续拆！';
+      var start=document.querySelector('[data-action="start"]');
+      if(start)start.setAttribute('data-action','continue');
+      var secondary=document.querySelector('.home-secondary');
+      if(secondary&&!document.querySelector('.continue-note')){
+        var line=document.createElement('p');
+        line.className='continue-note';
+        line.textContent='精品主线';
+        secondary.parentNode.insertBefore(line,secondary);
+      }
+    }
+    var note=document.querySelector('#toast');
+    if(note){note.textContent='已恢复关闭前最后的操作与撤回记录。';note.classList.add('visible');}
+    var boxOf=function(node){if(!node)return null;var rect=node.getBoundingClientRect();return {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,width:rect.width,height:rect.height};};
+    setTimeout(function(){
+      parent.postMessage({type:'doro-home-measure',error:failed,slot:boxOf(document.querySelector('.home-character')),hero:boxOf(document.querySelector('.home-doro')),button:boxOf(document.querySelector('[data-action="continue"],[data-action="start"]')),logo:boxOf(document.querySelector('.home-logo')),text:(document.body&&document.body.innerText||'').slice(0,180)},'*');
+    },80);
+    return;
+  }
   if(event.data&&event.data.type==='doro-flow'){
     runScenario().then(function(result){parent.postMessage({type:'doro-flow-done',ok:true,result:result},'*');}).catch(function(error){parent.postMessage({type:'doro-flow-done',ok:false,message:String(error&&error.message||error)},'*');});
     return;

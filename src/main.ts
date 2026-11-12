@@ -4,7 +4,7 @@ import {remainingOnBoard} from './geometry';
 import {observeVisible} from './visible-analysis';
 import {tutorialEvidence,teachingCue,teachingFlags} from './teaching';
 import { GameAudio } from './audio';
-import { assetUrl, sprite, PANEL_SLICE, preloadFrames } from './art';
+import { assetUrl, resolvedAssetPath, sprite, PANEL_SLICE, preloadFrames } from './art';
 import {R2_TITLES,CAMPAIGN_TITLES,CAMPAIGN_COUNT,dailyPractice,practiceCampaignId} from './r2-catalog';
 import { GameServices } from './worker-client';
 import { assistCount, challengeCode, clearRank, readChallengeCode, RANK_NAMES, CONTENT_REVISION } from './run';
@@ -341,6 +341,7 @@ function openModal(name:string,content:string,options:{wide?:boolean;closable?:b
 }
 
 function closeModal():void {
+  releaseArtworkHd();
   services.cancelHint();hintSequence++;
   artwork?.destroy();artwork=null;
   const returnTo=modalHistory.pop()??modalReturn;
@@ -466,7 +467,28 @@ function showAlbum():void {
 
 function showAlbumCard(id:number):void {if(!save.album.includes(id)){showArtwork(id-1);return;}showArtwork(id-1);}
 
+function releaseArtworkHd():void{window.__DORO_MAPP__?.releaseAsset?.();}
+async function toggleArtworkHd(button:HTMLElement):Promise<void>{
+  const image=document.querySelector<HTMLImageElement>('.artwork-hd'),canvas=document.querySelector<HTMLElement>('.artwork-stage canvas');
+  if(!image||!canvas||!save.album.includes(artworkIndex+1))return;
+  if(artHighDefinition){
+    artHighDefinition=false;image.hidden=true;canvas.hidden=false;image.removeAttribute('src');releaseArtworkHd();
+    button.textContent='欣赏高清原图';return;
+  }
+  const file='album-'+(artworkIndex+1)+'.png';
+  let src=assetUrl(file,'hd');
+  if(!src){
+    const load=window.__DORO_MAPP__?.loadAsset;
+    if(!load){toast('高清原图没有打开。');return;}
+    try{src=await load(resolvedAssetPath(file,'hd'));}catch{src='';}
+  }
+  if(!src){toast('高清原图没有打开。');return;}
+  artHighDefinition=true;
+  if(image.getAttribute('src')!==src)image.src=src;
+  image.hidden=false;canvas.hidden=true;button.textContent='看看螺丝点阵';
+}
 function showArtwork(preferred?:number):void {
+  releaseArtworkHd();
   const first=ARTWORKS.findIndex((art,i)=>save.artworkProgress[i]<art.columns*art.rows),index=preferred??first;if(index<0||index>=ARTWORKS.length){showAlbum();return;}artworkIndex=index;artHighDefinition=false;
   const art=ARTWORKS[index],total=art.columns*art.rows,progress=save.artworkProgress[index];
   openModal('artwork',`<div class="artwork-dialog"><h2>${art.title}</h2><div class="artwork-stage artwork-frame"><canvas aria-label="逐颗螺丝完成的 Doro 点阵作品"></canvas><img class="artwork-hd" hidden alt="${art.title}高清原图"></div><div class="artwork-meter"><span data-art-progress>${Math.round(progress/total*100)}% · ${progress} / ${total}</span><div class="progress-track">${sprite('button',0,'progress-art progress-base')}<span data-art-fill>${sprite('button',0,'progress-art')}</span></div></div><p class="artwork-balance">还存着 <strong data-art-balance>${save.materialBalance}</strong> 颗螺丝</p>${artButton('art-shoot','按住，一颗颗填入',{className:'artwork-launch',attrs:'data-art-launch'})}<div class="artwork-controls">${artButton('art-fill','一次填入',{secondary:true})}${artButton('album','查看画册',{secondary:true})}</div><button class="art-hd-toggle text-tool" data-action="art-hd" hidden>欣赏高清原图</button></div>`,{wide:true});
@@ -607,7 +629,7 @@ function dispatchButton(button:HTMLElement):void {
   if (action==='art-next') {if(engine?.state.phase==='playing'||engine?.state.phase==='stuck')closeModal();else if(engine?.state.phase==='won')launchNext();else void startLevel(nextCampaignLevel());return;}
   if (action==='art-claim') {if(save.artworkProgress.every((filled,index)=>index>=ARTWORKS.length||filled>=ARTWORKS[index].columns*ARTWORKS[index].rows))showAlbum();else showArtwork();return;}
   if(action==='art-fill'){artwork?.fillAll();return;}
-  if(action==='art-hd'){const image=document.querySelector<HTMLImageElement>('.artwork-hd'),canvas=document.querySelector<HTMLElement>('.artwork-stage canvas');if(image&&canvas&&save.album.includes(artworkIndex+1)){artHighDefinition=!artHighDefinition;if(artHighDefinition&&!image.src){const src=assetUrl('album-'+(artworkIndex+1)+'.png','hd');if(!src){toast('这个微应用包没有附带高清原图。');artHighDefinition=false;return;}image.src=src;}image.hidden=!artHighDefinition;canvas.hidden=artHighDefinition;button.textContent=artHighDefinition?'看看螺丝点阵':'欣赏高清原图';}return;}
+  if(action==='art-hd'){void toggleArtworkHd(button);return;}
   if (action==='art-retry') {artwork?.reload();return;}
   if (action==='art-shoot') {artwork?.start();window.setTimeout(()=>artwork?.stop(),100);return;}
   if (action==='album-card') {showAlbumCard(Number(button.dataset.album));return;}

@@ -25,11 +25,11 @@ MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.0 npm run build:mapp
 | 项 | 值 |
 | --- | --- |
 | 路径 | `dist-mapp/package/app.zip`（需本地执行 `npm run build:mapp` 生成，不入库） |
-| 体积 | 11 113 523 字节（约 10.60 MiB） |
-| SHA-256 | `657b9cf5e1ad7bbbfea4aba68e8b82c7dc66471686816fbe2e4126ec3bef008d` |
-| 解压总量 / 文件数 | 12 554 254 字节（约 11.97 MiB） / 158 个文件 |
+| 体积 | 21 685 869 字节（约 20.68 MiB） |
+| SHA-256 | `2bd6a3b18c53e0c07b022d740aa91422fa61bbef58bc4c79649f93ec29753f19` |
+| 解压总量 / 文件数 | 23 130 291 字节（约 22.06 MiB） / 164 个文件 |
 | 版本 | `1.0.0` |
-| 最大单文件 | `app.js` 1 625 451 字节（约 1.55 MiB） |
+| 最大单文件 | `runtime/album-4-hd.f951fab2de.webp` 1 948 766 字节（约 1.86 MiB） |
 
 换成真实应用 ID 后，ZIP 的 SHA-256 会变。同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。
 

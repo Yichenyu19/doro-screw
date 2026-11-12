@@ -84,6 +84,51 @@ async function main(){
   });
   await shot('mapp-home-390x844.png');
   const homeOverflow=await overflow();
+  await page.evaluate(()=>{
+    const save=window.__DORO__.save;
+    save.artworkProgress[0]=17*16;
+    save.artworkProgress[1]=16*15;
+    for(const id of [1,2])if(!save.album.includes(id))save.album.push(id);
+  });
+  await page.click('[data-action="artwork"]');
+  await page.waitForSelector('[data-action="album"]');
+  await page.click('[data-action="album"]');
+  const hdShots=[];
+  for(const id of [1,2]){
+    await page.click(`[data-album="${id}"]`);
+    await page.waitForSelector('[data-action="art-hd"]',{state:'visible'});
+    const revokedBefore=await page.evaluate(()=>window.__doroRevoked||0);
+    await page.evaluate(()=>{
+      if(window.__doroRevokePatched)return;
+      const orig=URL.revokeObjectURL.bind(URL);
+      window.__doroRevoked=0;
+      URL.revokeObjectURL=(url)=>{window.__doroRevoked++;orig(url);};
+      window.__doroRevokePatched=true;
+    });
+    await page.click('[data-action="art-hd"]');
+    await page.waitForFunction(()=>{
+      const img=document.querySelector('.artwork-hd');
+      return img&&!img.hidden&&img.complete&&img.naturalWidth>=1000;
+    },null,{timeout:20000});
+    const info=await page.evaluate(()=>{
+      const img=document.querySelector('.artwork-hd');
+      return{src:img.currentSrc||img.src,width:img.naturalWidth,height:img.naturalHeight,title:document.querySelector('.artwork-dialog h2')?.textContent||''};
+    });
+    await shot(`mapp-hd-${id}-390x844.png`);
+    hdShots.push(info);
+    await page.click('[data-action="art-hd"]');
+    await page.waitForFunction(()=>document.querySelector('.artwork-hd')?.hidden===true);
+    const released=await page.evaluate(()=>window.__doroRevoked||0);
+    if(released<=revokedBefore)throw Error('关掉高清图后没有释放 Blob');
+    await page.click('[data-action="album"]');
+  }
+  // 画册和单幅互相压栈，关掉一层会回到上一层。一直关到主页露出来。
+  for(let i=0;i<12;i++){
+    const open=await page.evaluate(()=>!!document.querySelector('.modal-shade'));
+    if(!open)break;
+    await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
+  }
+  await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
   await page.click('[data-action="start"]');
   await waitBoard(page);
   const l1=await page.evaluate(()=>({id:window.__DORO__.engine.state.levelId,pins:window.__DORO__.engine.state.screws.length,phase:window.__DORO__.engine.state.phase,tip:document.querySelector('#board-tip')?.textContent||''}));
@@ -162,10 +207,11 @@ async function main(){
   const videos=(await import('node:fs')).readdirSync(outDir).filter(f=>f.endsWith('.webm'));
   const artifacts='/opt/cursor/artifacts';
   await mkdir(artifacts,{recursive:true});
-  for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png']){
+  for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png','mapp-hd-1-390x844.png','mapp-hd-2-390x844.png']){
     await copyFile(path.join(outDir,name),path.join(artifacts,name));
   }
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
+  if(hdShots.length!==2||hdShots.some(item=>item.width<1000))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,hdShots,end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
   await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
   console.log(JSON.stringify({ok:report.ok,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
   if(problems.length){console.error(problems.join('\n'));process.exit(1);}

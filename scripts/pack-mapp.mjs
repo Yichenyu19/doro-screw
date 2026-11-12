@@ -2,7 +2,7 @@ import {mkdir,copyFile,readFile,writeFile,stat} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pack} from '@discourse-mini-app/sdk/pack';
-import {listMappRuntimeFiles,listMappSfxFiles,campaignFiles} from './mapp-assets.mjs';
+import {listMappRuntimeFiles,listMappAlbumHdFiles,listMappSfxFiles,campaignFiles} from './mapp-assets.mjs';
 
 const root=process.cwd();
 const web=path.join(root,'dist-mapp/web');
@@ -15,12 +15,13 @@ await copyFile(path.join(root,'mapp/template.html'),path.join(web,'index.html'))
 await copyFile(path.join(root,'mapp/strings.json'),path.join(web,'strings.json'));
 
 const runtime=await listMappRuntimeFiles();
+const albumHd=await listMappAlbumHdFiles();
 const sfx=await listMappSfxFiles();
 const campaign=campaignFiles(4,8);
 const extra=['asset-list.json'];
-const assets=[...runtime,...sfx,...campaign,...extra];
+const assets=[...runtime,...albumHd,...sfx,...campaign,...extra];
 await writeFile(path.join(web,'asset-list.json'),JSON.stringify(runtime,null,0));
-for(const file of runtime){
+for(const file of [...runtime,...albumHd]){
   const from=path.join(root,'public',file);
   const to=path.join(web,file);
   await mkdir(path.dirname(to),{recursive:true});

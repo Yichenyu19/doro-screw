@@ -110,18 +110,28 @@ async function main():Promise<void>{
     // asset-list 本身也在 assets 中；失败时仍尝试启动，界面会提示缺图。
   }
   const revoke=await installAssets(sdk,Array.isArray(paths)?paths:[]);
-  if(sdk.permissions.has('files.save')){
-    window.__DORO_MAPP__={
-      saveFile:async(name,data)=>{await sdk.files.save(name,data);}
-    };
-  }
+  let held:{path:string;url:string}|null=null;
+  const releaseAsset=()=>{if(!held)return;URL.revokeObjectURL(held.url);held=null;};
+  const loadAsset=async(path:string)=>{
+    if(held?.path===path)return held.url;
+    releaseAsset();
+    const bytes=await sdk.assets.readBytes(path);
+    const url=URL.createObjectURL(new Blob([bytes],{type:mimeFor(path)}));
+    held={path,url};
+    return url;
+  };
+  window.__DORO_MAPP__={
+    loadAsset,
+    releaseAsset,
+    ...(sdk.permissions.has('files.save')?{saveFile:async(name:string,data:string)=>{await sdk.files.save(name,data);}}:{}),
+  };
   try{
     const {bootGame}=await import('../main');
     await bootGame();
   }finally{
     try{await sdk.lifecycle.ready();}catch{ /* 通知宿主已完成首次绘制。 */ }
   }
-  window.addEventListener('pagehide',()=>{unsubscribe?.();revoke();},{once:true});
+  window.addEventListener('pagehide',()=>{unsubscribe?.();revoke();window.__DORO_MAPP__?.releaseAsset?.();},{once:true});
 }
 
 void main().catch(error=>{

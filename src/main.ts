@@ -124,11 +124,13 @@ function shellAccessories():string {
   return '<div id="modal-root"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>';
 }
 function updateSaveStatus():void {const value=getSaveStatus();for(const element of document.querySelectorAll<HTMLElement>('[data-save-status]')){const text=value.status==='saved'?'已保存':value.status==='saving'?'正在保存…':value.status==='local'?'恢复日志已保存':'保存异常 · 导出';if(element.textContent!==text)element.textContent=text;if(element.dataset.status!==value.status)element.dataset.status=value.status;if(element.title!==value.message)element.title=value.message;}}
-onSaveStatus((status)=>{
-  updateSaveStatus();
-  if(status==='error'&&!lastSaveWarning){lastSaveWarning=true;toast('保存遇到问题。请保持页面开启，并点保存状态导出恢复记录。',5000);}
-  if(status==='saved'||status==='local')lastSaveWarning=false;
-});
+function subscribeSaveStatus():void {
+  onSaveStatus((status)=>{
+    updateSaveStatus();
+    if(status==='error'&&!lastSaveWarning){lastSaveWarning=true;toast('保存遇到问题。请保持页面开启，并点保存状态导出恢复记录。',5000);}
+    if(status==='saved'||status==='local')lastSaveWarning=false;
+  });
+}
 
 
 function markRow(rank:ReturnType<typeof rankMarks>,label:string):string{
@@ -678,6 +680,7 @@ function dispatchButton(button:HTMLElement):void {
 
 function bindShell():void{
   if(shellBound)return;
+  subscribeSaveStatus();
   const found=document.querySelector<HTMLDivElement>('#app');
   if(!found)throw Error('缺少应用容器');
   app=found;

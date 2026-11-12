@@ -77,6 +77,14 @@ class MappStorage implements Storage {
   getItem(key:string){return this.memory.has(String(key))?this.memory.get(String(key))!:null;}
   setItem(key:string,value:string){
     const k=String(key),v=String(value);
+    const bytes=(text:string)=>new TextEncoder().encode(text).byteLength;
+    if(bytes(k)>4096||bytes(v)>4096)return;
+    const next=new Map(this.memory);
+    next.set(k,v);
+    if(next.size>64)return;
+    let total=0;
+    for(const [name,item] of next)total+=bytes(name)+bytes(item);
+    if(total>65536)return;
     this.memory.set(k,v);
     if(!this.sdk.permissions.has('storage.write'))return;
     this.writes=this.writes.then(()=>this.sdk.localStorage.setItem(k,v)).catch(()=>{});

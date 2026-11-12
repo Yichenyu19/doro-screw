@@ -2,28 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const entry=readFileSync('src/mapp/entry.ts','utf8');
-const pack=readFileSync('scripts/pack-mapp.mjs','utf8');
+const entry=readFileSync('mapp/src/main.ts','utf8');
+const pack=readFileSync('mapp/scripts/package.ts','utf8');
 
-test('入口先画加载壳并通知宿主，再启动游戏，不加载分包',()=>{
-  assert.doesNotMatch(entry,/scripts\.load|chunks\/game\.js|code\.load/);
-  const boot=entry.slice(entry.indexOf('async function start'));
-  const paint=boot.indexOf('paintLoading');
-  const ready=boot.indexOf('lifecycle.ready');
-  const start=boot.indexOf('launchMiniApp(');
-  assert.ok(paint>=0&&ready>paint&&start>ready);
-  assert.match(entry,/globalThis\.DoroGame=Object\.freeze\(\{boot\}\)/);
-  assert.match(entry,/void boot\(\)\.catch\(fail\)/);
-  assert.doesNotMatch(entry,/currentScript/);
-  assert.match(entry,/__DORO_BOOT__/);
+test('入口先画加载文案，连接宿主后再启动，失败也会通知',()=>{
+  assert.doesNotMatch(entry,/scripts\.load|chunks\/game\.js|code\.load|currentScript/);
+  const refresh=entry.slice(entry.indexOf('async function refreshUser'));
+  const connect=refresh.indexOf('host.connect');
+  const install=refresh.indexOf('installShapeOutlines');
+  const ready=refresh.indexOf('host.rendered');
+  const launch=refresh.indexOf('launchMiniApp');
+  assert.ok(connect>=0&&install>connect&&ready>install&&launch>ready);
+  assert.match(entry,/paint\(messages\.zh_CN\.loading\)/);
   assert.match(entry,/微应用未能启动/);
-  const failBody=entry.slice(entry.indexOf('function fail'));
-  assert.ok(failBody.indexOf('lifecycle.ready')>0);
+  assert.match(entry,/void refreshUser\(\)/);
 });
 
-test('打包使用官方 pack，产物是单一 app.js',()=>{
-  assert.match(pack,/@discourse-mini-app\/sdk\/pack/);
-  assert.match(pack,/item!=='code\.load'/);
-  assert.doesNotMatch(pack,/chunks\/game\.js/);
-  assert.match(pack,/assertPackedApp/);
+test('打包脚本只调用官方 pack',()=>{
+  assert.match(pack,/import \{ pack \} from "@discourse-mini-app\/sdk\/pack"/);
+  assert.match(pack,/await pack\(\{ manifest, files, outputDirectory: "dist\/package" \}\)/);
+  assert.doesNotMatch(pack,/code\.load|chunks\/game\.js|finalizeGameSource|assertPackedApp/);
 });

@@ -82,7 +82,7 @@ export function parseMarkup(html:string):DocumentFragment{
       index=end;
       continue;
     }
-    if(html.startsWith('<!--',index)){
+    if(html.charCodeAt(index)===60&&html.charCodeAt(index+1)===33&&html.charCodeAt(index+2)===45&&html.charCodeAt(index+3)===45){
       const end=html.indexOf('-->',index);
       index=end<0?html.length:end+3;
       continue;

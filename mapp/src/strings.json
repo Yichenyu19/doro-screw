@@ -1,0 +1,12 @@
+{
+  "zh_CN": {
+    "loading": "正在打开…",
+    "apiError": "接口暂时没有响应（{code}）",
+    "saved": "已保存"
+  },
+  "en": {
+    "loading": "Opening…",
+    "apiError": "The interface did not respond ({code})",
+    "saved": "Saved"
+  }
+}

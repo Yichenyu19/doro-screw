@@ -24,12 +24,16 @@ export default defineConfig({
         const directEval = 'var eval2 = ' + 'eval;';
         if (!code.includes(directEval)) return;
         let next = code.replaceAll(directEval, 'var eval2 = function(){throw new Error("外部场景脚本未启用");};');
+        const styleProbe = 'ruler.' + 'set' + 'Attribute(' + "'style', 'position: fixed; height: 100vh; width: 0; top: 0')";
         next = next
           .replaceAll('element.' + htmlSink + ' = html;', 'element.textContent = html;')
           .replaceAll('this.node.' + htmlSink + ' = html;', 'this.node.textContent = html;')
           .replaceAll('this.data.' + htmlSink + ' = this.xhrLoader.responseText;', 'this.data.textContent = this.xhrLoader.responseText;')
           .replaceAll('domparser.' + xmlParse + "(data, 'text/xml')", 'null')
-          .replaceAll('parser.' + xmlParse + "(text, 'text/xml')", 'null');
+          .replaceAll('parser.' + xmlParse + "(text, 'text/xml')", 'null')
+          .replaceAll(styleProbe, "ruler.style.position='fixed';ruler.style.height='100vh';ruler.style.width='0';ruler.style.top='0'")
+          .replaceAll('target = (this.isTop) ? window.top : window;', 'try { target = (this.isTop) ? window.top : window; } catch (e) { target = window; }');
+        if (!next.includes("ruler.style.height='100vh'")) throw new Error('没有改掉 iOS 高度探测的样式属性');
         if (next === code) throw new Error('没有找到需要去掉的场景脚本求值');
         return { code: next, map: null };
       }

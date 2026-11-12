@@ -77,14 +77,14 @@ Doro 是《胜利女神：妮姬》（NIKKE）角色 Dorothy 的同人形象，�
 | 画册高清图体积 | 六张高清图让包变大，但仍低于 32 MiB。 | 说明高清图是包内资源，点开才读，关掉释放，不会请求外部地址。 |
 | 声音开关观感 | 平台在运行前就让用户选有声/静音，应用内再做一个开关可能重复。 | 不要再做第二套「总音量」去覆盖平台开关。保留游戏内已有的细项即可。沙箱里确认平台静音时没有漏音。 |
 | `BUILD_EXISTS` | 同一 SHA-256 再上传会被直接拒绝。 | 改 ID、改版本或改内容后重新打包。不要重复上传本草稿对应的占位符包。 |
-| 包体积超上传页限额 | 沙箱上传页写明 ZIP 上限 4 096 KiB。 | 当前 2 898 229 字节，低于 3 900 KiB。 |
+| 包体积超上传页限额 | 沙箱上传页写明 ZIP 上限 4 096 KiB。 | 当前 2 898 241 字节，低于 3 900 KiB。 |
 | 恢复日志文案 | 微应用不用原生 IndexedDB，页脚可能出现「恢复日志已保存」（出站队列在 localStorage）。 | 这是降级存储，不是失败。若审核员疑惑，说明撤回日志改走平台 localStorage。 |
 | 诱导或外链 | 若文案里出现官方站、商店或未声明链接。 | 微应用不申请 `links.open`，不要在说明里放需跳转的地址。网站地址如需提及，只写纯文本，不做成跳转。 |
 
 ## 作者上传步骤（本助手到此停止）
 
 1. 在社区个人资料的应用页创建应用，填写上面的名称、简介，上传方形图标，复制应用 ID。
-2. 确认 `dist-mapp/package/BUILD.json` 的 `id` 是 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，且 `placeholderId` 为 `false`。需要重打时用 `MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.3 npm run build:mapp`。
+2. 确认 `dist-mapp/package/BUILD.json` 的 `id` 是 `01a1cddd-b6e3-70d1-8132-f37aceee7d9c`，且 `placeholderId` 为 `false`。需要重打时用 `MINI_APP_ID=01a1cddd-b6e3-70d1-8132-f37aceee7d9c MINI_APP_VERSION=1.0.4 npm run build:mapp`。
 3. 只上传 `dist-mapp/package/app.zip`，等待沙箱构建完成的系统私信。
 4. 打开 `/apps-sandbox/<app-id>/<version>-<8-char-sha>`，按「可重复步骤」自检，并重拍提审截图。
 5. 在正式页新建发布，选择该构建，粘贴版本说明、权限用途和版权声明。审核期间可以撤回。

@@ -2,7 +2,7 @@
   "format": 1,
   "id": "01a1cddd-b6e3-70d1-8132-f37aceee7d9c",
   "name": "Doro个螺丝",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "entry": "index.html",
   "script": "app.js",
   "style": "app.css",

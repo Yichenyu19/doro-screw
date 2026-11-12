@@ -1,7 +1,7 @@
 import {readdir,readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-const pattern=/innerHTML|outerHTML|insertAdjacentHTML|document\.write|createContextualFragment|parseFromString|setHTMLUnsafe|\beval\s*\(|new Function|style="/;
+const pattern=/innerHTML|outerHTML|insertAdjacentHTML|document\.write|createContextualFragment|parseFromString|setHTMLUnsafe|\beval\s*\(|new Function|style="|setAttribute\(["']style["']/;
 
 export async function assertNoSinks(dir){
   const files=[];

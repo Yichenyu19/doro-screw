@@ -11,7 +11,8 @@ import {createRequire} from 'node:module';
 import {assemblePreview,servePreview,MAPP_CSP} from './serve-mapp-preview.mjs';
 
 const require=createRequire(import.meta.url);
-const {chromium}=require('playwright');
+const {chromium,webkit,devices}=require('playwright');
+const iphone=devices['iPhone 13'];
 const outDir=path.resolve(process.env.DORO_MAPP_CHECK_DIR||'/tmp/doro-mapp-check');
 const skipBuild=process.argv.includes('--skip-build');
 
@@ -53,10 +54,17 @@ async function main(){
   const preview=await assemblePreview();
   const port=await freePort();
   const server=await servePreview(preview,port,{'Content-Security-Policy':MAPP_CSP});
-  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  let browser; let deviceEngine='chromium-ios-ua';
+  try{
+    browser=await webkit.launch({headless:true});
+    deviceEngine='webkit-iphone';
+  }catch{
+    browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  }
+  const {defaultBrowserType:unusedBrowserType,...iphoneContext}=iphone;
   const context=await browser.newContext({
-    viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,
-    recordVideo:{dir:outDir,size:{width:390,height:844}},
+    ...iphoneContext,
+    recordVideo:{dir:outDir,size:{width:iphone.viewport.width,height:iphone.viewport.height}},
   });
   const page=await context.newPage();
   await page.addInitScript(()=>{
@@ -249,6 +257,7 @@ async function main(){
   const themed=await page.evaluate(()=>({dark:document.documentElement.classList.contains('mapp-dark'),reduced:document.documentElement.classList.contains('reduced-motion')}));
   await page.screenshot({path:path.join(outDir,'mapp-restored-390x844.png'),fullPage:true});
   const csp=await page.evaluate(()=>window.__DORO_CSP||[]);
+  const device=await page.evaluate(()=>({ua:navigator.userAgent,engine:navigator.vendor||'',ios:/iPhone|iPad/.test(navigator.userAgent)}));
 
   await context.close();
   await browser.close();
@@ -273,6 +282,7 @@ async function main(){
   if(restored.runId!==mid.runId||restored.moves!==mid.moves)problems.push('刷新后未恢复中途存档：'+JSON.stringify({mid,restored}));
   if(!themed?.dark||!themed?.reduced)problems.push('深色或减少动效没有跟上主题：'+JSON.stringify(themed));
   if(csp.length||violations.length)problems.push('内容安全策略违规：'+JSON.stringify(csp.concat(violations)));
+  if(!device.ios)problems.push('没有走到 iPhone 路径：'+device.ua);
 
   const videos=(await import('node:fs')).readdirSync(outDir).filter(f=>f.endsWith('.webm'));
   const artifacts='/opt/cursor/artifacts';
@@ -281,9 +291,9 @@ async function main(){
     await copyFile(path.join(outDir,name),path.join(artifacts,name));
   }
   if(hdShots.length!==2||hdShots.some(item=>item.width<800))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',csp:MAPP_CSP,violations:csp.concat(violations),banner,muted,l1,l2,themed,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',deviceEngine,device,csp:MAPP_CSP,violations:csp.concat(violations),banner,muted,l1,l2,themed,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
   await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
-  console.log(JSON.stringify({ok:report.ok,homeBytes,homeRequests:homeTraffic.length,hdShots,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
+  console.log(JSON.stringify({ok:report.ok,deviceEngine,device,violations:report.violations,homeBytes,homeRequests:homeTraffic.length,hdShots,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
   if(problems.length){console.error(problems.join('\n'));process.exit(1);}
 }
 main().catch(error=>{console.error(error);process.exit(1);});

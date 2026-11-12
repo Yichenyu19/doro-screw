@@ -117,18 +117,20 @@ async function defaultBoot():Promise<void>{
   await bootGame();
 }
 
-/** 先画出加载壳并通知宿主，再读素材、再进游戏。 */
-export async function launchMiniApp(sdk:MiniAppSDK,boot:()=>Promise<void>=defaultBoot):Promise<void>{
+/** 入口脚本已经通知宿主时，分包只负责读素材和进入游戏。 */
+export async function launchMiniApp(sdk:MiniAppSDK,boot:()=>Promise<void>=defaultBoot,options:{skipHostReady?:boolean}={}):Promise<void>{
   await sdk.ready;
   let toldHost=false;
   const tellHost=async()=>{
-    if(toldHost)return;
+    if(toldHost||options.skipHostReady)return;
     toldHost=true;
     try{await sdk.lifecycle.ready();}catch{ /* 宿主已超时或已收到。 */ }
   };
   try{
-    paintShell();
-    await tellHost();
+    if(!options.skipHostReady){
+      paintShell();
+      await tellHost();
+    }
     try{await installStorage(sdk);}catch{ /* 存档层失败不中断。 */ }
     let unsubscribe:(()=>void)|undefined;
     try{

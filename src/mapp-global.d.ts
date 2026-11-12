@@ -9,6 +9,7 @@ declare global {
       releaseAsset?(path?: string): void;
     };
     miniApp?: unknown;
+    __DORO_GAME_CHUNK__?: boolean;
   }
 }
 

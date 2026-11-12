@@ -42,8 +42,8 @@ await copyFile(path.join(root,'mapp/strings.json'),path.join(web,'strings.json')
 const runtime=await listMappRuntimeFiles();
 const albumHd=await listMappAlbumHdFiles();
 const sfx=await listMappSfxFiles();
-const extra=['asset-list.json'];
-// 关卡已经打进 app.js。微应用里 usePack 为假，不再把 campaign JSON 打进 ZIP。
+const extra=['asset-list.json','chunks/game.js'];
+// 关卡已经打进游戏分包。微应用里 usePack 为假，不再把 campaign JSON 打进 ZIP。
 const startup=runtime.filter(file=>!isAlbumWorkingFile(file));
 const assets=[...runtime,...albumHd,...sfx,...extra];
 await writeFile(path.join(web,'asset-list.json'),JSON.stringify(startup,null,0));
@@ -54,15 +54,25 @@ for(const file of sfx){
   await copyFile(path.join(root,'public',file),to);
 }
 
+manifest.permissions=[...new Set([...(manifest.permissions||[]),'code.load'])];
+manifest.code={...(manifest.code||{}),scripts:['chunks/game.js']};
 manifest.assets=assets;
-const appJsPath=path.join(web,'app.js');
-let appJs=await readFile(appJsPath,'utf8');
-const rewritten=appJs
+const shell=await readFile(path.join(root,'mapp/shell.js'),'utf8');
+if(shell.length>4096)throw Error('入口 app.js 超过 4096 字节，宿主还要先解析完才能收到 ready。');
+if(/\beval\b|new Function|new Worker/.test(shell))throw Error('入口 app.js 含 eval、new Function 或 new Worker。');
+const readyAt=shell.indexOf('lifecycle.ready');
+const loadAt=shell.indexOf('scripts.load');
+const paintAt=shell.indexOf('正在打开');
+if(paintAt<0||readyAt<0||loadAt<0||!(paintAt<readyAt&&readyAt<loadAt))throw Error('入口没有在加载分包之前画出加载壳并调用 lifecycle.ready。');
+await writeFile(path.join(web,'app.js'),shell);
+const gamePath=path.join(web,'chunks/game.js');
+let gameJs=await readFile(gamePath,'utf8');
+const rewritten=gameJs
   .replaceAll('new Function("return this")()','globalThis')
   .replaceAll('https://phaser.io','');
-if(rewritten===appJs)throw Error('没有找到需要去掉的运行时求值或默认外链，打包中止。');
-if(/\beval\s*\(|new Function\b/.test(rewritten))throw Error('app.js 仍含 eval 或 new Function。');
-await writeFile(appJsPath,rewritten);
+if(rewritten===gameJs)throw Error('没有找到需要去掉的运行时求值或默认外链，打包中止。');
+if(/\beval\b|new Function\b/.test(rewritten))throw Error('游戏分包仍含 eval 或 new Function。');
+await writeFile(gamePath,rewritten);
 const files={};
 for(const name of ['index.html','app.js','app.css','strings.json',...assets]){
   files[name]=await readFile(path.join(web,name));

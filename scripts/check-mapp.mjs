@@ -76,7 +76,7 @@ async function main(){
         assets.readJson=path=>count(()=>readJson(path));
         const ready=sdk.lifecycle.ready.bind(sdk.lifecycle);
         sdk.lifecycle.ready=async()=>{
-          window.__DORO_READY_STATS={assetReadsBeforeReady:reads,booted:!!window.__DORO__};
+          window.__DORO_READY_STATS={assetReadsBeforeReady:reads,booted:!!window.__DORO__,gameChunk:!!window.__DORO_GAME_CHUNK__};
           return ready();
         };
         Object.defineProperty(window,'miniApp',{configurable:true,writable:true,value:sdk});
@@ -110,6 +110,7 @@ async function main(){
   if(!readyStats)throw Error('没有记录 lifecycle.ready');
   if(readyStats.assetReadsBeforeReady!==0)throw Error('lifecycle.ready 等到了素材读取：'+readyStats.assetReadsBeforeReady);
   if(readyStats.booted)throw Error('lifecycle.ready 等到了 bootGame');
+  if(readyStats.gameChunk)throw Error('lifecycle.ready 等到了游戏分包');
   await settle();
   const homeTraffic=traffic.slice();
   const homeBytes=homeTraffic.reduce((sum,item)=>sum+(item.status<400?item.size:0),0);

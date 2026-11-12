@@ -97,7 +97,7 @@
     return "application/octet-stream";
   }
 
-  const permissions = ["theme.read", "storage.read", "storage.write", "audio.webAudio", "files.save"];
+  const permissions = ["theme.read", "storage.read", "storage.write", "audio.webAudio", "files.save", "code.load"];
   const sdk = {
     ready: Promise.resolve(),
     permissions: {
@@ -137,6 +137,17 @@
       },
       async readJson(path) {
         return JSON.parse(await sdk.assets.readText(path));
+      },
+    },
+    scripts: {
+      async load(path) {
+        await new Promise((resolve, reject) => {
+          const el = document.createElement("script");
+          el.src = "./" + String(path);
+          el.onload = () => resolve();
+          el.onerror = () => reject(new Error("分包没有加载：" + path));
+          document.head.appendChild(el);
+        });
       },
     },
     files: {

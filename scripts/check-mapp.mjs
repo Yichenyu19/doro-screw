@@ -5,7 +5,7 @@
  */
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {copyFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {assemblePreview,servePreview} from './serve-mapp-preview.mjs';
@@ -53,7 +53,7 @@ async function main(){
   const preview=await assemblePreview();
   const port=await freePort();
   const server=await servePreview(preview,port);
-  const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const context=await browser.newContext({
     viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,
     recordVideo:{dir:outDir,size:{width:390,height:844}},
@@ -73,10 +73,22 @@ async function main(){
   await page.waitForSelector('[data-action="start"]',{timeout:20000});
   const banner=await page.locator('#mapp-mock-bar').textContent();
   const officialFlag=await page.evaluate(()=>window.__DORO_MAPP_MOCK__?.officialSandbox);
-  await page.screenshot({path:path.join(outDir,'mapp-home-390x844.png'),fullPage:true});
+  const shot=async(name)=>{
+    await page.evaluate(()=>{const bar=document.querySelector('#mapp-mock-bar');if(bar)bar.style.display='none';document.body.style.paddingTop='0';});
+    await page.screenshot({path:path.join(outDir,name)});
+    await page.evaluate(()=>{const bar=document.querySelector('#mapp-mock-bar');if(bar)bar.style.display='';document.body.style.paddingTop='';});
+  };
+  const overflow=()=>page.evaluate(()=>{
+    const nodes=[document.documentElement,document.body,document.querySelector('#app'),document.querySelector('.home-screen'),document.querySelector('.game-screen')].filter(Boolean);
+    return nodes.map(el=>({id:el.id||el.className,scroll:el.scrollWidth,client:el.clientWidth,over:el.scrollWidth-el.clientWidth}));
+  });
+  await shot('mapp-home-390x844.png');
+  const homeOverflow=await overflow();
   await page.click('[data-action="start"]');
   await waitBoard(page);
-  await page.screenshot({path:path.join(outDir,'mapp-l1-start-390x844.png'),fullPage:true});
+  const l1=await page.evaluate(()=>({id:window.__DORO__.engine.state.levelId,pins:window.__DORO__.engine.state.screws.length,phase:window.__DORO__.engine.state.phase,tip:document.querySelector('#board-tip')?.textContent||''}));
+  await shot('mapp-l1-start-390x844.png');
+  const l1Overflow=await overflow();
 
   // 声音开关（平台 mock）
   await page.click('#mock-sound');
@@ -84,32 +96,18 @@ async function main(){
   await page.screenshot({path:path.join(outDir,'mapp-sound-muted-390x844.png'),fullPage:true});
   await page.click('#mock-sound'); // 恢复有声，避免影响可玩性
 
-  const picks=await clickOfficial(page,15);
-  await page.waitForFunction(()=>window.__DORO__?.engine?.state?.phase==='won'||document.querySelector('[data-action="home"],.dialog h2'),{timeout:20000}).catch(()=>{});
-  const end=await page.evaluate(()=>({phase:window.__DORO__?.engine?.state?.phase,moves:window.__DORO__?.engine?.state?.moves,completed:window.__DORO__?.save?.completed||[]}));
-  await page.waitForTimeout(800);
-  await page.screenshot({path:path.join(outDir,'mapp-l1-won-390x844.png'),fullPage:true});
-
-  // 新开一局做到一半再测存档与隐藏暂停、挑战码
-  await page.click('[data-action="home"]').catch(()=>{});
-  await page.waitForTimeout(400);
-  // 若结算页没有 home，点关闭后再回首页
-  if(!await page.$('[data-action="start"],[data-action="continue"]')){
-    await page.click('[data-action="close-modal"]').catch(()=>{});
-    await page.click('[data-action="home"]').catch(()=>{});
-  }
-  await page.waitForSelector('[data-action="start"],[data-action="continue"]',{timeout:15000});
-  // 清掉已完成进度后的继续，改开第二关？存档恢复用刷新当前进行中的一局：再开第二关或重玩。
-  // 为了恢复测试，从关卡地图开第 2 关或继续。这里新开一局：若首页是开始第2关，进入后点 6 颗。
-  const startSel=await page.$('[data-action="continue"]')?'[data-action="continue"]':'[data-action="start"]';
-  if(startSel==='[data-action="continue"]'){
-    // 上一局已赢，current 应为空，首页应是开始下一关
-  }
-  await page.click('[data-action="start"],[data-action="continue"]');
+  const picks=await clickOfficial(page,3);
+  const end=await page.evaluate(()=>({phase:window.__DORO__?.engine?.state?.phase,moves:window.__DORO__?.engine?.state?.moves,levelId:window.__DORO__?.engine?.state?.levelId}));
+  await page.evaluate(async()=>{await window.__DORO__.startLevel(2);});
   await waitBoard(page);
-  const midPicks=await clickOfficial(page,6);
+  const l2=await page.evaluate(()=>({id:window.__DORO__.engine.state.levelId,pins:window.__DORO__.engine.state.screws.length,phase:window.__DORO__.engine.state.phase,tip:document.querySelector('#board-tip')?.textContent||''}));
+  await shot('mapp-l2-start-390x844.png');
+  const l2Overflow=await overflow();
+
+  // 第二关做到一半，再测存档、隐藏暂停和挑战码。
+  const midPicks=await clickOfficial(page,3);
   const mid=await page.evaluate(()=>({moves:window.__DORO__.engine.state.moves,runId:window.__DORO__.engine.state.runId,levelId:window.__DORO__.engine.state.levelId,phase:window.__DORO__.engine.state.phase}));
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(400);
 
   // 隐藏暂停
   await page.click('#mock-hide');
@@ -149,7 +147,12 @@ async function main(){
   if(pageErrors.length)problems.push('页面异常：'+pageErrors.join(' | '));
   if(consoleErrors.length)problems.push('控制台错误：'+consoleErrors.join(' | '));
   if(failed.length)problems.push('资源失败：'+JSON.stringify(failed));
-  if(end.phase!=='won'||end.moves!==15)problems.push('第一关未通关：'+JSON.stringify(end));
+  if(l1.id!==1||l1.pins!==30||l1.phase!=='playing')problems.push('第一关没有加载：'+JSON.stringify(l1));
+  if(l2.id!==2||l2.pins!==120||l2.phase!=='playing')problems.push('第二关没有加载：'+JSON.stringify(l2));
+  if(/免费辅助|已经露出来|先留好颜色/.test(l1.tip+l2.tip))problems.push('关卡仍在讲解：'+l1.tip+' / '+l2.tip);
+  const wide=[...homeOverflow,...l1Overflow,...l2Overflow].filter(item=>item.over>1);
+  if(wide.length)problems.push('横向超出视口：'+JSON.stringify(wide));
+  if(!picks.some(item=>item.hit))problems.push('第一关点了螺丝但步数没有增加：'+JSON.stringify(picks));
   if(!muted.flag||muted.gain!==0)problems.push('声音开关未静音输出：'+JSON.stringify(muted));
   if(mid.moves<3)problems.push('中途进度不足：'+JSON.stringify(mid));
   if(!paused.modal)problems.push('页面隐藏后未出现暂停界面：'+JSON.stringify(paused));
@@ -157,7 +160,12 @@ async function main(){
   if(restored.runId!==mid.runId||restored.moves!==mid.moves)problems.push('刷新后未恢复中途存档：'+JSON.stringify({mid,restored}));
 
   const videos=(await import('node:fs')).readdirSync(outDir).filter(f=>f.endsWith('.webm'));
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,end,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
+  const artifacts='/opt/cursor/artifacts';
+  await mkdir(artifacts,{recursive:true});
+  for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png']){
+    await copyFile(path.join(outDir,name),path.join(artifacts,name));
+  }
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,l1,l2,end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
   await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
   console.log(JSON.stringify({ok:report.ok,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
   if(problems.length){console.error(problems.join('\n'));process.exit(1);}

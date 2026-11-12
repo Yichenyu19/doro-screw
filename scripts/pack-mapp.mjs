@@ -33,6 +33,14 @@ for(const file of [...sfx,...campaign]){
 }
 
 manifest.assets=assets;
+const appJsPath=path.join(web,'app.js');
+let appJs=await readFile(appJsPath,'utf8');
+const rewritten=appJs
+  .replaceAll('new Function("return this")()','globalThis')
+  .replaceAll('https://phaser.io','');
+if(rewritten===appJs)throw Error('没有找到需要去掉的运行时求值或默认外链，打包中止。');
+if(/\beval\s*\(|new Function\b/.test(rewritten))throw Error('app.js 仍含 eval 或 new Function。');
+await writeFile(appJsPath,rewritten);
 const files={};
 for(const name of ['index.html','app.js','app.css','strings.json',...assets]){
   files[name]=await readFile(path.join(web,name));

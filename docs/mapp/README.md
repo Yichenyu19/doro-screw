@@ -1,6 +1,6 @@
 # Linux DO 微应用适配（阶段 E）
 
-本目录是提审材料草稿和本地验收说明。官方文档以 [linux-do/mapp-developer-guide](https://github.com/linux-do/mapp-developer-guide) 为准，本分支对照的是提交时仓库提交 `acbe7817a006bd82c2fc084611d8f43de245808c`（2026-11-10 08:20 AM America/Ojinaga，UTC-6）。
+本目录是提审材料草稿和本地验收说明。官方文档以 [linux-do/mapp-developer-guide](https://github.com/linux-do/mapp-developer-guide) 为准，当前对照的是该仓库提交 `ae0b523297a8c25314304f2cd92270badc0ac629`。
 
 **不要把这里的材料当成已经提交。** 本分支不会代替任何人登录 Linux DO，也不会上传 `app.zip` 或发起正式审核。
 
@@ -25,11 +25,11 @@ MINI_APP_ID=<应用页复制的 UUID> MINI_APP_VERSION=1.0.0 npm run build:mapp
 | 项 | 值 |
 | --- | --- |
 | 路径 | `dist-mapp/package/app.zip`（需本地执行 `npm run build:mapp` 生成，不入库） |
-| 体积 | 11 115 575 字节（约 10.60 MiB） |
-| SHA-256 | `abcf00720f10c256136c873c18b3d1a90754fc24f27d1d68ed9c5b0562b47a7e` |
-| 解压总量 / 文件数 | 12 555 363 字节（约 11.97 MiB） / 158 个文件 |
+| 体积 | 11 113 523 字节（约 10.60 MiB） |
+| SHA-256 | `657b9cf5e1ad7bbbfea4aba68e8b82c7dc66471686816fbe2e4126ec3bef008d` |
+| 解压总量 / 文件数 | 12 554 254 字节（约 11.97 MiB） / 158 个文件 |
 | 版本 | `1.0.0` |
-| 最大单文件 | `app.js` 1 629 166 字节（约 1.55 MiB） |
+| 最大单文件 | `app.js` 1 625 451 字节（约 1.55 MiB） |
 
 换成真实应用 ID 后，ZIP 的 SHA-256 会变。同一份 SHA-256 再次上传会被平台拒绝（`BUILD_EXISTS`），过期构建也不例外。
 

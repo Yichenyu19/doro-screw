@@ -58,7 +58,13 @@ function sandboxSafeRuntime() {
         .replaceAll("new Function(\"return this\")()", "globalThis")
         .replaceAll("new Function('return this')()", "globalThis")
         .replaceAll("https://phaser.io", "")
-        .replaceAll("innerHTML", "textContent");
+        .replaceAll("innerHTML", "textContent")
+        // 宿主 document.write 后可能不 close，readyState 会停在 loading，DOMContentLoaded 和 load 都不会发生。
+        // 脚本执行时 body 已经在树上，这时直接启动，不再等永远不来的事件。
+        .replaceAll(
+          "if (document.readyState === 'complete' || document.readyState === 'interactive')",
+          "if (document.readyState === 'complete' || document.readyState === 'interactive' || document.body)"
+        );
       return next === code ? null : { code: next, map: null };
     },
   };

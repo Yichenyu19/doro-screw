@@ -196,6 +196,15 @@ function gameShell():void {
   </main>${shellAccessories()}`);
 }
 
+function afterPaint():Promise<void>{
+  return new Promise(resolve=>{
+    let done=false;
+    const finish=()=>{if(done)return;done=true;resolve();};
+    requestAnimationFrame(()=>requestAnimationFrame(()=>window.setTimeout(finish,0)));
+    window.setTimeout(finish,500);
+  });
+}
+
 async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,version:ContentVersion=saved?.contentVersion??'v4',playMode:PlayMode=saved?.mode??(version==='v4'?(id>30?'endless':'campaign'):'legacy'),revision=saved?.contentRevision??CONTENT_REVISION):Promise<void> {
   const token=++generation;services.cancelHint();hintSequence++;pendingLaunch=null;clearTeachingTimers();
   artwork?.destroy();artwork=null;presenter?.cancel();presenter=null;view?.destroy();view=null;engine=null;level=null;
@@ -204,11 +213,11 @@ async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,versi
   const starting=document.querySelector<HTMLButtonElement>('[data-action="start"],[data-action="continue"]');
   if(starting){starting.setAttribute('aria-busy','true');starting.disabled=true;const label=starting.querySelector('.button-label');if(label)label.textContent='正在准备…';}
   else appendMarkup(app,'<div class="toast visible" role="status">正在准备这一局…</div>');
-  // 先让加载状态完成一次绘制，再加载引擎并在后台准备关卡。
-  await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>window.setTimeout(resolve,0))));
+  // 先让加载状态完成一次绘制，再加载引擎并在后台准备关卡。绘制回调若一直不来，也不能停在这里。
+  await afterPaint();
   if(token!==generation)return;
   gameShell();
-  await new Promise<void>(resolve=>requestAnimationFrame(()=>window.setTimeout(resolve,0)));
+  await afterPaint();
   if(token!==generation)return;
   try{
     const [prepared,renderer]=await Promise.all([services.prepare(id,attempt,version,playMode,revision),import('./render')]);if(token!==generation)return;
@@ -220,7 +229,7 @@ async function startLevel(id:number,saved?:GameState,forcedAttempt?:number,versi
     const mounted=await renderer.mountGame(document.querySelector<HTMLElement>('#game-canvas')!,active,save.settings,{onPick:pick,onBoard:meltBoard,onReveal:events=>{services.cancelHint();hintSequence++;presenter?.reset(active.snapshot());audio.play('reveal');saveNow();},onAmbiguous:()=>{const menu=document.querySelector<HTMLElement>('.camera-menu');if(menu)menu.hidden=false;},onBlocked:()=>{audio.play('blocked');},onFall:()=>audio.play('fall'),onInvalid:()=>audio.play('blocked'),onInspect:text=>{tickClock();inspecting=!!text;lastClockTime=performance.now();const panel=document.querySelector<HTMLElement>('#board-inspect');if(panel){panel.hidden=!text;panel.textContent=text??'';}},onCamera:zoom=>{const label=document.querySelector('#zoom-value');if(label)label.textContent=Math.round(zoom*100)+'%';presenter?.flush();}});
     if(token!==generation){mounted.destroy();return;}view=mounted;lastClockTime=performance.now();document.querySelector('#board-loading')?.remove();delight.onLevelStart(prepared,active.state);view.setPaused(document.hidden||!!modal);presenter.prepareLayout();saveNow();
     if(active.state.phase==='stuck')audio.play('full');else updateTeaching();if(save.settings.sound)audio.unlock();
-  }catch(error){if(token!==generation)return;openModal('error',`${doro(3,'dialog-doro')}<h2>这一局还没准备好</h2><p>盘面记录仍保留着。请重新加载；如果仍未完成，可以先保存退出。</p><p class="small-note">${escapeText(error instanceof Error?error.message:'资源暂时不可用')}。</p>${artButton('retry','重新加载',{icon:12})}${artButton('home','保存退出',{secondary:true})}`,{closable:false});}
+  }catch(error){if(token!==generation)return;document.querySelector('#board-loading')?.remove();openModal('error',`${doro(3,'dialog-doro')}<h2>这一局还没准备好</h2><p>盘面记录仍保留着。请重新加载；如果仍未完成，可以先保存退出。</p><p class="small-note">${escapeText(error instanceof Error?error.message:'资源暂时不可用')}。</p>${artButton('retry','重新加载',{icon:12})}${artButton('home','保存退出',{secondary:true})}`,{closable:false});}
 }
 
 function updateHUD():void {
@@ -764,7 +773,7 @@ export async function bootGame():Promise<void> {
   if(loaded.warning)toast(loaded.warning,5500);
   const hostNotes=import.meta.env.DORO_MAPP?(window as Window & {__DORO_MAPP_NOTICES?:string[]}).__DORO_MAPP_NOTICES:[];
   if(hostNotes?.length)toast(hostNotes[0],6000);
-  if(import.meta.env.DEV||import.meta.env.MODE==='verification'||import.meta.env.DORO_MAPP&&new URLSearchParams(location.search).has('check')||new URLSearchParams(location.search).has('check')) {
+  if(import.meta.env.DEV||import.meta.env.MODE==='verification'||import.meta.env.DORO_MAPP&&(new URLSearchParams(location.search).has('check')||globalThis.__DORO_CHECK__===true)||new URLSearchParams(location.search).has('check')) {
     Object.defineProperty(window,'__DORO__',{value:{get engine(){return engine;},get view(){return view;},get level(){return level;},get presenter(){return presenter;},observe:()=>engine?observeVisible(engine.state):null,prepareLevel:(id:number,attempt=0)=>services.prepare(id,attempt),startLevel,pick,showHome,showAlbum,showLevels,showRecords,showWin,showShareCard,showRandomMenu,showChallenge,get save(){return save;},get artwork(){return artwork;},delight},configurable:true});
   }
 }

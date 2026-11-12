@@ -138,6 +138,8 @@ export class GameAudio {
 
   unlock():void{
     if(!this.enabled||(typeof document!=='undefined'&&document.hidden))return;
+    const activation=navigator.userActivation;
+    if(activation&&!activation.isActive)return;
     try{
       this.context??=new AudioContext();
       this.ensureGraph(this.context);

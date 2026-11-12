@@ -66,28 +66,64 @@ async function installAssets(sdk:MiniAppSDK,paths:string[]):Promise<{urls:Map<st
   return {urls,revoke(){for(const url of urls.values())URL.revokeObjectURL(url);setAssetResolver(null);}};
 }
 
+const storageBytes=(text:string)=>new TextEncoder().encode(text).byteLength;
+const CHUNK=900;
+
+function storageParts(value:string):string[]{
+  const parts:string[]=[];
+  for(let index=0;index<value.length;index+=CHUNK)parts.push(value.slice(index,index+CHUNK));
+  return parts.length?parts:[''];
+}
+
+function assembleStorage(entries:Array<[string,string]>):Map<string,string>{
+  const plain=new Map<string,string>();
+  const parts=new Map<string,Map<number,string>>();
+  const counts=new Map<string,number>();
+  for(const [key,value] of entries){
+    const count=/^(.*)\u0001n$/.exec(key);
+    const part=/^(.*)\u0001(\d+)$/.exec(key);
+    if(count)counts.set(count[1],Number(value));
+    else if(part){
+      const bag=parts.get(part[1])??new Map<number,string>();
+      bag.set(Number(part[2]),value);
+      parts.set(part[1],bag);
+    }else plain.set(key,value);
+  }
+  for(const [key,count] of counts){
+    const bag=parts.get(key);
+    if(!bag||bag.size!==count)continue;
+    let text='';
+    for(let index=0;index<count;index++)text+=bag.get(index)??'';
+    plain.set(key,text);
+  }
+  return plain;
+}
+
 class MappStorage implements Storage {
   private memory=new Map<string,string>();
   private writes:Promise<unknown>=Promise.resolve();
   constructor(private sdk:MiniAppSDK,entries:Array<[string,string]>){
-    for(const [key,value] of entries)this.memory.set(key,value);
+    this.memory=assembleStorage(entries);
   }
   get length(){return this.memory.size;}
   key(index:number){return [...this.memory.keys()][index]??null;}
   getItem(key:string){return this.memory.has(String(key))?this.memory.get(String(key))!:null;}
   setItem(key:string,value:string){
     const k=String(key),v=String(value);
-    const bytes=(text:string)=>new TextEncoder().encode(text).byteLength;
-    if(bytes(k)>4096||bytes(v)>4096)return;
-    const next=new Map(this.memory);
-    next.set(k,v);
-    if(next.size>64)return;
-    let total=0;
-    for(const [name,item] of next)total+=bytes(name)+bytes(item);
-    if(total>65536)return;
+    if(storageBytes(k)>512)return;
     this.memory.set(k,v);
     if(!this.sdk.permissions.has('storage.write'))return;
-    this.writes=this.writes.then(()=>this.sdk.localStorage.setItem(k,v)).catch(()=>{});
+    const parts=storageBytes(v)<=4096?[v]:storageParts(v);
+    this.writes=this.writes.then(async()=>{
+      if(parts.length===1&&storageBytes(parts[0])<=4096){
+        await this.sdk.localStorage.setItem(k,parts[0]);
+        await this.sdk.localStorage.removeItem(k+'\u0001n').catch(()=>{});
+        return;
+      }
+      await this.sdk.localStorage.removeItem(k).catch(()=>{});
+      for(let index=0;index<parts.length;index++)await this.sdk.localStorage.setItem(k+'\u0001'+index,parts[index]);
+      await this.sdk.localStorage.setItem(k+'\u0001n',String(parts.length));
+    }).catch(()=>{});
   }
   removeItem(key:string){
     const k=String(key);

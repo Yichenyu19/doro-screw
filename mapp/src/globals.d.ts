@@ -1,3 +1,5 @@
+var __DORO_CHECK__: boolean | undefined;
+
 interface Window {
   __DORO_MAPP__?: {
     saveFile?(name: string, data: string): Promise<void> | void;

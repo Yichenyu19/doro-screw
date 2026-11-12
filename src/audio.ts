@@ -178,8 +178,14 @@ export class GameAudio {
   }
   private async loadUrl(context:AudioContext,file:string):Promise<AudioBuffer|null>{
     try{
-      const load=window.__DORO_MAPP__?.loadAsset;
-      const response=await fetch(load?await load(file):this.sampleUrl(file));
+      const readBytes=window.__DORO_MAPP__?.readBytes;
+      if(readBytes){
+        const data=await readBytes(file);
+        const copy=new ArrayBuffer(data.byteLength);
+        new Uint8Array(copy).set(data);
+        return await context.decodeAudioData(copy);
+      }
+      const response=await fetch(this.sampleUrl(file));
       if(!response.ok)return null;
       return await context.decodeAudioData(await response.arrayBuffer());
     }catch{return null;}

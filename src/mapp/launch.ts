@@ -166,6 +166,7 @@ export async function launchMiniApp(sdk:MiniAppSDK,boot:()=>Promise<void>,option
     };
     window.__DORO_MAPP__={
       loadAsset,
+      readBytes:path=>sdk.assets.readBytes(path),
       releaseAsset,
       ...(sdk.permissions.has('files.save')?{saveFile:async(name:string,data:string)=>{await sdk.files.save(name,data);}}:{}),
     };

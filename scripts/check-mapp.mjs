@@ -9,6 +9,7 @@ import {copyFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {assemblePreview,servePreview,MAPP_CSP} from './serve-mapp-preview.mjs';
+import {checkHostFrame} from './check-host-frame.mjs';
 
 const require=createRequire(import.meta.url);
 const {chromium,webkit,devices}=require('playwright');
@@ -59,7 +60,16 @@ async function main(){
     const browser=deviceEngine.startsWith('webkit')
       ?await webkit.launch({headless:true})
       :await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
-    try{reports.push(await checkEngine(browser,deviceEngine,port));}
+    try{
+      const hostShot=path.join('/opt/cursor/artifacts',deviceEngine.startsWith('webkit')?'host-webkit-home.png':'host-chromium-home.png');
+      const levelShot=path.join('/opt/cursor/artifacts',deviceEngine.startsWith('webkit')?'host-webkit-l1.png':'host-chromium-l1.png');
+      await mkdir('/opt/cursor/artifacts',{recursive:true});
+      const host=await checkHostFrame({browser,webDir:path.resolve('dist-mapp/web'),shotPath:hostShot,levelShot,device:iphone});
+      console.log(JSON.stringify({host:deviceEngine,ok:host.ok,readyMs:host.readyMs,origin:host.ready&&host.ready.origin,text:(host.ready&&host.ready.text||'').slice(0,80),level:host.level&&{hasCanvas:host.level.hasCanvas,text:(host.level.text||'').slice(0,80)},problems:host.problems},null,2));
+      reports.push(await checkEngine(browser,deviceEngine,port));
+      if(!host.ok)reports[reports.length-1].problems.push(...host.problems.map(item=>'沙箱模拟：'+item));
+      reports[reports.length-1].ok=reports[reports.length-1].problems.length===0;
+    }
     finally{await browser.close();}
   }
   server.close();

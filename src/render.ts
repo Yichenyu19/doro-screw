@@ -80,17 +80,34 @@ class PuzzleScene extends Phaser.Scene {
 
   private sceneSheets():SceneSheet[]{return [...((this.engine.state.contentRevision??1)>=2?[]:this.engine.state.contentVersion==='v2'?['plates','plateExtra']:['plateA','plateB','plateC']),'heads','assistHeads','screws','fx'] as SceneSheet[];}
 
-  preload(): void {
-    for (const kind of this.sceneSheets()) this.load.image(kind, assetUrl(ART.sheets[kind].file));
-    if((this.engine.state.contentRevision??1)>=2)for(const shape of new Set(this.engine.state.boards.map(b=>b.shape))){const index=SHAPES.indexOf(shape),kind=(['plateA','plateB','plateC'] as const)[Math.floor(index/6)];this.load.image('plate-r2-'+shape,assetUrl(ART.sheets[kind].sprites[index%6].file));}
-    this.load.on('loaderror', (file: Phaser.Loader.File) => {
-      this.loadFailed = true;
-      this.failed(new Error(`图片加载失败：${file.key}`));
+  preload(): void {}
+
+  private loadImage(key:string,url:string):Promise<void>{
+    return new Promise((resolve,reject)=>{
+      const image=new Image();
+      image.onload=()=>{if(!this.textures.exists(key))this.textures.addImage(key,image);resolve();};
+      image.onerror=()=>reject(new Error(`图片加载失败：${key}`));
+      image.src=url;
     });
   }
 
   create(): void {
-    if (this.disposed || this.loadFailed) return;
+    void this.bootScene();
+  }
+
+  private async bootScene():Promise<void>{
+    if(this.disposed)return;
+    try{
+      const jobs:Promise<void>[]=[];
+      for(const kind of this.sceneSheets())jobs.push(this.loadImage(kind,assetUrl(ART.sheets[kind].file)));
+      if((this.engine.state.contentRevision??1)>=2)for(const shape of new Set(this.engine.state.boards.map(b=>b.shape))){const index=SHAPES.indexOf(shape),kind=(['plateA','plateB','plateC'] as const)[Math.floor(index/6)];jobs.push(this.loadImage('plate-r2-'+shape,assetUrl(ART.sheets[kind].sprites[index%6].file)));}
+      await Promise.all(jobs);
+    }catch(error){
+      this.loadFailed=true;
+      this.failed(error instanceof Error?error:new Error(String(error)));
+      return;
+    }
+    if(this.disposed||this.loadFailed)return;
     for (const kind of this.sceneSheets()) {
       const texture = this.textures.get(kind);
       ART.sheets[kind].frames.forEach((frame, index) => texture.add(String(index), 0, frame.x, frame.y, frame.width, frame.height));

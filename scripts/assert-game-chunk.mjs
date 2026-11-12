@@ -312,15 +312,27 @@ export async function executePackedAppWithApp(code){
     set(target,key,value){target[key]=value;return true;},
   });
   win.HTMLCanvasElement.prototype.getContext=()=>fakeContext();
+  const stats={ready:0};
   const sdk={
     ready:Promise.resolve(),
     permissions:{has:()=>true},
-    lifecycle:{ready:async()=>{}},
+    lifecycle:{ready:async()=>{stats.ready++;}},
     theme:{async get(){return {mode:'light',background:'#fff',text:'#111',reducedMotion:false,locale:'zh_CN',accent:'#000',border:'#ccc'};},onChange:()=>()=>{}},
     localStorage:{exportData:async()=>({format:1,entries:[]}),setItem:async()=>{},removeItem:async()=>{},clear:async()=>{}},
     assets:{readJson:async()=>[],readBytes:async()=>new Uint8Array(),readText:async()=>'[]'},
     files:{save:async()=>{}},
   };
+  const security=name=>{const error=new Error(name+' 被沙箱拒绝');error.name='SecurityError';throw error;};
+  for(const key of ['localStorage','sessionStorage','indexedDB','caches']){
+    Object.defineProperty(win,key,{configurable:true,get(){security(key);}});
+  }
+  try{Object.defineProperty(win.document,'cookie',{configurable:true,get(){security('cookie');},set(){security('cookie');}});}catch{ /* jsdom 的 cookie 不可改写时，启动路径也不能去读它。 */ }
+  win.fetch=()=>{throw Error('fetch 被沙箱拒绝');};
+  win.XMLHttpRequest=function XMLHttpRequest(){throw Error('XHR 被沙箱拒绝');};
+  win.Worker=function Worker(){throw Error('Worker 被沙箱拒绝');};
+  win.WebSocket=function WebSocket(){throw Error('WebSocket 被沙箱拒绝');};
+  win.AudioContext=function AudioContext(){throw Error('启动时不能创建 AudioContext');};
+  win.webkitAudioContext=win.AudioContext;
   const timers=new Set();
   const sandbox={
     console,
@@ -328,7 +340,7 @@ export async function executePackedAppWithApp(code){
     clearTimeout,
     setInterval:(fn,ms,...args)=>{const id=setInterval(fn,ms,...args);id.unref?.();timers.add(id);return id;},
     clearInterval:(id)=>{timers.delete(id);clearInterval(id);},
-    document:win.document,navigator:win.navigator,localStorage:win.localStorage,location:win.location,history:win.history,
+    document:win.document,navigator:win.navigator,location:win.location,history:win.history,
     performance:win.performance,HTMLElement:win.HTMLElement,Element:win.Element,Node:win.Node,Image:win.Image,Audio:win.Audio,
     SVGElement:win.SVGElement,HTMLCanvasElement:win.HTMLCanvasElement,MutationObserver:win.MutationObserver,
     ResizeObserver:win.ResizeObserver||class{observe(){}disconnect(){}},
@@ -340,14 +352,15 @@ export async function executePackedAppWithApp(code){
     matchMedia:query=>win.matchMedia(query),
     devicePixelRatio:1,
     innerWidth:390,innerHeight:844,
-    URL,URLSearchParams,Blob,TextEncoder,TextDecoder,atob,btoa,crypto,fetch,Headers,Request,Response,queueMicrotask,structuredClone,
+    URL,URLSearchParams,Blob,TextEncoder,TextDecoder,atob,btoa,crypto,Headers,Request,Response,queueMicrotask,structuredClone,
+    fetch:win.fetch,
     FormData:globalThis.FormData||class FormData{},
     File:globalThis.File||class File{},
     FileReader:globalThis.FileReader||class FileReader{},
     DOMParser:globalThis.DOMParser||class DOMParser{parseFromString(){return null;}},
-    XMLHttpRequest:globalThis.XMLHttpRequest||class XMLHttpRequest{},
-    WebSocket:globalThis.WebSocket||class WebSocket{},
-    Worker:globalThis.Worker||class Worker{},
+    XMLHttpRequest:win.XMLHttpRequest,
+    WebSocket:win.WebSocket,
+    Worker:win.Worker,
     visualViewport:{width:390,height:844,addEventListener(){},removeEventListener(){}},
     miniApp:sdk,
     __code:code,
@@ -355,27 +368,40 @@ export async function executePackedAppWithApp(code){
   sandbox.window=sandbox;
   sandbox.self=sandbox;
   sandbox.globalThis=sandbox;
+  for(const key of ['localStorage','sessionStorage','indexedDB','caches']){
+    Object.defineProperty(sandbox,key,{configurable:true,get(){security(key);}});
+  }
   try{
-    vm.runInContext('new Function(__code)()',vm.createContext(sandbox),{timeout:15000});
-    const loaded=win.document.querySelector('#app')?.textContent||'';
-    if(/开始拆|继续拆/.test(loaded))throw Error('加载本身已经进入首页');
-    if(typeof sandbox.DoroGame?.boot!=='function')throw Error('jsdom 执行后没有启动函数');
+    Object.defineProperty(win.document,'currentScript',{configurable:true,get(){return null;}});
+    vm.runInContext('new Function(__code)()',vm.createContext(sandbox),{timeout:20000});
+    if(typeof sandbox.DoroGame?.boot!=='function')throw Error('new Function 执行后没有启动函数');
     await sandbox.DoroGame.boot();
     const home=win.document.querySelector('#app')?.textContent||'';
-    if(!/开始拆|继续拆/.test(home))throw Error('调用启动函数后没有首页：'+home.slice(0,120));
-    return {loaded:loaded.slice(0,40),home:true};
+    if(!/开始拆|继续拆/.test(home))throw Error('currentScript 为 null 时没有进首页：'+home.slice(0,160));
+    const readyOnce=stats.ready;
+    if(readyOnce<1)throw Error('currentScript 为 null 时没有调用 lifecycle.ready');
+    await sandbox.DoroGame.boot();
+    if(stats.ready!==readyOnce)throw Error('第二次 boot 又通知了宿主：'+stats.ready);
+    return {currentScript:null,readyCount:readyOnce,readyAfterSecond:stats.ready,home:true,listenerFailures:0};
   }finally{
     for(const id of timers)clearInterval(id);
     win.close();
   }
 }
 
-export function assertAppStatic(code,manifest){
+export async function assertAppStatic(code,manifest){
   if(manifest?.permissions?.includes('code.load'))throw Error('清单仍申请了 code.load');
   if(manifest?.code?.scripts?.length)throw Error('清单仍声明了 code.scripts');
   if(JSON.stringify(manifest?.assets||[]).includes('chunks/game.js'))throw Error('清单资源仍包含 chunks/game.js');
   if(code.includes('</script'))throw Error('app.js 含有 </script');
-  if(/\bnew Function\b|\beval\s*\(|innerHTML|outerHTML|insertAdjacentHTML/.test(code))throw Error('app.js 仍有 innerHTML、eval 或 new Function');
+  if(/\bnew Function\b|\beval\s*\(/.test(code))throw Error('app.js 仍有 eval 或 new Function');
+  if(code.includes('currentScript'))throw Error('app.js 仍根据 currentScript 决定是否启动');
+  if(/\bimport\s*\(/.test(code))throw Error('app.js 仍有 import()');
+  if(/\bnew Worker\s*\(|importScripts\s*\(/.test(code))throw Error('app.js 会创建 Worker 或调用 importScripts');
+  for(const sink of ['innerHTML','outerHTML','insertAdjacentHTML','document.write','srcdoc']){
+    const count=code.split(sink).length-1;
+    if(count)throw Error(sink+' 出现 '+count+' 次');
+  }
   if(/Promise\.resolve\(\)\.then\(\(\)\s*=>\s*[A-Za-z_$]/.test(code)){
     const re=/Promise\.resolve\(\)\.then\(\(\)\s*=>\s*([A-Za-z_$][\w$]*)\s*\)/g;
     const forward=[];
@@ -385,11 +411,25 @@ export function assertAppStatic(code,manifest){
     }
     if(forward.length)throw Error('app.js 仍有前向引用：'+forward.join(','));
   }
+  const template=await readFile(new URL('../mapp/template.html',import.meta.url),'utf8');
+  if(/<script|<link|<meta|style=|on[a-z]+=/i.test(template))throw Error('index.html 不是纯正文片段：'+template);
+  try{
+    const css=await readFile(new URL('../dist-mapp/web/app.css',import.meta.url),'utf8');
+    if(/@font-face|url\(\s*['"][^'"]+\.(?:woff2?|ttf|otf)/i.test(css))throw Error('app.css 含字体文件');
+  }catch(error){
+    if(!String(error&&error.message||error).includes('字体')){
+      if(error&&error.code==='ENOENT')return;
+      throw error;
+    }
+    throw error;
+  }
 }
 
 export async function assertPackedApp(code,manifest){
-  assertAppStatic(code,manifest);
-  const bare=executePackedAppBare(code);
+  await assertAppStatic(code,manifest);
   const home=await executePackedAppWithApp(code);
-  return {bare,home,head:code.slice(0,180),tail:code.slice(-300)};
+  if(home.currentScript!==null)throw Error('new Function 执行时 currentScript 不是 null');
+  if(home.readyCount<1)throw Error('currentScript 为 null 时没有 lifecycle.ready');
+  if(home.readyAfterSecond!==home.readyCount)throw Error('bootOnce 没有挡住第二次启动');
+  return {home,head:code.slice(0,180),tail:code.slice(-300)};
 }

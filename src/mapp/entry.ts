@@ -18,20 +18,28 @@ function paintLoading():void{
 
 function fail(error:unknown):void{
   const node=document.querySelector('#app')||document.body;
-  if(!node)return;
-  const message=error instanceof Error?error.message:String(error);
-  node.textContent='微应用未能启动：'+message;
+  if(node){
+    const message=error instanceof Error?error.message:String(error);
+    node.textContent='微应用未能启动：'+message;
+  }
+  try{void getSDK().lifecycle.ready();}catch{ /* 没有 SDK 时宿主只能看到自己的失败页。 */ }
 }
 
-async function boot():Promise<void>{
+async function start():Promise<void>{
   const sdk=getSDK();
   await sdk.ready;
-  paintLoading();
+  try{paintLoading();}catch{ /* 画不出来也要先通知宿主。 */ }
   try{await sdk.lifecycle.ready();}catch{ /* 宿主已经收到，或这次通知超时。 */ }
   await launchMiniApp(sdk,bootGame,{skipHostReady:true});
 }
 
-globalThis.DoroGame=Object.freeze({boot});
+function boot():Promise<void>{
+  const slot=globalThis as typeof globalThis&{__DORO_BOOT__?:Promise<void>};
+  if(slot.__DORO_BOOT__)return slot.__DORO_BOOT__;
+  const pending=start();
+  slot.__DORO_BOOT__=pending;
+  return pending;
+}
 
-// 只有真正的 script 标签执行时才启动。new Function 执行时 currentScript 为空，加载本身不进游戏。
-if(document.currentScript)void boot().catch(fail);
+globalThis.DoroGame=Object.freeze({boot});
+void boot().catch(fail);

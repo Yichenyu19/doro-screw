@@ -1,6 +1,6 @@
 # 音效计量（修订 4 · 混音 v3）
 
-完整候选、事件表、对照 skill 的改动见 [`sfx-design.md`](./sfx-design.md)。试听 WAV、叠加混音、合成后备与频谱图在 `/workspace/doro-screw-review/sfx-v3/`。
+完整候选、事件表、检查项与本轮改动见 [`sfx-design.md`](./sfx-design.md)。试听 WAV、叠加混音、合成后备与频谱图在 `/workspace/doro-screw-review/sfx-v3/`。
 
 听力状态：**未经人耳验收。** 短音效的 Integrated LUFS 常为 −70，不以它作为通过条件。本批门限是真峰值 ≤ −1 dBTP、起止采样绝对值 ≤ 0.03（点击声）、叠加场景限幅后真峰值 ≤ −1 dBTP。分层比较使用 400 ms 门限的 K 加权功率（`k_momentary_db`）。发行 ogg 合计 **96124 字节（0.092 MiB）**。
 

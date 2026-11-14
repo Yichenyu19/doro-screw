@@ -74,23 +74,56 @@ class PuzzleScene extends Phaser.Scene {
   private lastPulsePaint=0;
   private layoutWatchers:Array<()=>void>=[];
   private frameCosts:Array<{at:number;delta:number;total:number;physics:number;visibility:number;paint:number;plates:number;pins:number}>=[];
+  private imageStatus=new Map<string,'pending'|'ok'|'fail'>();
 
   constructor(private engine: GameEngine, private settings: Settings, private callbacks: Callbacks,
     private loaded: () => void, private failed: (error: Error) => void) { super('puzzle'); }
 
   private sceneSheets():SceneSheet[]{return [...((this.engine.state.contentRevision??1)>=2?[]:this.engine.state.contentVersion==='v2'?['plates','plateExtra']:['plateA','plateB','plateC']),'heads','assistHeads','screws','fx'] as SceneSheet[];}
 
-  preload(): void {
-    for (const kind of this.sceneSheets()) this.load.image(kind, assetUrl(ART.sheets[kind].file));
-    if((this.engine.state.contentRevision??1)>=2)for(const shape of new Set(this.engine.state.boards.map(b=>b.shape))){const index=SHAPES.indexOf(shape),kind=(['plateA','plateB','plateC'] as const)[Math.floor(index/6)];this.load.image('plate-r2-'+shape,assetUrl(ART.sheets[kind].sprites[index%6].file));}
-    this.load.on('loaderror', (file: Phaser.Loader.File) => {
-      this.loadFailed = true;
-      this.failed(new Error(`图片加载失败：${file.key}`));
+  preload(): void {}
+
+  imageReport():string{
+    return [...this.imageStatus.entries()].map(([key,state])=>`${key}:${state}`).join(',')||'none';
+  }
+
+  private loadImage(key:string,url:string):Promise<void>{
+    return new Promise((resolve,reject)=>{
+      const image=new Image();
+      let finished=false;
+      const done=(ok:boolean,error?:Error)=>{
+        if(finished)return;
+        finished=true;
+        window.clearTimeout(timer);
+        this.imageStatus.set(key,ok?'ok':'fail');
+        if(ok){if(!this.textures.exists(key))this.textures.addImage(key,image);resolve();}
+        else reject(error??new Error(`图片加载失败：${key}`));
+      };
+      const timer=window.setTimeout(()=>done(false,new Error(`图片加载失败：${key}（超时）`)),7000);
+      image.onload=()=>done(true);
+      image.onerror=()=>done(false,new Error(`图片加载失败：${key}`));
+      this.imageStatus.set(key,'pending');
+      image.src=url;
     });
   }
 
   create(): void {
-    if (this.disposed || this.loadFailed) return;
+    void this.bootScene();
+  }
+
+  private async bootScene():Promise<void>{
+    if(this.disposed)return;
+    try{
+      const jobs:Promise<void>[]=[];
+      for(const kind of this.sceneSheets())jobs.push(this.loadImage(kind,assetUrl(ART.sheets[kind].file)));
+      if((this.engine.state.contentRevision??1)>=2)for(const shape of new Set(this.engine.state.boards.map(b=>b.shape))){const index=SHAPES.indexOf(shape),kind=(['plateA','plateB','plateC'] as const)[Math.floor(index/6)];jobs.push(this.loadImage('plate-r2-'+shape,assetUrl(ART.sheets[kind].sprites[index%6].file)));}
+      await Promise.all(jobs);
+    }catch(error){
+      this.loadFailed=true;
+      this.failed(error instanceof Error?error:new Error(String(error)));
+      return;
+    }
+    if(this.disposed||this.loadFailed)return;
     for (const kind of this.sceneSheets()) {
       const texture = this.textures.get(kind);
       ART.sheets[kind].frames.forEach((frame, index) => texture.add(String(index), 0, frame.x, frame.y, frame.width, frame.height));
@@ -360,7 +393,7 @@ class PuzzleScene extends Phaser.Scene {
     this.capture();this.inspected=target?.id??null;this.inspectedBoards.clear();
     if(!target){this.callbacks.onInspect?.(null);this.accumulator=0;this.dirty=true;return;}
     if(target.kind==='board'){this.inspectedBoards.add(target.id);this.callbacks.onInspect?.('这块玻璃正在高亮。松手结束检查，轻点才会执行融化。');}
-    else {const screw=this.engine.state.screws.find(s=>s.id===target.id);if(!screw)return;const blockers=blockingBoards(this.engine.state,target.id);this.inspectedBoards.add(screw.boardId);for(const id of blockers)this.inspectedBoards.add(id);this.callbacks.onInspect?.(`${COLOR_NAMES[screw.color]}钉 · ${this.engine.canPick(target.id)?'当前可以拆':blockers.length?'被 '+blockers.length+' 块上层玻璃遮挡':'等待玻璃露出'}。相关玻璃已高亮，松手结束检查。`);}
+    else {const screw=this.engine.state.screws.find(s=>s.id===target.id);if(!screw)return;const blockers=blockingBoards(this.engine.state,target.id);this.inspectedBoards.add(screw.boardId);for(const id of blockers)this.inspectedBoards.add(id);this.callbacks.onInspect?.(COLOR_NAMES[screw.color]);}
     this.accumulator=0;this.dirty=true;
   }
 
@@ -504,8 +537,10 @@ export function mountGame(container: HTMLElement, engine: GameEngine, settings: 
     let observer: ResizeObserver;
     let settled = false;
     let destroyed = false;
+    let watchdog = 0;
     const scene = new PuzzleScene(engine, settings, callbacks, () => {
       if (settled) return; settled = true;
+      window.clearTimeout(watchdog);
       resolve({
         sync: (events, reset) => scene.sync(events, reset), setPaused: value => scene.setPaused(value),
         setHint: id => scene.setHint(id), setMeltMode: value => scene.setMeltMode(value), capturePhysics: () => scene.capture(),
@@ -515,21 +550,46 @@ export function mountGame(container: HTMLElement, engine: GameEngine, settings: 
         diagnostics:()=>scene.diagnostics(),invalidateLayout:()=>scene.invalidateLayout(),
         destroy: () => { if (destroyed) return; destroyed = true; observer?.disconnect(); scene.dispose(); game.destroy(true); },
       });
-    }, error => { if (!settled) { settled = true; observer?.disconnect(); setTimeout(() => game?.destroy(true), 0); reject(error); } });
+    }, error => { if (!settled) { settled = true; window.clearTimeout(watchdog); observer?.disconnect(); setTimeout(() => game?.destroy(true), 0); reject(error); } });
     // 保持 WebKit 尺寸变化后的画布可见；本场景仅使用图片精灵，支持官方 Canvas 后备。
     const webKit = /AppleWebKit\//.test(navigator.userAgent) && !/(?:Chrome|Chromium|Edg|OPR)\//.test(navigator.userAgent);
     const canvasProbe=(import.meta.env.DEV||import.meta.env.MODE==='verification')&&new URLSearchParams(location.search).get('renderer')==='canvas';
+    const blankPng=URL.createObjectURL(new Blob([Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),char=>char.charCodeAt(0))],{type:'image/png'}));
     game = new Phaser.Game({ type: webKit||canvasProbe ? Phaser.CANVAS : Phaser.AUTO, parent: container, transparent: true,
+      images:{default:blankPng,missing:blankPng,white:blankPng},
       width: Math.max(1, container.clientWidth * pixelRatio), height: Math.max(1, container.clientHeight * pixelRatio),
       antialias: true,
-      input:{mouse:false,touch:false,keyboard:false,gamepad:false},
+      input:{mouse:false,touch:false,keyboard:false,gamepad:false,windowEvents:false},
       render: { antialias: true, antialiasGL:false, roundPixels: false, transparent: true, premultipliedAlpha: true },
       scale: { mode: Phaser.Scale.NONE, zoom: 1 / pixelRatio, autoCenter: Phaser.Scale.CENTER_BOTH },
       physics: { default: 'matter', matter: { gravity: { x: 0, y: .75 }, enableSleeping: false, autoUpdate: false, positionIterations: 8, velocityIterations: 8, constraintIterations: 4 } },
       // 60Hz 屏逐帧更新；给高刷屏留出计时余量，避免严格60上限因微小抖动跳过整帧。
       scene: [scene], banner: false, audio: { noAudio: true }, fps: { target: 60, limit:90, smoothStep: false },
     });
-    observer = new ResizeObserver(() => { if (game.scale && container.clientWidth && container.clientHeight) game.scale.resize(container.clientWidth * pixelRatio, container.clientHeight * pixelRatio); });
+    observer = new ResizeObserver(() => { if (game.isBooted && game.canvas && game.scale && container.clientWidth && container.clientHeight) game.scale.resize(container.clientWidth * pixelRatio, container.clientHeight * pixelRatio); });
     observer.observe(container);
+    if (!game.isBooted && document.readyState === 'loading') {
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+    }
+    watchdog = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const canvas = container.querySelector('canvas');
+      const rendererType = game?.renderer?.type;
+      const rendererName = rendererType === Phaser.CANVAS ? 'canvas' : rendererType === Phaser.WEBGL ? 'webgl' : String(rendererType ?? 'none');
+      let sceneStatus = 'none';
+      try { sceneStatus = String(scene.sys?.settings?.status ?? 'none'); } catch { sceneStatus = 'unavailable'; }
+      observer?.disconnect();
+      window.setTimeout(() => { try { game?.destroy(true); } catch { /* 画布可能还没创建。 */ } }, 0);
+      reject(new Error([
+        '棋盘没有在 8 秒内准备好',
+        'readyState='+document.readyState,
+        'booted='+String(Boolean(game?.isBooted)),
+        'scene='+sceneStatus,
+        'images='+scene.imageReport(),
+        'canvas='+(canvas?`${canvas.width}x${canvas.height}/${canvas.clientWidth}x${canvas.clientHeight}`:'none'),
+        'renderer='+rendererName,
+      ].join('；')));
+    }, 8000);
   });
 }

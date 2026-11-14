@@ -14,10 +14,26 @@ export async function assemblePreview(web='dist-mapp/web',dest='dist-mapp/previe
   await cp(from,to,{recursive:true});
   await copyFile('mapp/preview/index.html',path.join(to,'index.html'));
   await copyFile('mapp/preview/mock-sdk.js',path.join(to,'mock-sdk.js'));
+  await copyFile('mapp/preview/mock-bar.css',path.join(to,'mock-bar.css'));
   return to;
 }
 
-export function servePreview(rootDir,portNumber){
+export const MAPP_CSP=[
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self' blob:",
+  "img-src 'self' blob: data:",
+  "font-src 'none'",
+  "connect-src 'self' blob: data:",
+  "media-src 'self' blob: data:",
+  "worker-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "require-trusted-types-for 'script'",
+  "trusted-types mapp-mock-host",
+].join('; ');
+
+export function servePreview(rootDir,portNumber,headers={}){
   const server=createServer(async(req,res)=>{
     try{
       let urlPath=decodeURIComponent(new URL(req.url||'/',`http://127.0.0.1:${portNumber}`).pathname);
@@ -28,7 +44,7 @@ export function servePreview(rootDir,portNumber){
       let info=await stat(file).catch(()=>null);
       if(info?.isDirectory()){file=path.join(file,'index.html');info=await stat(file).catch(()=>null);}
       if(!info?.isFile()){res.writeHead(404);res.end('Not found');return;}
-      res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':'no-cache'});
+      res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':'no-cache',...headers});
       createReadStream(file).pipe(res);
     }catch{res.writeHead(404);res.end('Not found');}
   });

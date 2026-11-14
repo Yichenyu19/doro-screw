@@ -1,132 +1,45 @@
 import {getSDK} from '@discourse-mini-app/sdk';
-import type {MiniAppSDK,MiniAppTheme} from '@discourse-mini-app/sdk';
 import './shell.css';
-import {setAssetResolver} from '../art';
+import {launchMiniApp} from './launch';
+import {bootGame} from '../main';
 
-const ASSET_LIST_URL = 'asset-list.json';
-
-function mimeFor(path:string):string{
-  if(path.endsWith('.webp'))return 'image/webp';
-  if(path.endsWith('.png'))return 'image/png';
-  if(path.endsWith('.jpg')||path.endsWith('.jpeg'))return 'image/jpeg';
-  if(path.endsWith('.json'))return 'application/json';
-  if(path.endsWith('.txt')||path.endsWith('.md'))return 'text/plain';
-  return 'application/octet-stream';
-}
-
-async function installAssets(sdk:MiniAppSDK,paths:string[]):Promise<()=>void>{
-  const urls=new Map<string,string>();
-  const failed:string[]=[];
-  for(const path of paths){
-    if(path.endsWith('.json')&&path.startsWith('campaign/'))continue;
-    try{
-      const bytes=await sdk.assets.readBytes(path);
-      const url=URL.createObjectURL(new Blob([bytes],{type:mimeFor(path)}));
-      urls.set(path,url);
-    }catch{
-      failed.push(path);
-    }
-  }
-  setAssetResolver(path=>urls.get(path)??null);
-  if(failed.length)console.warn('部分素材未能读取',failed.length);
-  return()=>{for(const url of urls.values())URL.revokeObjectURL(url);setAssetResolver(null);};
-}
-
-class MappStorage implements Storage {
-  private memory=new Map<string,string>();
-  private writes:Promise<unknown>=Promise.resolve();
-  constructor(private sdk:MiniAppSDK,entries:Array<[string,string]>){
-    for(const [key,value] of entries)this.memory.set(key,value);
-  }
-  get length(){return this.memory.size;}
-  key(index:number){return [...this.memory.keys()][index]??null;}
-  getItem(key:string){return this.memory.has(String(key))?this.memory.get(String(key))!:null;}
-  setItem(key:string,value:string){
-    const k=String(key),v=String(value);
-    this.memory.set(k,v);
-    if(!this.sdk.permissions.has('storage.write'))return;
-    this.writes=this.writes.then(()=>this.sdk.localStorage.setItem(k,v)).catch(()=>{});
-  }
-  removeItem(key:string){
-    const k=String(key);
-    this.memory.delete(k);
-    if(!this.sdk.permissions.has('storage.write'))return;
-    this.writes=this.writes.then(()=>this.sdk.localStorage.removeItem(k)).catch(()=>{});
-  }
-  clear(){
-    this.memory.clear();
-    if(!this.sdk.permissions.has('storage.write'))return;
-    this.writes=this.writes.then(()=>this.sdk.localStorage.clear()).catch(()=>{});
-  }
-}
-
-async function installStorage(sdk:MiniAppSDK):Promise<void>{
-  let entries:Array<[string,string]>=[];
-  if(sdk.permissions.has('storage.read')){
-    try{
-      const snapshot=await sdk.localStorage.exportData();
-      if(snapshot?.format===1&&Array.isArray(snapshot.entries))entries=snapshot.entries.map(([k,v])=>[String(k),String(v)]);
-    }catch{ /* 存储失败仍可开局。 */ }
-  }
-  const storage=new MappStorage(sdk,entries);
-  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:storage});
-  // 官方存档按应用隔离，由 sdk.localStorage 代管；不使用可能越出隔离范围的原生 IndexedDB。
-  Object.defineProperty(globalThis,'indexedDB',{configurable:true,value:undefined});
-}
-
-function applyTheme(theme:MiniAppTheme):void{
-  const root=document.documentElement;
-  root.classList.toggle('reduced-motion',theme.reducedMotion);
-  root.classList.toggle('mapp-dark',theme.mode==='dark');
-  root.style.setProperty('--mapp-bg',theme.background);
-  root.style.setProperty('--mapp-text',theme.text);
-  document.body.style.background=theme.background;
-  if(theme.reducedMotion){
-    try{
-      const raw=localStorage.getItem('doro-screw-reborn:v4:r2');
-      // 不在这里改存档；只把系统减少动效偏好写到文档类，游戏设置页仍可单独开关。
-    }catch{ /* ignore */ }
-  }
-}
-
-async function main():Promise<void>{
+function paintLoading():void{
   document.documentElement.classList.add('mapp-shell');
-  document.body.classList.add('mapp-shell');
+  document.body?.classList.add('mapp-shell');
+  const node=document.querySelector('#app');
+  if(!node)return;
+  const note=document.createElement('p');
+  note.className='mapp-loading';
+  note.setAttribute('role','status');
+  note.textContent='正在打开…';
+  if(typeof node.replaceChildren==='function')node.replaceChildren(note);
+  else node.textContent=note.textContent;
+}
+
+function fail(error:unknown):void{
+  const node=document.querySelector('#app')||document.body;
+  if(node){
+    const message=error instanceof Error?error.message:String(error);
+    node.textContent='微应用未能启动：'+message;
+  }
+  try{void getSDK().lifecycle.ready();}catch{ /* 没有 SDK 时宿主只能看到自己的失败页。 */ }
+}
+
+async function start():Promise<void>{
   const sdk=getSDK();
   await sdk.ready;
-  await installStorage(sdk);
-  let unsubscribe:(()=>void)|undefined;
-  try{
-    if(sdk.permissions.has('theme.read')){
-      unsubscribe=sdk.theme.onChange(applyTheme);
-      const theme=await sdk.theme.get();
-      applyTheme(theme);
-    }
-  }catch{ /* 主题失败不阻断。 */ }
-  let paths:string[]=[];
-  try{
-    paths=await sdk.assets.readJson(ASSET_LIST_URL) as string[];
-  }catch{
-    // asset-list 本身也在 assets 中；失败时仍尝试启动，界面会提示缺图。
-  }
-  const revoke=await installAssets(sdk,Array.isArray(paths)?paths:[]);
-  if(sdk.permissions.has('files.save')){
-    window.__DORO_MAPP__={
-      saveFile:async(name,data)=>{await sdk.files.save(name,data);}
-    };
-  }
-  try{
-    const {bootGame}=await import('../main');
-    await bootGame();
-  }finally{
-    try{await sdk.lifecycle.ready();}catch{ /* 通知宿主已完成首次绘制。 */ }
-  }
-  window.addEventListener('pagehide',()=>{unsubscribe?.();revoke();},{once:true});
+  try{paintLoading();}catch{ /* 画不出来也要先通知宿主。 */ }
+  try{await sdk.lifecycle.ready();}catch{ /* 宿主已经收到，或这次通知超时。 */ }
+  await launchMiniApp(sdk,bootGame,{skipHostReady:true});
 }
 
-void main().catch(error=>{
-  const app=document.querySelector('#app')||document.body;
-  const message=error instanceof Error?error.message:String(error);
-  app.textContent='微应用未能启动：'+message;
-  try{void getSDK().lifecycle.ready();}catch{ /* ignore */ }
-});
+function boot():Promise<void>{
+  const slot=globalThis as typeof globalThis&{__DORO_BOOT__?:Promise<void>};
+  if(slot.__DORO_BOOT__)return slot.__DORO_BOOT__;
+  const pending=start();
+  slot.__DORO_BOOT__=pending;
+  return pending;
+}
+
+globalThis.DoroGame=Object.freeze({boot});
+void boot().catch(fail);

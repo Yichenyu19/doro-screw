@@ -28,6 +28,5 @@ function escape(value:string):string{return value.replace(/[&<>"']/g,c=>({'&':'&
 export function sprite(kind:ArtKind,index:number,className='',label=''):string{
   const sheet=runtime.sheets[kind],frame=sheet.sprites[index]??sheet.sprites[0];
   const file=kind==='doro'&&index===1&&className.includes('home-doro')?runtime.hero.doro:frame.file;
-  const style=`display:inline-block;background-image:url('${assetUrl(file)}');background-size:100% 100%;background-repeat:no-repeat;aspect-ratio:${frame.width}/${frame.height}`;
-  return `<span class="art art-${kind} ${escape(className)}" style="${style}" ${label?`role="img" aria-label="${escape(label)}"`:'aria-hidden="true"'}></span>`;
+  return `<span class="art art-${kind} ${escape(className)}" data-art-bg="${escape(assetUrl(file))}" data-art-ratio="${frame.width}/${frame.height}" ${label?`role="img" aria-label="${escape(label)}"`:'aria-hidden="true"'}></span>`;
 }

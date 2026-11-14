@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises';
 
-/** 微应用包运行素材：与网站瘦身包相同，但不含画册高清原图、R1 关卡、站点图标与分享图。 */
+/** 微应用包运行素材：与网站瘦身包相同，但不含 R1 关卡、站点图标与分享图。画册高清图另列，不在启动时预读。 */
 export async function listMappRuntimeFiles(root='.'){
   const manifest=JSON.parse(await readFile(new URL('../src/runtime-art.json',import.meta.url),'utf8'));
   const phaserAtlases=new Set(['heads','assistHeads','screws','fx','plates','plateExtra']);
@@ -15,6 +15,17 @@ export async function listMappRuntimeFiles(root='.'){
     if(individualSheets.has(kind))for(const sprite of sheet.sprites)files.add(sprite.file);
   }
   return [...files].sort();
+}
+
+/** 画册高清图打进包，但启动时不预读，点开再取。 */
+export async function listMappAlbumHdFiles(){
+  const manifest=JSON.parse(await readFile(new URL('../src/runtime-art.json',import.meta.url),'utf8'));
+  return Object.entries(manifest.raw).filter(([name])=>name.endsWith(':hd')).map(([,value])=>value).sort();
+}
+
+/** 点阵用的 720 画稿。留在包里，但不进启动清单，打开那一幅时才读。 */
+export function isAlbumWorkingFile(file){
+  return /\/album-\d+\.[0-9a-f]+\.webp$/.test(file);
 }
 
 export function campaignFiles(revision=4,count=8){

@@ -6,24 +6,35 @@
     {
       "id": 1,
       "file": "level-1.json",
-      "pins": 15,
+      "pins": 30,
       "seed": 4456449,
-      "bytes": 4491,
-      "sha256": "d4f051ecbae7806351bc45cebcfba8155e74adcc8470c8d13cdb350935c2b184",
+      "bytes": 6687,
+      "sha256": "bd22c92803ca0e4d48793456d03d3c0de224d3c44d2d1add919831af4d040e99",
       "design": {
         "id": 1,
-        "name": "先装满一盒",
-        "total": 15
+        "name": "夹层",
+        "total": 30
       },
       "difficulty": {
-        "theme": "先装满一盒",
+        "theme": "夹层",
         "decisions": [
-          "开局先把已经露出的当前盒色装完。",
-          "长板留下最后一颗时会自己摆开，拆光掉下去也可以。"
+          "先拆盖板，还是先拆更高的旁板。",
+          "盖板进孔之后，底下的颜色才能入盒，新盒再把孔里的钉子接走。"
         ],
-        "dependencies": [],
-        "planningDepth": 1,
-        "crossRegionLinks": 1,
+        "dependencies": [
+          {
+            "from": "r4-l1-lid-l",
+            "to": "r4-l1-lid-r",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          },
+          {
+            "from": "r4-l1-lid-r",
+            "to": "r4-l1-north",
+            "reason": "上一处开路改变当前盒序与后续开路所需空孔"
+          }
+        ],
+        "planningDepth": 2,
+        "crossRegionLinks": 3,
         "crossRevealLinks": 0,
         "bufferMargin": 1,
         "predecessorComparison": "待统一策略与整局物理对照验收。",
@@ -39,8 +50,8 @@
       "file": "level-2.json",
       "pins": 120,
       "seed": 4456450,
-      "bytes": 27692,
-      "sha256": "966825238fb1ab1fb87dd2ab500d31ca9bd49f4b9202ac5e53d48e7575b94953",
+      "bytes": 27626,
+      "sha256": "920306c82b74300c8a6a4399fc63bb66dbd03b3cff864e6c03d7bb011fe82297",
       "design": {
         "id": 2,
         "name": "四角借路",

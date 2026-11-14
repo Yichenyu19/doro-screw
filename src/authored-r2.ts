@@ -303,16 +303,42 @@ export function getCampaignLevelR3(id:number):LevelDef{
   throw Error('战役关卡不存在');
 }
 
+/** 第一关：两层盖住当前盒色，更高的旁板是占孔陷阱。官方线无道具。 */
+function openingLevel():LevelDef{
+  const bedL=plate('r4-l1-bed-l','square',112,212,150,132,1,[[-28,-24,'orange'],[30,-20,'orange'],[0,32,'orange']]);
+  const bedR=plate('r4-l1-bed-r','square',278,212,150,132,1,[[-28,-24,'cyan'],[30,-20,'cyan'],[0,32,'cyan']]);
+  const coverL=plate('r4-l1-lid-l','square',108,204,156,164,3,[[-36,-54,'red'],[28,-12,'red'],[-4,54,'red']]);
+  const coverR=plate('r4-l1-lid-r','square',282,204,156,164,3,[[36,-54,'purple'],[-28,-12,'purple'],[4,54,'purple']]);
+  const north=plate('r4-l1-north','capsule',195,88,318,86,6,[[-104,0,'yellow'],[0,0,'yellow'],[104,0,'yellow']]);
+  const underN=plate('r4-l1-under-n','capsule',195,90,180,52,1,[[-40,0,'brown'],[0,2,'brown'],[40,0,'brown']]);
+  const south=plate('r4-l1-south','capsule',195,328,318,86,6,[[-104,0,'blue'],[0,0,'blue'],[104,0,'blue']]);
+  const underS=plate('r4-l1-under-s','capsule',195,326,180,52,1,[[-40,0,'green'],[0,-2,'green'],[40,0,'green']]);
+  const west=plate('r4-l1-west','capsule',38,210,44,160,6,[[0,-52,'gray'],[0,2,'gray'],[0,52,'gray']]);
+  const underW=plate('r4-l1-under-w','square',30,210,36,96,1,[[0,-24,'rose'],[0,0,'rose'],[0,24,'rose']]);
+  const boards=[bedL,bedR,underN,underS,underW,coverL,coverR,north,south,west];
+  const queue:ColorId[]=['orange','cyan','red','purple','yellow','blue','brown','green','gray','rose'];
+  const order=[...ids(coverL),...ids(bedL),...ids(coverR),...ids(bedR),...ids(north),...ids(underN),...ids(south),...ids(underS),...ids(west),...ids(underW)];
+  const buried=new Set([bedL.screws[0].id,bedR.screws[0].id,underN.screws[0].id,underS.screws[0].id,underW.screws[0].id]);
+  const owners=new Map(boards.flatMap(b=>b.screws.map(s=>[s.id,b.id] as const)));
+  const left=new Map(boards.map(b=>[b.id,b.screws.length]));
+  const witness:WitnessStep[]=order.map(screwId=>{
+    const board=owners.get(screwId)!;
+    const remain=left.get(board)!-1;left.set(board,remain);
+    return{screwId,waitMs:remain===0||buried.has(screwId)?1300:40,waitForExposure:true};
+  });
+  const critical=[coverL.id,coverR.id,north.id];
+  const level:LevelDef={
+    id:1,name:CAMPAIGN_NAMES[0],subtitle:'第 1 关',seed:0x440001,attempt:0,mode:'campaign',contentRevision:4,contentVersion:'v4',geometryVersion:'v4',
+    theme:'cascade',sourceKind:'doro-original',tutorial:false,boards,boxQueue:queue,witness,
+    strategy:'',designNotes:['当前两盒的颜色在盖板下面。更高的三块旁板各三颗，先拆它们会占满五个孔。','官方线无道具可解。'],
+    difficulty:profile(CAMPAIGN_NAMES[0],['先拆盖板，还是先拆更高的旁板。','盖板进孔之后，底下的颜色才能入盒，新盒再把孔里的钉子接走。'],critical,2),
+    curriculum:{objective:'在孔满之前打开被盖住的颜色',prerequisites:[],decision:'先动哪一块玻璃',failure:'先拆更高的旁板会占满五个孔',release:'盖板让开后，底下的颜色入盒，孔里的钉子被下一盒接走',criticalBoardIds:critical,stages:[{until:order.length,title:'',advice:''}]},
+  };
+  return annotateCampaign(level,1,level.designNotes as string[],4);
+}
+
 export function getCampaignLevel(id:number):LevelDef{
-  if(id===1){
-    const level=structuredClone(getCampaignLevelR3(1));
-    level.seed=0x440000+id;
-    level.contentRevision=4;
-    return annotateCampaign(level,1,[
-      '修订 4 保留修订 3 重做的第一关：开局就能点到当前盒色，先装满一盒。',
-      '第二关收回 120 颗大墙；这一关仍然允许少量失误，官方线无道具可解。',
-    ],4);
-  }
+  if(id===1)return openingLevel();
   if(id===2){
     const level=structuredClone(getR2Prototype(2));
     level.seed=0x440000+id;
@@ -324,7 +350,7 @@ export function getCampaignLevel(id:number):LevelDef{
     const notes=Array.isArray(level.designNotes)?[...level.designNotes]:[String(level.designNotes??'')];
     return annotateCampaign(level,2,[
       '修订 4 收回原第二关 120 颗大墙，五座四角桥保持手作，官方线无道具可解。',
-      '第1段南桥略抬深度，避免“只点最上层就能过”。过不去可以用免费辅助，成绩会写明用了挂。',
+      '第1段南桥略抬深度，避免只点最上层就能过。',
       ...notes,
     ],4);
   }

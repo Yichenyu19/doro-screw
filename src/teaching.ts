@@ -30,19 +30,13 @@ function take(seen:string[],key:string,text:string):TeachingCue|null{
 export function teachingCue(level:LevelDef,state:GameState,events:GameEvent[],seen:string[]):TeachingCue|null{
   if(seen.includes('skip'))return null;
   const campaign=level.mode==='campaign'&&(level.contentRevision??0)>=2;
+  if(campaign&&(level.contentRevision??0)>=4)return null;
   if(campaign&&level.id===1){
     if(state.moves===0)return take(seen,'l1-open',`盒子要${boxText(state)}，这两种已经露出来了。先点它们。`);
     if(events.some(e=>e.type==='box-completed')&&state.stats.boxesCompleted===1)return take(seen,'l1-box','同色三颗就装满了。下一盒接着收。');
     if(events.some(e=>e.type==='board-released'&&e.remaining===1&&e.boardId.endsWith('-gate')))return take(seen,'l1-hinge','中间这块板还留着一颗，它会自己摆开。');
     if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return take(seen,'l1-refill','同色盒子来了，孔里的钉会自己回去。');
     if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return take(seen,'l1-buffer','先放在孔里也没关系，同色盒来了会接回去。');
-    return null;
-  }
-  if(campaign&&level.id===2&&(level.contentRevision??0)>=4){
-    if(state.moves===0)return take(seen,'l2-open',`120 颗的墙。先看盒子要的是${boxText(state)}。过不去用免费辅助。`);
-    if(events.some(e=>e.type==='routed'&&e.sourcePlace==='buffer'&&e.destination==='box'))return take(seen,'l2-refill','同色钉接回去了。先装箱，再看下一座桥。');
-    if(events.some(e=>e.type==='routed'&&e.destination==='buffer'))return take(seen,'l2-buffer','先放在孔里也行。空孔要省着花。');
-    if(events.some(e=>e.type==='board-released'&&e.remaining===0))return take(seen,'l2-bridge','桥板落下了，两边的盒色露出来了。先装箱。');
     return null;
   }
   if(campaign&&level.id===2){

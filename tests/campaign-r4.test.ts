@@ -11,10 +11,10 @@ import {teachingTip} from '../src/teaching';
 function pins(level:{boards:Array<{screws:unknown[]}>}){return level.boards.reduce((n,b)=>n+b.screws.length,0);}
 function storage(){const old=Object.getOwnPropertyDescriptor(globalThis,'localStorage'),values=new Map<string,string>();Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{get length(){return values.size;},key:(i:number)=>[...values.keys()][i]??null,getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>values.set(key,value),removeItem:(key:string)=>values.delete(key)}});return{values,restore:()=>{if(old)Object.defineProperty(globalThis,'localStorage',old);else Reflect.deleteProperty(globalThis,'localStorage');}};}
 
-test('修订4主线回到八关，第二关是120颗大墙，总量仍为1020',()=>{
-  assert.equal(CONTENT_REVISION,4);assert.equal(CAMPAIGN_COUNT,8);assert.equal(CAMPAIGN_TOTAL_PINS,1020);
-  assert.deepEqual([...CAMPAIGN_TOTALS],[15,120,129,135,141,156,156,168]);
-  assert.deepEqual([...CAMPAIGN_NAMES],['先装满一盒','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局']);
+test('修订4主线八关，第二关仍是120颗大墙',()=>{
+  assert.equal(CONTENT_REVISION,4);assert.equal(CAMPAIGN_COUNT,8);assert.equal(CAMPAIGN_TOTAL_PINS,1035);
+  assert.deepEqual([...CAMPAIGN_TOTALS],[30,120,129,135,141,156,156,168]);
+  assert.deepEqual([...CAMPAIGN_NAMES],['夹层','四角借路','花心有后手','先别装满','交叉路口','留给下一层','两岸接力','花心终局']);
   for(let id=1;id<=8;id++){
     const level=getCampaignLevel(id);
     assert.equal(level.id,id);assert.equal(level.contentRevision,4);
@@ -26,14 +26,16 @@ test('修订4主线回到八关，第二关是120颗大墙，总量仍为1020',(
   assert.equal(RANK_NAMES.complete,'完成（用了挂）');
 });
 
-test('第一关仍是先装满一盒，第二关开场把墙和免费辅助说清楚',()=>{
+test('第一关开局没有露出的盒色，第二关也不劝用辅助',()=>{
   const level=getCampaignLevel(1),game=new GameEngine(level),state=game.state;
+  assert.equal(level.tutorial,false);
+  assert.equal(level.boards.reduce((n,b)=>n+b.screws.length,0),30);
   const matching=game.available().filter(s=>state.boxes.some(b=>b.color===s.color));
-  assert.ok(matching.length>=3,`开局可点盒色仅 ${matching.length}`);
-  const start=teachingTip(level,state,[],[]);
-  assert.match(start??'',/已经露出来了/);
+  assert.equal(matching.length,0);
+  assert.equal(teachingTip(level,state,[],[]),null);
   const l2=getCampaignLevel(2),tip=teachingTip(l2,new GameEngine(l2).state,[],[]);
-  assert.match(tip??'',/120/);assert.match(tip??'',/免费辅助/);
+  assert.equal(tip,null);
+  assert.equal(l2.boards.reduce((n,b)=>n+b.screws.length,0),120);
 });
 
 test('线上修订2存档按同一关号迁入，不把大墙拆成三关',()=>{

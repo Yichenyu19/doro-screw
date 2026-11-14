@@ -1,4 +1,5 @@
 import {sprite} from './art';
+import {fill} from './markup';
 import {COLORS,type GameEvent,type GameState,type Settings,type Vec2,type ColorId} from './types';
 const copy=(s:GameState):GameState=>({...s,boxes:s.boxes.map(b=>({...b,screws:[...b.screws]})),buffer:[...s.buffer],pocket:[...s.pocket],collected:[...s.collected]});
 interface Hooks{render:(state:GameState)=>void;screenPoint:(p:Vec2)=>Vec2|null;boxSound:()=>void;arriveSound?:()=>void;refillSound?:()=>void}
@@ -24,7 +25,7 @@ export class PresentationDirector{
  private at(time:number,callback:()=>void):void{const epoch=this.epoch;this.endAt=Math.max(this.endAt,time);const t=window.setTimeout(()=>{this.timers.delete(t);if(epoch!==this.epoch)return;callback();if(!this.timers.size)this.waiters.splice(0).forEach(r=>r());},Math.max(0,time-performance.now()));this.timers.add(t);}
  private draw():void{if(!this.latest)return;const state=copy(this.latest);this.closing.clear();for(const c of this.cohorts.values())if(c.packing&&!c.closed&&state.boxes.some(b=>b.id===c.id&&b.completed===c.generation))this.closing.add(c.id);this.state=state;this.hooks.render(state);}
  private measureAnchors():void {this.anchorViewport=innerWidth+':'+innerHeight;this.anchors.clear();for(const e of document.querySelectorAll<HTMLElement>('[data-box-id],[data-buffer-slot],[data-pocket-target]')){const kind=e.hasAttribute('data-box-id')?'box':e.hasAttribute('data-buffer-slot')?'buffer':'pocket',index=kind==='box'?e.dataset.boxId:kind==='buffer'?e.dataset.bufferSlot:'',r=e.getBoundingClientRect();this.anchors.set(kind+':'+(index??''),{x:r.left+r.width/2,y:r.top+r.height*(kind==='box'?.64:.5)});}}
- prepareLayout():void{this.measureAnchors();if(!this.flightTemplates.size)for(const color of COLORS){const wrapper=document.createElement('span');wrapper.innerHTML=sprite('heads',COLORS.indexOf(color));const e=wrapper.firstElementChild as HTMLElement;Object.assign(e.style,{position:'fixed',width:'28px',height:'28px',pointerEvents:'none',zIndex:'2500'});this.flightTemplates.set(color,e);}}
+ prepareLayout():void{this.measureAnchors();if(!this.flightTemplates.size)for(const color of COLORS){const wrapper=document.createElement('span');fill(wrapper,sprite('heads',COLORS.indexOf(color)));const e=wrapper.firstElementChild as HTMLElement;Object.assign(e.style,{position:'fixed',width:'28px',height:'28px',pointerEvents:'none',zIndex:'2500'});this.flightTemplates.set(color,e);}}
  private anchor(kind:'box'|'buffer'|'pocket',index?:number):Vec2|null{return this.anchors.get(kind+':'+(index??''))??null;}
  private fly(color:ColorId,from:Vec2|null,to:Vec2|null,duration:number):void{
   if(!from||!to)return;if(!this.flightTemplates.size)this.prepareLayout();const e=this.flightTemplates.get(color)!.cloneNode(true) as HTMLElement;e.style.left=`${from.x-14}px`;e.style.top=`${from.y-14}px`;document.body.appendChild(e);this.flights.add(e);const dx=to.x-from.x,dy=to.y-from.y;

@@ -49,7 +49,12 @@
 .game-screen.dl-ceremony .dl-wall-tally,
 .game-screen.dl-ceremony .board-guide,
 .game-screen.dl-ceremony .board-camera,
-.game-screen.dl-ceremony .run-line{visibility:hidden;}
+.game-screen.dl-ceremony .run-line,
+.game-screen.dl-ceremony .play-toolbar,
+.game-screen.dl-ceremony .game-tools,
+.game-screen.dl-ceremony .collection-area,
+.game-screen.dl-ceremony .queue-preview,
+.game-screen.dl-ceremony .buffer-area{visibility:hidden;}
 
 
 /* 粉笔记号：四竖一斜。 */

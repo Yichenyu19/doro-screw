@@ -5,13 +5,15 @@
  */
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {copyFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {assemblePreview,servePreview} from './serve-mapp-preview.mjs';
+import {assemblePreview,servePreview,MAPP_CSP} from './serve-mapp-preview.mjs';
+import {checkHostFrame} from './check-host-frame.mjs';
 
 const require=createRequire(import.meta.url);
-const {chromium}=require('playwright');
+const {chromium,webkit,devices}=require('playwright');
+const iphone=devices['iPhone 13'];
 const outDir=path.resolve(process.env.DORO_MAPP_CHECK_DIR||'/tmp/doro-mapp-check');
 const skipBuild=process.argv.includes('--skip-build');
 
@@ -52,70 +54,243 @@ async function main(){
   if(!skipBuild)run(process.execPath,['scripts/build-mapp.mjs']);
   const preview=await assemblePreview();
   const port=await freePort();
-  const server=await servePreview(preview,port);
-  const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  const server=await servePreview(preview,port,{'Content-Security-Policy':MAPP_CSP});
+  const reports=[];
+  for(const deviceEngine of ['webkit-iphone','chromium-iphone']){
+    const browser=deviceEngine.startsWith('webkit')
+      ?await webkit.launch({headless:true})
+      :await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+    try{
+      const hostShot=path.join('/opt/cursor/artifacts',deviceEngine.startsWith('webkit')?'host-webkit-home.png':'host-chromium-home.png');
+      const levelShot=path.join('/opt/cursor/artifacts',deviceEngine.startsWith('webkit')?'host-webkit-l1.png':'host-chromium-l1.png');
+      await mkdir('/opt/cursor/artifacts',{recursive:true});
+      const host=await checkHostFrame({browser,webDir:path.resolve('dist-mapp/web'),shotPath:hostShot,levelShot,device:iphone});
+      console.log(JSON.stringify({host:deviceEngine,ok:host.ok,readyMs:host.readyMs,origin:host.ready&&host.ready.origin,text:(host.ready&&host.ready.text||'').slice(0,80),level:host.level&&{hasCanvas:host.level.hasCanvas,text:(host.level.text||'').slice(0,80)},problems:host.problems},null,2));
+      reports.push(await checkEngine(browser,deviceEngine,port));
+      if(!host.ok)reports[reports.length-1].problems.push(...host.problems.map(item=>'沙箱模拟：'+item));
+      reports[reports.length-1].ok=reports[reports.length-1].problems.length===0;
+    }
+    finally{await browser.close();}
+  }
+  server.close();
+  const problems=reports.flatMap(item=>item.problems.map(problem=>item.deviceEngine+'：'+problem));
+  const artifacts='/opt/cursor/artifacts';
+  await mkdir(artifacts,{recursive:true});
+  const webkitDir=path.join(outDir,'webkit-iphone');
+  for(const name of ['mapp-home-390x844.png','mapp-l1-start-390x844.png','mapp-l2-start-390x844.png','mapp-hd-1-390x844.png','mapp-hd-2-390x844.png']){
+    await copyFile(path.join(webkitDir,name),path.join(artifacts,name));
+  }
+  await writeFile(path.join(outDir,'report.json'),JSON.stringify({ok:problems.length===0,reports},null,2));
+  console.log(JSON.stringify({ok:problems.length===0,reports:reports.map(item=>({ok:item.ok,deviceEngine:item.deviceEngine,device:item.device,violations:item.violations,end:item.end,problems:item.problems}))},null,2));
+  if(problems.length){console.error(problems.join('\n'));process.exit(1);}
+}
+
+async function checkEngine(browser,deviceEngine,port){
+  const shotRoot=path.join(outDir,deviceEngine);
+  await mkdir(shotRoot,{recursive:true});
+  const {defaultBrowserType:unusedBrowserType,...iphoneContext}=iphone;
   const context=await browser.newContext({
-    viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,
-    recordVideo:{dir:outDir,size:{width:390,height:844}},
+    ...iphoneContext,
+    recordVideo:{dir:shotRoot,size:{width:iphone.viewport.width,height:iphone.viewport.height}},
   });
   const page=await context.newPage();
-  const consoleErrors=[],pageErrors=[],failed=[];
+  await page.addInitScript(()=>{
+    let current;
+    Object.defineProperty(window,'miniApp',{
+      configurable:true,
+      set(sdk){
+        current=sdk;
+        let reads=0;
+        const count=async(run)=>{reads++;return run();};
+        const assets=sdk.assets;
+        const readBytes=assets.readBytes.bind(assets);
+        const readText=assets.readText.bind(assets);
+        const readJson=assets.readJson.bind(assets);
+        assets.readBytes=path=>count(()=>readBytes(path));
+        assets.readText=path=>count(()=>readText(path));
+        assets.readJson=path=>count(()=>readJson(path));
+        const ready=sdk.lifecycle.ready.bind(sdk.lifecycle);
+        sdk.lifecycle.ready=async()=>{
+          window.__DORO_READY_STATS={assetReadsBeforeReady:reads,booted:!!window.__DORO__,gameChunk:!!window.__DORO_GAME_CHUNK__};
+          return ready();
+        };
+        Object.defineProperty(window,'miniApp',{configurable:true,writable:true,value:sdk});
+      },
+      get(){return current;},
+    });
+  });
+  const consoleErrors=[],pageErrors=[],failed=[],violations=[];
+  let capturing=false;
   const ignoreUrl=url=>/\/(?:favicon\.ico|apple-touch-icon[^/]*\.png)$/i.test(url||'');
   page.on('console',msg=>{
     if(msg.type()!=='error')return;
     const loc=msg.location()?.url||'';
     if(ignoreUrl(loc))return;
+    // WebKit 截图时会往页面里塞一段样式，严格 CSP 把它记进控制台，但不会产生 securitypolicyviolation。
+    if(capturing&&msg.text().includes('Refused to apply a stylesheet'))return;
     consoleErrors.push(msg.text());
   });
   page.on('pageerror',err=>pageErrors.push(String(err.stack||err.message||err)));
-  page.on('response',res=>{if(res.status()>=400&&!ignoreUrl(res.url()))failed.push({url:res.url(),status:res.status()});});
+  await page.addInitScript(()=>{
+    document.addEventListener('securitypolicyviolation',event=>{
+      (window.__DORO_CSP=window.__DORO_CSP||[]).push(event.violatedDirective+' '+event.effectiveDirective+' '+event.blockedURI);
+    });
+  });
+  const traffic=[];
+  const largeAsset=url=>/\/album-\d+(?:-hd)?\.[0-9a-f]+\.webp(?:$|\?)/.test(url);
+  page.on('response',res=>{
+    const url=res.url();
+    if(ignoreUrl(url))return;
+    if(res.status()>=400)failed.push({url,status:res.status()});
+    const rec={url,status:res.status(),size:0};
+    rec.done=res.finished().then(async()=>{try{rec.size=(await res.body()).length;}catch{}}).catch(()=>{});
+    traffic.push(rec);
+  });
+  const settle=()=>Promise.all(traffic.map(item=>item.done));
   await page.goto(`http://127.0.0.1:${port}/?check=1`,{waitUntil:'networkidle',timeout:60000});
   await page.waitForSelector('[data-action="start"]',{timeout:20000});
+  const readyStats=await page.evaluate(()=>window.__DORO_READY_STATS||null);
+  if(!readyStats)throw Error('没有记录 lifecycle.ready');
+  if(readyStats.assetReadsBeforeReady!==0)throw Error('lifecycle.ready 等到了素材读取：'+readyStats.assetReadsBeforeReady);
+  if(readyStats.booted)throw Error('lifecycle.ready 等到了 bootGame');
+  if(readyStats.gameChunk)throw Error('lifecycle.ready 等到了游戏分包');
+  await settle();
+  const homeTraffic=traffic.slice();
+  const homeBytes=homeTraffic.reduce((sum,item)=>sum+(item.status<400?item.size:0),0);
+  const homeLarge=homeTraffic.filter(item=>largeAsset(item.url));
+  if(homeLarge.length)throw Error('首屏读取了大图：'+homeLarge.map(item=>item.url).join(' '));
   const banner=await page.locator('#mapp-mock-bar').textContent();
   const officialFlag=await page.evaluate(()=>window.__DORO_MAPP_MOCK__?.officialSandbox);
-  await page.screenshot({path:path.join(outDir,'mapp-home-390x844.png'),fullPage:true});
-  await page.click('[data-action="start"]');
+  const snap=async(name,fullPage=false)=>{
+    capturing=true;
+    try{await page.screenshot({path:path.join(shotRoot,name),fullPage});}
+    finally{capturing=false;}
+  };
+  const shot=async(name)=>{
+    await page.evaluate(()=>{const bar=document.querySelector('#mapp-mock-bar');if(bar)bar.style.display='none';document.body.style.paddingTop='0';});
+    await snap(name);
+    await page.evaluate(()=>{const bar=document.querySelector('#mapp-mock-bar');if(bar)bar.style.display='';document.body.style.paddingTop='';});
+  };
+  const overflow=()=>page.evaluate(()=>{
+    const nodes=[document.documentElement,document.body,document.querySelector('#app'),document.querySelector('.home-screen'),document.querySelector('.game-screen')].filter(Boolean);
+    return nodes.map(el=>({id:el.id||el.className,scroll:el.scrollWidth,client:el.clientWidth,over:el.scrollWidth-el.clientWidth}));
+  });
+  await shot('mapp-home-390x844.png');
+  const homeOverflow=await overflow();
+  await page.evaluate(()=>{
+    const save=window.__DORO__.save;
+    save.artworkProgress[0]=17*16;
+    save.artworkProgress[1]=16*15;
+    for(const id of [1,2])if(!save.album.includes(id))save.album.push(id);
+  });
+  await page.click('[data-action="artwork"]');
+  await page.waitForSelector('[data-action="album"]');
+  await page.click('[data-action="album"]');
+  const hdShots=[];
+  for(const id of [1,2]){
+    await page.click(`[data-album="${id}"]`);
+    await page.waitForSelector('[data-action="art-hd"]',{state:'visible'});
+    const revokedBefore=await page.evaluate(()=>window.__doroRevoked||0);
+    await page.evaluate(()=>{
+      if(window.__doroRevokePatched)return;
+      const orig=URL.revokeObjectURL.bind(URL);
+      window.__doroRevoked=0;
+      URL.revokeObjectURL=(url)=>{window.__doroRevoked++;orig(url);};
+      window.__doroRevokePatched=true;
+    });
+    const beforeHd=traffic.length;
+    await page.click('[data-action="art-hd"]');
+    await page.waitForFunction(()=>{
+      const img=document.querySelector('.artwork-hd');
+      return img&&!img.hidden&&img.complete&&img.naturalWidth>=800;
+    },null,{timeout:20000});
+    const info=await page.evaluate(()=>{
+      const img=document.querySelector('.artwork-hd');
+      return{src:img.currentSrc||img.src,width:img.naturalWidth,height:img.naturalHeight,title:document.querySelector('.artwork-dialog h2')?.textContent||''};
+    });
+    await settle();
+    const hdFetches=traffic.slice(beforeHd).filter(item=>/\/album-\d+-hd\./.test(item.url));
+    if(hdFetches.length!==1)throw Error('点开大图时期望只读这一张，实际 '+hdFetches.map(item=>item.url).join(' '));
+    await shot(`mapp-hd-${id}-390x844.png`);
+    hdShots.push({...info,bytes:hdFetches[0].size});
+    await page.click('[data-action="art-hd"]');
+    await page.waitForFunction(()=>document.querySelector('.artwork-hd')?.hidden===true);
+    const released=await page.evaluate(()=>window.__doroRevoked||0);
+    if(released<=revokedBefore)throw Error('关掉高清图后没有释放 Blob');
+    await page.click('[data-action="album"]');
+  }
+  // 画册和单幅互相压栈，关掉一层会回到上一层。一直关到主页露出来。
+  for(let i=0;i<12;i++){
+    const open=await page.evaluate(()=>!!document.querySelector('.modal-shade'));
+    if(!open)break;
+    await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
+  }
+  await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
+  await page.click('.home-character');
+  const beforePlay=traffic.length;
+  let homeStart=false;
+  for(let i=0;i<20&&!homeStart;i++){
+    await page.keyboard.press('Tab');
+    homeStart=await page.evaluate(()=>['start','continue'].includes(document.activeElement?.getAttribute?.('data-action')||''));
+  }
+  if(!homeStart)throw Error('首页 Tab 没有走到开始');
+  await page.keyboard.press('Enter');
   await waitBoard(page);
-  await page.screenshot({path:path.join(outDir,'mapp-l1-start-390x844.png'),fullPage:true});
+  await settle();
+  const playLarge=traffic.slice(beforePlay).filter(item=>largeAsset(item.url));
+  if(playLarge.length)throw Error('进游戏读取了大图：'+playLarge.map(item=>item.url).join(' '));
+  const l1=await page.evaluate(()=>({id:window.__DORO__.engine.state.levelId,pins:window.__DORO__.engine.state.screws.length,phase:window.__DORO__.engine.state.phase,tip:document.querySelector('#board-tip')?.textContent||''}));
+  await shot('mapp-l1-start-390x844.png');
+  const l1Overflow=await overflow();
 
   // 声音开关（平台 mock）
   await page.click('#mock-sound');
   const muted=await page.evaluate(()=>({flag:window.__DORO_MAPP_MOCK__.isMuted(),gain:window.__DORO_MAPP_MOCK__.muteGain()}));
-  await page.screenshot({path:path.join(outDir,'mapp-sound-muted-390x844.png'),fullPage:true});
+  await snap('mapp-sound-muted-390x844.png',true);
   await page.click('#mock-sound'); // 恢复有声，避免影响可玩性
 
-  const picks=await clickOfficial(page,15);
-  await page.waitForFunction(()=>window.__DORO__?.engine?.state?.phase==='won'||document.querySelector('[data-action="home"],.dialog h2'),{timeout:20000}).catch(()=>{});
-  const end=await page.evaluate(()=>({phase:window.__DORO__?.engine?.state?.phase,moves:window.__DORO__?.engine?.state?.moves,completed:window.__DORO__?.save?.completed||[]}));
-  await page.waitForTimeout(800);
-  await page.screenshot({path:path.join(outDir,'mapp-l1-won-390x844.png'),fullPage:true});
-
-  // 新开一局做到一半再测存档与隐藏暂停、挑战码
-  await page.click('[data-action="home"]').catch(()=>{});
-  await page.waitForTimeout(400);
-  // 若结算页没有 home，点关闭后再回首页
-  if(!await page.$('[data-action="start"],[data-action="continue"]')){
-    await page.click('[data-action="close-modal"]').catch(()=>{});
-    await page.click('[data-action="home"]').catch(()=>{});
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[data-action="resume"]');
+  let pauseResume=false;
+  for(let i=0;i<16&&!pauseResume;i++){
+    await page.keyboard.press('Tab');
+    pauseResume=await page.evaluate(()=>document.activeElement?.getAttribute?.('data-action')==='resume');
   }
-  await page.waitForSelector('[data-action="start"],[data-action="continue"]',{timeout:15000});
-  // 清掉已完成进度后的继续，改开第二关？存档恢复用刷新当前进行中的一局：再开第二关或重玩。
-  // 为了恢复测试，从关卡地图开第 2 关或继续。这里新开一局：若首页是开始第2关，进入后点 6 颗。
-  const startSel=await page.$('[data-action="continue"]')?'[data-action="continue"]':'[data-action="start"]';
-  if(startSel==='[data-action="continue"]'){
-    // 上一局已赢，current 应为空，首页应是开始下一关
+  if(!pauseResume)throw Error('暂停页 Tab 没有走到继续');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>!document.querySelector('.modal-shade'));
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Tab');
+  const keyReach=await page.evaluate(()=>({tag:document.activeElement?.tagName||'',action:document.activeElement?.getAttribute?.('data-action')||''}));
+  const picks=[];
+  let won=false;
+  for(let i=0;i<40&&!won;i++){
+    picks.push(...await clickOfficial(page,1));
+    won=await page.evaluate(()=>window.__DORO__.engine.state.phase==='won');
   }
-  await page.click('[data-action="start"],[data-action="continue"]');
+  if(!won)throw Error('第一关没有按解法走完');
+  await page.waitForSelector('.dialog h2');
+  const winTitle=await page.evaluate(()=>document.querySelector('.dialog h2')?.textContent||'');
+  const end=await page.evaluate(()=>({phase:window.__DORO__?.engine?.state?.phase,moves:window.__DORO__?.engine?.state?.moves,levelId:window.__DORO__?.engine?.state?.levelId}));
+  await page.evaluate(async()=>{await window.__DORO__.startLevel(2);});
   await waitBoard(page);
-  const midPicks=await clickOfficial(page,6);
+  const l2=await page.evaluate(()=>({id:window.__DORO__.engine.state.levelId,pins:window.__DORO__.engine.state.screws.length,phase:window.__DORO__.engine.state.phase,tip:document.querySelector('#board-tip')?.textContent||''}));
+  await shot('mapp-l2-start-390x844.png');
+  const l2Overflow=await overflow();
+
+  // 第二关做到一半，再测存档、隐藏暂停和挑战码。
+  const midPicks=await clickOfficial(page,3);
   const mid=await page.evaluate(()=>({moves:window.__DORO__.engine.state.moves,runId:window.__DORO__.engine.state.runId,levelId:window.__DORO__.engine.state.levelId,phase:window.__DORO__.engine.state.phase}));
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(400);
 
   // 隐藏暂停
   await page.click('#mock-hide');
   await page.waitForTimeout(400);
   const paused=await page.evaluate(()=>({hidden:window.__DORO_MAPP_MOCK__.isHidden(),modal:!!document.querySelector('.dialog'),title:document.querySelector('.dialog h2')?.textContent||'',viewPaused:true}));
-  await page.screenshot({path:path.join(outDir,'mapp-hidden-pause-390x844.png'),fullPage:true});
+  await snap('mapp-hidden-pause-390x844.png',true);
 
   // 隐藏已弹出暂停页，直接从这里打开本局挑战码；不要先关掉再找按钮。
   await page.click('[data-action="challenge"]');
@@ -127,7 +302,7 @@ async function main(){
     const toast=document.querySelector('#toast')?.textContent||'';
     return{value:input?.value||'',selected:(input?.selectionEnd||0)-(input?.selectionStart||0),toast};
   });
-  await page.screenshot({path:path.join(outDir,'mapp-challenge-copy-390x844.png'),fullPage:true});
+  await snap('mapp-challenge-copy-390x844.png',true);
 
   // 刷新恢复
   await page.reload({waitUntil:'networkidle'});
@@ -137,11 +312,24 @@ async function main(){
   else await page.click('[data-action="start"]');
   await waitBoard(page);
   const restored=await page.evaluate(()=>({moves:window.__DORO__.engine.state.moves,runId:window.__DORO__.engine.state.runId,levelId:window.__DORO__.engine.state.levelId,phase:window.__DORO__.engine.state.phase}));
-  await page.screenshot({path:path.join(outDir,'mapp-restored-390x844.png'),fullPage:true});
+  await page.evaluate(()=>window.__DORO_MAPP_MOCK__.setTheme({mode:'dark',reducedMotion:true,background:'#24181c',text:'#fff6f8'}));
+  const themed=await page.evaluate(()=>({dark:document.documentElement.classList.contains('mapp-dark'),reduced:document.documentElement.classList.contains('reduced-motion')}));
+  await snap('mapp-restored-390x844.png',true);
+  await page.click('[data-action="undo"]');
+  await page.click('[data-action="tools"]');
+  await page.waitForSelector('[data-action="use-melt"],[data-action="close-modal"]');
+  if(await page.$('[data-action="use-melt"]'))await page.click('[data-action="use-melt"]');
+  if(await page.$('.modal-shade'))await page.evaluate(()=>document.querySelector('[data-action="close-modal"]')?.click());
+  await page.goto(`http://127.0.0.1:${port}/?check=1&fail=theme`,{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>(document.querySelector('#toast')?.textContent||'').includes('主题'),null,{timeout:20000});
+  const themeFail=await page.evaluate(()=>document.querySelector('#toast')?.textContent||'');
+  await page.goto(`http://127.0.0.1:${port}/?check=1&fail=storage`,{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>(document.querySelector('#toast')?.textContent||'').includes('存档'),null,{timeout:20000});
+  const storageFail=await page.evaluate(()=>document.querySelector('#toast')?.textContent||'');
+  const csp=await page.evaluate(()=>window.__DORO_CSP||[]);
+  const device=await page.evaluate(()=>({ua:navigator.userAgent,engine:navigator.vendor||'',ios:/iPhone|iPad/.test(navigator.userAgent)}));
 
   await context.close();
-  await browser.close();
-  server.close();
 
   const problems=[];
   if(officialFlag!==false)problems.push('未标明这是 mock 而非官方沙箱');
@@ -149,17 +337,29 @@ async function main(){
   if(pageErrors.length)problems.push('页面异常：'+pageErrors.join(' | '));
   if(consoleErrors.length)problems.push('控制台错误：'+consoleErrors.join(' | '));
   if(failed.length)problems.push('资源失败：'+JSON.stringify(failed));
-  if(end.phase!=='won'||end.moves!==15)problems.push('第一关未通关：'+JSON.stringify(end));
+  if(l1.id!==1||l1.pins!==30||l1.phase!=='playing')problems.push('第一关没有加载：'+JSON.stringify(l1));
+  if(l2.id!==2||l2.pins!==120||l2.phase!=='playing')problems.push('第二关没有加载：'+JSON.stringify(l2));
+  if(/免费辅助|已经露出来|先留好颜色/.test(l1.tip+l2.tip))problems.push('关卡仍在讲解：'+l1.tip+' / '+l2.tip);
+  const wide=[...homeOverflow,...l1Overflow,...l2Overflow].filter(item=>item.over>1);
+  if(wide.length)problems.push('横向超出视口：'+JSON.stringify(wide));
+  if(!picks.some(item=>item.hit))problems.push('第一关点了螺丝但步数没有增加：'+JSON.stringify(picks));
   if(!muted.flag||muted.gain!==0)problems.push('声音开关未静音输出：'+JSON.stringify(muted));
   if(mid.moves<3)problems.push('中途进度不足：'+JSON.stringify(mid));
   if(!paused.modal)problems.push('页面隐藏后未出现暂停界面：'+JSON.stringify(paused));
   if(!copy.value||!String(copy.toast).includes('长按')||copy.selected===0)problems.push('挑战码复制降级不符合预期：'+JSON.stringify(copy));
   if(restored.runId!==mid.runId||restored.moves!==mid.moves)problems.push('刷新后未恢复中途存档：'+JSON.stringify({mid,restored}));
+  if(!themed?.dark||!themed?.reduced)problems.push('深色或减少动效没有跟上主题：'+JSON.stringify(themed));
+  if(!['BUTTON','A','INPUT'].includes(keyReach.tag))problems.push('键盘没有落到可操作控件：'+JSON.stringify(keyReach));
+  if(end.phase!=='won'||!winTitle)problems.push('第一关没有走到通关页：'+JSON.stringify({end,winTitle}));
+  if(!themeFail.includes('主题'))problems.push('主题失败没有可见反馈：'+themeFail);
+  if(!storageFail.includes('存档'))problems.push('存档失败没有可见反馈：'+storageFail);
+  if(csp.length||violations.length)problems.push('内容安全策略违规：'+JSON.stringify(csp.concat(violations)));
+  if(!device.ios)problems.push('没有走到 iPhone 路径：'+device.ua);
 
-  const videos=(await import('node:fs')).readdirSync(outDir).filter(f=>f.endsWith('.webm'));
-  const report={ok:problems.length===0,sandbox:'local-mock-not-official',banner,muted,end,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:outDir,video:videos[0]?path.join(outDir,videos[0]):null};
-  await writeFile(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
-  console.log(JSON.stringify({ok:report.ok,end,muted,restored,copy,problems,shots:outDir,video:report.video},null,2));
-  if(problems.length){console.error(problems.join('\n'));process.exit(1);}
+  const videos=(await import('node:fs')).readdirSync(shotRoot).filter(f=>f.endsWith('.webm'));
+  if(hdShots.length!==2||hdShots.some(item=>item.width<800))problems.push('高清图没有打开：'+JSON.stringify(hdShots));
+  const report={ok:problems.length===0,sandbox:'local-mock-not-official',deviceEngine,device,csp:MAPP_CSP,violations:csp.concat(violations),banner,muted,l1,l2,themed,hdShots,homeBytes,homeRequests:homeTraffic.length,homeLarge:homeLarge.map(item=>item.url),playLarge:playLarge.map(item=>item.url),end,homeOverflow,l1Overflow,l2Overflow,mid,paused,copy,restored,picks:picks.length,midPicks:midPicks.length,consoleErrors,pageErrors,failed,problems,shots:shotRoot,video:videos[0]?path.join(shotRoot,videos[0]):null};
+  console.log(JSON.stringify({ok:report.ok,deviceEngine,device,violations:report.violations,end,problems},null,2));
+  return report;
 }
 main().catch(error=>{console.error(error);process.exit(1);});

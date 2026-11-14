@@ -76,6 +76,7 @@
       return null;
     },
     async exportData() {
+      if (new URLSearchParams(location.search).get("fail") === "storage") throw new Error("storage denied");
       const entries = [];
       for (let i = 0; i < native.length; i++) {
         const k = native.key(i);
@@ -97,7 +98,7 @@
     return "application/octet-stream";
   }
 
-  const permissions = ["theme.read", "storage.read", "storage.write", "audio.webAudio", "files.save"];
+  const permissions = ["theme.read", "storage.read", "storage.write", "audio.webAudio", "files.save", "code.load"];
   const sdk = {
     ready: Promise.resolve(),
     permissions: {
@@ -107,6 +108,7 @@
     lifecycle: { ready: async () => { document.documentElement.dataset.mappReady = "1"; } },
     theme: {
       async get() {
+        if (new URLSearchParams(location.search).get("fail") === "theme") throw new Error("theme denied");
         return {
           mode: "light",
           background: "#f6dae5",
@@ -139,6 +141,20 @@
         return JSON.parse(await sdk.assets.readText(path));
       },
     },
+    scripts: {
+      async load(path) {
+        const policy = globalThis.trustedTypes?.createPolicy
+          ? globalThis.__DORO_MOCK_POLICY || (globalThis.__DORO_MOCK_POLICY = trustedTypes.createPolicy("mapp-mock-host", { createScriptURL: (value) => value }))
+          : null;
+        await new Promise((resolve, reject) => {
+          const el = document.createElement("script");
+          el.src = policy ? policy.createScriptURL("./" + String(path)) : "./" + String(path);
+          el.onload = () => resolve();
+          el.onerror = () => reject(new Error("分包没有加载：" + path));
+          document.head.appendChild(el);
+        });
+      },
+    },
     files: {
       async save(name, data) {
         const blob = data instanceof Blob ? data : new Blob([data], { type: "application/json" });
@@ -154,6 +170,15 @@
     user: { getCurrent: async () => null, getById: async () => { throw new Error("PERMISSION_DENIED"); } },
   };
 
+  document.getElementById("mock-sound")?.addEventListener("click", function () {
+    setMuted(!muted);
+    this.textContent = muted ? "声音开关：静音" : "声音开关：有声";
+  });
+  document.getElementById("mock-hide")?.addEventListener("click", function () {
+    setHidden(!hidden);
+    this.textContent = hidden ? "模拟恢复可见" : "模拟页面隐藏";
+  });
+
   window.miniApp = sdk;
   window.__DORO_MAPP_MOCK__ = {
     officialSandbox: false,
@@ -161,6 +186,11 @@
     setMuted,
     isMuted: () => muted,
     setHidden,
+    async setTheme(partial) {
+      const current = await sdk.theme.get();
+      const next = { ...current, ...partial };
+      for (const listener of listeners) listener(next);
+    },
     isHidden: () => hidden,
     muteGain: () => (gains.size ? [...gains][0].gain.value : muted ? 0 : 1),
   };

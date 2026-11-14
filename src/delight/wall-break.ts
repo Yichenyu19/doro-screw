@@ -1,4 +1,5 @@
 import {sprite} from '../art';
+import {appendMarkup} from '../markup';
 import {tallyGroups} from './store';
 
 /** 第二关破墙仪式。只在主线第二关清盘的那一刻演一次，点一下即可跳过。 */
@@ -29,11 +30,11 @@ export function tallyHtml(n:number):string{
 
 export function wallBreakHtml(input:WallBreakInput):string{
   const ox=input.origin?.x??50,oy=input.origin?.y??46;
-  const shards=Array.from({length:10},(_,i)=>{const a=i/10*Math.PI*2+.3,r=36+(i%3)*14;return `<span class="dl-shard" style="--sx:${(Math.cos(a)*r).toFixed(1)}vw;--sy:${(Math.sin(a)*r*.9).toFixed(1)}vh;--sr:${(i%2?1:-1)*(120+i*37)}deg;--sd:${i*18}ms;left:${ox}%;top:${oy}%">${sprite('fx',4)}</span>`;}).join('');
+  const shards=Array.from({length:10},(_,i)=>{const a=i/10*Math.PI*2+.3,r=36+(i%3)*14;return `<span class="dl-shard" data-css="--sx:${(Math.cos(a)*r).toFixed(1)}vw;--sy:${(Math.sin(a)*r*.9).toFixed(1)}vh;--sr:${(i%2?1:-1)*(120+i*37)}deg;--sd:${i*18}ms;left:${ox}%;top:${oy}%">${sprite('fx',4)}</span>`;}).join('');
   return `<div class="dl-wall" data-beat="crack" role="img" aria-label="第二关破墙">
-    <svg class="dl-cracks" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${crackPaths(ox,oy).map((d,i)=>`<path class="ink" d="${d}" style="--d:${i*22}ms"/><path class="glint" d="${d}" style="--d:${i*22}ms"/>`).join('')}</svg>
+    <svg class="dl-cracks" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${crackPaths(ox,oy).map((d,i)=>`<path class="ink" d="${d}" data-css="--d:${i*22}ms"/><path class="glint" d="${d}" data-css="--d:${i*22}ms"/>`).join('')}</svg>
     <div class="dl-shards" aria-hidden="true">${shards}</div>
-    <div class="dl-hole" style="left:${ox}%;top:${oy}%" aria-hidden="true">${sprite('fx',5,'dl-burst')}${sprite('doro',5,'dl-doro')}</div>
+    <div class="dl-hole" data-css="left:${ox}%;top:${oy}%" aria-hidden="true">${sprite('fx',5,'dl-burst')}${sprite('doro',5,'dl-doro')}</div>
     <div class="dl-seal-wrap">
       <svg width="0" height="0" class="dl-svgdefs" aria-hidden="true"><filter id="dl-ink"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter></svg>
       ${sprite('doro',5,'dl-perch')}
@@ -48,7 +49,7 @@ export function wallBreakHtml(input:WallBreakInput):string{
 export function playWallBreak(host:HTMLElement,input:WallBreakInput,opts:{reduced:boolean;onBeat?:(beat:WallBeat)=>void}):{done:Promise<void>;skip:()=>void}{
   host.querySelector('.dl-wall')?.remove();
   host.classList.add('dl-ceremony');
-  host.insertAdjacentHTML('beforeend',wallBreakHtml(input));
+  appendMarkup(host,wallBreakHtml(input));
   const node=host.querySelector<HTMLElement>('.dl-wall')!;
   const timers:number[]=[];let finish:()=>void=()=>{};
   const done=new Promise<void>(resolve=>{finish=resolve;});

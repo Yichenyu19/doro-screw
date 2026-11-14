@@ -15,11 +15,16 @@ export function normalizeLedger(raw:unknown):DelightLedger{
   const bumps=data.v===undefined&&data.bumps!==undefined?data.bumps:data.wallBumps;
   return{v:1,wallBumps:count(bumps),wallBroken:data.wallBroken===true,pokes:count(data.pokes)};
 }
-export function loadLedger(storage:Pick<Storage,'getItem'>|null=typeof localStorage==='undefined'?null:localStorage):DelightLedger{
-  try{const text=storage?.getItem(DELIGHT_KEY);return text?normalizeLedger(JSON.parse(text)):freshLedger();}catch{return freshLedger();}
+function browserStorage():Storage|null{
+  try{return localStorage;}catch{return null;}
 }
-export function saveLedger(ledger:DelightLedger,storage:Pick<Storage,'setItem'>|null=typeof localStorage==='undefined'?null:localStorage):boolean{
-  try{storage?.setItem(DELIGHT_KEY,JSON.stringify(normalizeLedger(ledger)));return !!storage;}catch{return false;}
+export function loadLedger(storage?:Pick<Storage,'getItem'>|null):DelightLedger{
+  const store=storage===undefined?browserStorage():storage;
+  try{const text=store?.getItem(DELIGHT_KEY);return text?normalizeLedger(JSON.parse(text)):freshLedger();}catch{return freshLedger();}
+}
+export function saveLedger(ledger:DelightLedger,storage?:Pick<Storage,'setItem'>|null):boolean{
+  const store=storage===undefined?browserStorage():storage;
+  try{store?.setItem(DELIGHT_KEY,JSON.stringify(normalizeLedger(ledger)));return !!store;}catch{return false;}
 }
 /** 撞墙计数：只在第二关主线真正卡住时加一；破墙后不再增长。 */
 export function noteWallBump(ledger:DelightLedger):DelightLedger{return ledger.wallBroken?ledger:{...ledger,wallBumps:Math.min(9999,ledger.wallBumps+1)};}

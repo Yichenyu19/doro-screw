@@ -52,8 +52,10 @@ export function noteUnsaved():void{notify('saving');}
 function open():Promise<IDBDatabase> {
   if(opened)return opened;
   opened=new Promise((resolve,reject)=>{
-    if(typeof indexedDB==='undefined'){reject(Error('此环境未开放本地数据库'));return;}
-    const request=indexedDB.open(DB,1);let settled=false;
+    let idb:IDBFactory|undefined;
+    try{idb=indexedDB;}catch{idb=undefined;}
+    if(!idb){reject(Error('此环境未开放本地数据库'));return;}
+    const request=idb.open(DB,1);let settled=false;
     const timer=setTimeout(()=>{if(!settled){settled=true;reject(Error('本地数据库暂时没有响应'));}},2000);
     request.onupgradeneeded=()=>{for(const name of ['journal','bases','frames'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name);};
     request.onsuccess=()=>{clearTimeout(timer);if(settled){request.result.close();return;}settled=true;request.result.onversionchange=()=>{request.result.close();opened=null;};resolve(request.result);};

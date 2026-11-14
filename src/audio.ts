@@ -138,6 +138,8 @@ export class GameAudio {
 
   unlock():void{
     if(!this.enabled||(typeof document!=='undefined'&&document.hidden))return;
+    const activation=navigator.userActivation;
+    if(activation&&!activation.isActive)return;
     try{
       this.context??=new AudioContext();
       this.ensureGraph(this.context);
@@ -178,6 +180,13 @@ export class GameAudio {
   }
   private async loadUrl(context:AudioContext,file:string):Promise<AudioBuffer|null>{
     try{
+      const readBytes=window.__DORO_MAPP__?.readBytes;
+      if(readBytes){
+        const data=await readBytes(file);
+        const copy=new ArrayBuffer(data.byteLength);
+        new Uint8Array(copy).set(data);
+        return await context.decodeAudioData(copy);
+      }
       const response=await fetch(this.sampleUrl(file));
       if(!response.ok)return null;
       return await context.decodeAudioData(await response.arrayBuffer());

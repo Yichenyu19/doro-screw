@@ -9,9 +9,23 @@ import {GameEngine} from './core';
 import {remainingOnBoard} from './geometry';
 import {capturePlatePhysics,configurePlatePhysics,createPlatePhysics,rotate,type PlatePhysics,type PlatePhysicsAdapter} from './physics';
 import type {GameState,HintInfo,LevelDef} from './types';
-Common.setDecomp(decomp);
+
+let decompInstalled = false;
+export function installDecomp(): void {
+  if (decompInstalled) return;
+  Common.setDecomp(decomp);
+  decompInstalled = true;
+}
+
+function packedMiniApp(): boolean {
+  try { return Boolean(import.meta.env.DORO_MAPP); }
+  catch { return false; }
+}
+
+if (!packedMiniApp()) installDecomp();
 
 export function physicsSimulation(game:GameEngine){
+ installDecomp();
  const engine=Engine.create({positionIterations:8,velocityIterations:8,constraintIterations:4,enableSleeping:false});engine.gravity.x=0;engine.gravity.y=.75;
  const views=new Map<string,PlatePhysics>();
  const adapter:PlatePhysicsAdapter={fromVertices:(...args)=>{const body=Bodies.fromVertices(...args);Composite.add(engine.world,body);return body;},setAngle:Body.setAngle,setVelocity:Body.setVelocity,setAngularVelocity:Body.setAngularVelocity,setStatic:Body.setStatic,addPin:(body,pointA,pointB)=>{const pin=Constraint.create({bodyB:body,pointA,pointB,length:0,stiffness:.97,damping:.14});Composite.add(engine.world,pin);return pin;},removePin:pin=>{Composite.remove(engine.world,pin);}};

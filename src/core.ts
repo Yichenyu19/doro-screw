@@ -126,6 +126,62 @@ export class GameEngine {
   }
 
   get canUndo():boolean{return this.history.length>0;}
+
+  /** 当前已拆的官方钉是否正好是见证前缀，没有额外离盘钉子。 */
+  isOfficialPrefix(state=this.state):boolean {
+    const off=new Set(state.screws.filter(screw=>screw.place!=='board').map(screw=>screw.id));
+    let prefix=0;
+    for(const step of this.definition.witness){
+      if(!off.has(step.screwId))break;
+      prefix++;
+    }
+    const allowed=new Set(this.definition.witness.slice(0,prefix).map(step=>step.screwId));
+    return [...off].every(id=>allowed.has(id));
+  }
+
+  /** 从该姿态沿官方见证静态重放能否通关（空板视为已离场，不做物理预测）。 */
+  witnessSolves(state=this.state):boolean {
+    if(state.phase==='won')return true;
+    if(state.phase==='stuck')return false;
+    const trial=new GameEngine(this.definition,copyState(state));
+    const remaining=this.definition.witness.map(step=>step.screwId).filter(id=>trial.state.screws.some(screw=>screw.id===id&&screw.place==='board'));
+    for(const id of remaining){
+      for(const board of trial.state.boards)if(!board.melted&&remainingOnBoard(trial.state,board.id).length===0)board.gone=true;
+      if(!trial.canPick(id))return false;
+      const result=trial.perform({type:'pick',screwId:id},false);
+      if(!result.ok||trial.state.phase==='stuck')return false;
+    }
+    return trial.state.phase==='won';
+  }
+
+  /** 在撤回日志里找最近一个官方线仍可走的姿态；开局永远可作退路。 */
+  solvableRewindPlan():{ok:boolean;steps:number;moves:number;reason:string}{
+    if(this.state.phase==='won')return{ok:false,steps:0,moves:this.state.moves,reason:'这一关已经完成了。'};
+    // 只把“开局”或“正好走在官方前缀上”当成可解点。静态见证会把空板直接标成离场，
+    // 忽略真实摆动后最后一颗被挡住的情况，不能单独用来证明中途分歧姿态可续解。
+    if(this.state.phase!=='stuck'&&(this.state.moves===0||this.isOfficialPrefix(this.state)))return{ok:false,steps:0,moves:this.state.moves,reason:'现在还能继续拆，不必回到更早的一步。'};
+    for(let index=this.history.length-1;index>=0;index--){
+      const prior=this.history[index];
+      if(prior.phase==='stuck')continue;
+      if(prior.moves===0||this.isOfficialPrefix(prior)){
+        const steps=this.history.length-index;
+        if(steps<=0)continue;
+        const reason=steps===1?'撤回一步就能继续。':`孔已经满了，只撤回一两步通常还拆不开。回到 ${steps} 步之前还能继续，会记 ${steps} 次撤回。`;
+        return{ok:true,steps,moves:prior.moves,reason};
+      }
+    }
+    return{ok:false,steps:0,moves:this.state.moves,reason:'撤回记录里还没有找到能继续的一步。'};
+  }
+
+  rewindToSolvable():{ok:boolean;steps:number;moves:number;reason:string}{
+    const plan=this.solvableRewindPlan();
+    if(!plan.ok)return plan;
+    for(let step=0;step<plan.steps;step++){
+      if(!this.undo())return{ok:false,steps:step,moves:this.state.moves,reason:'撤回中途失败。'};
+    }
+    return{...plan,reason:`已回到 ${plan.steps} 步之前，还可以继续拆。这次记了 ${plan.steps} 次撤回。`};
+  }
+
   advanceWorld(milliseconds:number):GameEvent[]{return advanceReveal(this.state,milliseconds);}
   hintContinuation():string[]{return [...this.verifiedContinuation];}
   advanceClock(milliseconds:number):void {
@@ -300,7 +356,7 @@ export class GameEngine {
     const events: GameEvent[] = [];
     const reject = (reason: string): ActionResult => ({ ok: false, events: [], reason });
     if (action.type === 'pick') {
-      if (!this.canPick(action.screwId)) return reject(this.state.phase === 'stuck' ? '先让 Doro 帮你腾出位置' : '这颗螺丝还被玻璃挡着');
+      if (!this.canPick(action.screwId)) return reject(this.state.phase === 'stuck' ? '孔满了。' : '这颗还拆不了。');
       const screw = this.state.screws.find(item => item.id === action.screwId)!;
       const from = this.position(screw);
       events.push({ type: 'picked', screwId: screw.id, from });

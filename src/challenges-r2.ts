@@ -1,10 +1,11 @@
+import {CONTENT_REVISION} from './run';
 import {getR2Practice} from './authored-r2';
 import {GameEngine,occupiedBuffer} from './core';
 import type {GameState,LevelDef} from './types';
 import {PRACTICE_VARIANTS} from './r2-catalog';
 
-export async function getR2Challenge(theme:number,attempt:number,mode:'mastery'|'rescue'):Promise<LevelDef>{
-  const variant=attempt%PRACTICE_VARIANTS,level=getR2Practice(theme,variant);level.mode=mode;level.attempt=attempt;level.seed=0x520000+theme*100001+attempt;
+export async function getR2Challenge(theme:number,attempt:number,mode:'mastery'|'rescue',revision=CONTENT_REVISION):Promise<LevelDef>{
+  const variant=attempt%PRACTICE_VARIANTS,level=getR2Practice(theme,variant,revision);level.mode=mode;level.attempt=attempt;level.seed=(revision>=3?0x530000:0x520000)+theme*100001+attempt;level.contentRevision=revision;
   if(mode==='mastery')return level;
   const {physicsSimulation}=await import('./matter-analysis'),game=new GameEngine(level),sim=physicsSimulation(game),desired=[36,42,48,54,60,33][variant];
   let chosen:{state:GameState;index:number;score:number}|null=null;

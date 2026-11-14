@@ -8,7 +8,8 @@ import type { PlatePhysics, PlatePhysicsAdapter } from './physics';
 import { COLORS, SHAPES, COLOR_MARKS } from './types';
 import type { BoardState, GameEvent, ScrewState, Settings, Vec2 } from './types';
 import {BoardGestures,type PickTarget} from './gestures';
-import {COLOR_NAMES} from './types';
+import {COLOR_NAMES, type ColorId} from './types';
+import {drawColorSign} from './color-signs';
 import {VisibilityCache} from './visibility-cache';
 
 export interface GameView {
@@ -25,6 +26,7 @@ export interface GameView {
   resetCamera():void;
   isInspecting():boolean;
   diagnostics():Array<{at:number;delta:number;total:number;physics:number;visibility:number;paint:number;plates:number;pins:number}>;
+  invalidateLayout():void;
 }
 interface Callbacks { onPick: (id: string) => void; onBoard: (id: string) => void; onBlocked?: (ids:string[])=>void; onFall?:(id:string)=>void;onInspect?:(text:string|null)=>void;onCamera?:(zoom:number)=>void;onInvalid?:()=>void;onReveal?:(events:GameEvent[])=>void;onAmbiguous?:()=>void }
 interface PlateView extends PlatePhysics {
@@ -40,6 +42,7 @@ class PuzzleScene extends Phaser.Scene {
   private plates = new Map<string, PlateView>();
   private screws = new Map<string, Phaser.GameObjects.Image>();
   private labels = new Map<string, Phaser.GameObjects.Image>();
+  private marks = new Map<string, Phaser.GameObjects.Image>();
   private hintImage?: Phaser.GameObjects.Image;
   private hintId: string | null = null;
   private melt = false;
@@ -68,6 +71,8 @@ class PuzzleScene extends Phaser.Scene {
   private inspected:string|null=null;
   private inspectedBoards=new Set<string>();
   private canvasRect:DOMRect|null=null;
+  private lastPulsePaint=0;
+  private layoutWatchers:Array<()=>void>=[];
   private frameCosts:Array<{at:number;delta:number;total:number;physics:number;visibility:number;paint:number;plates:number;pins:number}>=[];
 
   constructor(private engine: GameEngine, private settings: Settings, private callbacks: Callbacks,
@@ -95,6 +100,7 @@ class PuzzleScene extends Phaser.Scene {
     this.resize();
     this.scale.on('resize', () => this.resize());
     this.gestures=new BoardGestures(this.game.canvas,{target:p=>this.targetAt(p),activate:t=>this.activate(t),world:p=>this.worldPoint(p),camera:()=>({zoom:this.userZoom,center:{...this.cameraCenter}}),setCamera:(zoom,center)=>this.setCamera(zoom,center),inspect:t=>this.inspect(t),enabled:()=>!this.pausedByUI&&this.engine.state.phase==='playing',invalid:()=>this.callbacks.onInvalid?.()});
+    this.watchLayout();
     this.ready = true;
     this.rebuild();
     // 加载阶段准备首次约束切换和粒子对象，临时刚体不参与任何物理步进。
@@ -107,6 +113,7 @@ class PuzzleScene extends Phaser.Scene {
   }
 
   private resize(): void {
+    if(this.disposed)return;
     this.baseZoom=Math.min(this.scale.width / WIDTH, this.scale.height / HEIGHT);
     this.setCamera(this.userZoom,this.cameraCenter);
     this.dirty=true;
@@ -119,10 +126,31 @@ class PuzzleScene extends Phaser.Scene {
     this.cameraCenter={x:halfW>=WIDTH/2?WIDTH/2:Math.max(halfW,Math.min(WIDTH-halfW,center.x)),y:halfH>=HEIGHT/2?HEIGHT/2:Math.max(halfH,Math.min(HEIGHT-halfH,center.y))};
     this.cameras.main.setZoom(z).centerOn(this.cameraCenter.x,this.cameraCenter.y);this.dirty=true;this.callbacks.onCamera?.(this.userZoom);
   }
-  private worldPoint(point:Vec2):Vec2 {const canvas=this.canvasRect??=this.game.canvas.getBoundingClientRect(),zoom=this.cameras.main.zoom;return{x:this.cameraCenter.x+(point.x-canvas.left-canvas.width/2)*this.scale.width/canvas.width/zoom,y:this.cameraCenter.y+(point.y-canvas.top-canvas.height/2)*this.scale.height/canvas.height/zoom};}
+  private worldPoint(point:Vec2):Vec2 {
+    const canvas=this.measureCanvas(),zoom=this.cameras.main.zoom;
+    return{x:this.cameraCenter.x+(point.x-canvas.left-canvas.width/2)*this.scale.width/canvas.width/zoom,y:this.cameraCenter.y+(point.y-canvas.top-canvas.height/2)*this.scale.height/canvas.height/zoom};
+  }
+  private measureCanvas():DOMRect{
+    if(!this.canvasRect||this.canvasRect.width<=0||this.canvasRect.height<=0)this.canvasRect=this.game.canvas.getBoundingClientRect();
+    return this.canvasRect;
+  }
+
   zoomBy(factor:number):void{this.gestures?.cancel();this.setCamera(this.userZoom*factor,this.cameraCenter);}
   resetCamera():void{this.gestures?.cancel();this.setCamera(1,{x:WIDTH/2,y:HEIGHT/2});}
   isInspecting():boolean{return this.inspected!==null;}
+  invalidateLayout():void{if(this.disposed)return;this.canvasRect=null;this.resize();}
+  private watchLayout():void{
+    const invalidate=()=>this.invalidateLayout();
+    const viewport=visualViewport;
+    window.addEventListener('orientationchange',invalidate);
+    viewport?.addEventListener('resize',invalidate);
+    viewport?.addEventListener('scroll',invalidate);
+    this.layoutWatchers.push(()=>window.removeEventListener('orientationchange',invalidate));
+    if(viewport){
+      this.layoutWatchers.push(()=>viewport.removeEventListener('resize',invalidate));
+      this.layoutWatchers.push(()=>viewport.removeEventListener('scroll',invalidate));
+    }
+  }
 
   private makePlate(board: BoardState, renderDepth: number): PlateView {
     const physics = createPlatePhysics(board, this.physicsAdapter());
@@ -162,6 +190,7 @@ class PuzzleScene extends Phaser.Scene {
     for (const id of [...this.plates.keys()]) this.removePlate(id);
     this.screws.forEach(screw => screw.destroy()); this.screws.clear();
     this.labels.forEach(label => label.destroy()); this.labels.clear();
+    this.marks.forEach(mark => mark.destroy()); this.marks.clear();
     this.hintImage?.destroy(); this.hintImage = undefined;
     for (const effect of this.effects) { this.tweens.killTweensOf(effect); effect.destroy(); }
     this.effects.clear();
@@ -201,6 +230,13 @@ class PuzzleScene extends Phaser.Scene {
     const texture=this.textures.createCanvas(key,64,64)!;
     const context=texture.getContext();context.clearRect(0,0,64,64);context.fillStyle='#fff9ec';context.beginPath();context.arc(32,32,27,0,Math.PI*2);context.fill();context.font='700 48px "Microsoft YaHei UI", "PingFang SC", sans-serif';context.fillStyle='#281e25';context.textAlign='center';context.textBaseline='middle';context.fillText(COLOR_MARKS[color],32,34);texture.refresh();return key;
   }
+  private signTexture(color:ColorId):string{
+    const key=`sign-${color}`;if(this.textures.exists(key))return key;
+    const texture=this.textures.createCanvas(key,32,32)!;
+    const context=texture.getContext();context.clearRect(0,0,32,32);
+    context.fillStyle='#fff9ece6';context.beginPath();context.arc(16,16,15,0,Math.PI*2);context.fill();
+    drawColorSign(context,color,16,16,16);texture.refresh();return key;
+  }
 
   private addBoard(board:BoardState,depth:number):void{
       if(board.active===false)return;
@@ -211,6 +247,7 @@ class PuzzleScene extends Phaser.Scene {
         const pinDepth=(this.engine.state.contentRevision??1)>=2?1000+board.depth*.1:depth+2;
         this.screws.set(screw.id, this.add.image(point.x, point.y, this.settings.colorLabels?'assistHeads':'heads', String(COLORS.indexOf(screw.color))).setDisplaySize(30, 30).setDepth(pinDepth));
         if(this.settings.colorLabels)this.labels.set(screw.id,this.add.image(point.x,point.y,this.glyph(screw.color)).setDepth(pinDepth+1));
+        else this.marks.set(screw.id,this.add.image(point.x,point.y,this.signTexture(screw.color)).setDisplaySize(12,12).setDepth(pinDepth+1));
       }
   }
 
@@ -236,12 +273,28 @@ class PuzzleScene extends Phaser.Scene {
     for (const [id, image] of this.screws) {
       if (this.screwStates.get(id)?.place !== 'board') {
         this.tweens.killTweensOf(image);
-        image.destroy(); this.screws.delete(id); this.labels.get(id)?.destroy(); this.labels.delete(id);
+        image.destroy(); this.screws.delete(id); this.labels.get(id)?.destroy(); this.labels.delete(id); this.marks.get(id)?.destroy(); this.marks.delete(id);
       }
     }
     // 飞入、旧盒装满和后续回流由 PresentationDirector 单独编排。
     for (const event of events) {
       if (event.type === 'picked') this.burst(event.from, 0, 3);
+      if (event.type === 'board-released' && event.remaining === 1) {
+        const last = this.engine.state.screws.find(s => s.boardId === event.boardId && s.place === 'board');
+        if (last) this.burst(this.engine.position(last), 2, this.settings.reducedMotion ? 2 : 5);
+      }
+      if (event.type === 'board-released' && event.remaining === 0) {
+        const board = this.boardStates.get(event.boardId);
+        if (board) this.burst({ x: board.x, y: board.y }, 3, this.settings.reducedMotion ? 3 : 8);
+      }
+      if (event.type === 'group-revealed') {
+        for (const id of event.boardIds) {
+          const board = this.engine.state.boards.find(b => b.id === id);
+          if (board) this.burst({ x: board.x, y: board.y }, 1, this.settings.reducedMotion ? 2 : 6);
+          const view = this.plates.get(id);
+          if (view && !this.settings.reducedMotion) this.tweens.add({ targets: view.image, alpha: 1, duration: 180, yoyo: true, hold: 40 });
+        }
+      }
       if (event.type === 'won') this.burst({ x: WIDTH / 2, y: HEIGHT / 2 }, 5, 12);
     }
     this.hintId = null;
@@ -307,7 +360,7 @@ class PuzzleScene extends Phaser.Scene {
     this.capture();this.inspected=target?.id??null;this.inspectedBoards.clear();
     if(!target){this.callbacks.onInspect?.(null);this.accumulator=0;this.dirty=true;return;}
     if(target.kind==='board'){this.inspectedBoards.add(target.id);this.callbacks.onInspect?.('这块玻璃正在高亮。松手结束检查，轻点才会执行融化。');}
-    else {const screw=this.engine.state.screws.find(s=>s.id===target.id);if(!screw)return;const blockers=blockingBoards(this.engine.state,target.id);this.inspectedBoards.add(screw.boardId);for(const id of blockers)this.inspectedBoards.add(id);this.callbacks.onInspect?.(`${COLOR_NAMES[screw.color]}钉 · ${this.engine.canPick(target.id)?'当前可以拆':blockers.length?'被 '+blockers.length+' 块上层玻璃遮挡':'等待玻璃露出'}。相关玻璃已高亮，松手结束检查。`);}
+    else {const screw=this.engine.state.screws.find(s=>s.id===target.id);if(!screw)return;const blockers=blockingBoards(this.engine.state,target.id);this.inspectedBoards.add(screw.boardId);for(const id of blockers)this.inspectedBoards.add(id);this.callbacks.onInspect?.(COLOR_NAMES[screw.color]);}
     this.accumulator=0;this.dirty=true;
   }
 
@@ -336,22 +389,30 @@ class PuzzleScene extends Phaser.Scene {
       if (!view) continue;
       view.image.setPosition(board.x, board.y).setRotation(board.angle).setVisible(!board.gone);
       const distance = Math.max(0, topDepth - board.depth);
-      const opacity = this.engine.state.contentVersion==='v4'?Math.max(.30,.77-distance*.105):Math.max(.60,.73-distance*.025);
+      const opacity = this.engine.state.contentVersion==='v4'?Math.max(.34,.84-distance*.11):Math.max(.60,.73-distance*.025);
       const blocked=(this.blockedUntil.get(board.id)??0)>this.clock;
       view.image.setAlpha(this.inspected?(this.inspectedBoards.has(board.id)?.96:.20):blocked?.86+Math.sin(this.clock/65)*.12:this.melt && !board.falling ? .72 + Math.sin(this.clock / 150) * .06 : opacity);
       for (const original of board.screws) {
         const hole = view.holes.get(original.id)!;
         const p = rotate(original, board.angle);
-        hole.setPosition(board.x + p.x, board.y + p.y).setRotation(board.angle).setVisible(!board.gone).setAlpha(this.engine.state.contentVersion==='v4'?.32:.68);
+        hole.setPosition(board.x + p.x, board.y + p.y).setRotation(board.angle).setVisible(!board.gone).setAlpha(this.engine.state.contentVersion==='v4'?.46:.68);
       }
     }
+    const boxColors=new Set(this.engine.state.boxes.map(b=>b.color).filter((c):c is NonNullable<typeof c>=>!!c));
     for (const [id, image] of this.screws) {
       const screw = this.screwStates.get(id)!;
       const board = this.boardStates.get(screw.boardId)!;
       const p = screwPosition(screw, board);
-      const obscuredOpacity = this.engine.state.contentVersion==='v4'?.23:Math.max(.44, .52 - Math.max(0, topDepth - board.depth) * .025);
-      image.setPosition(p.x, p.y).setVisible(this.readable.has(id)).setAlpha(this.exposed.has(id) ? 1 : obscuredOpacity);
-      this.labels.get(id)?.setPosition(p.x,p.y).setDisplaySize(labelSize,labelSize).setVisible(this.settings.colorLabels&&this.readable.has(id)).setAlpha(this.exposed.has(id)?1:obscuredOpacity);
+      const matching=boxColors.has(screw.color);
+      const layer=Math.max(0, topDepth - board.depth);
+      const obscuredOpacity = this.engine.state.contentVersion==='v4'?(matching?.50:.23):Math.max(.44, .52 - layer * .025);
+      const ghost=matching&&!this.readable.has(id)&&layer<=2&&this.engine.state.contentVersion==='v4';
+      const visible=this.readable.has(id)||ghost;
+      const pulse=!this.settings.reducedMotion&&matching&&this.exposed.has(id)?1+Math.sin(this.clock/220)*.07:1;
+      image.setPosition(p.x, p.y).setVisible(visible).setAlpha(this.exposed.has(id) ? 1 : ghost?.28:obscuredOpacity).setDisplaySize(30*pulse,30*pulse);
+      this.labels.get(id)?.setPosition(p.x,p.y).setDisplaySize(labelSize*pulse,labelSize*pulse).setVisible(this.settings.colorLabels&&visible).setAlpha(this.exposed.has(id)?1:ghost?.28:obscuredOpacity);
+      const markSize=11*pulse/(this.cssScale()||1);
+      this.marks.get(id)?.setPosition(p.x+8,p.y+8).setDisplaySize(markSize,markSize).setVisible(!this.settings.colorLabels&&visible).setAlpha(this.exposed.has(id)?1:ghost?.28:obscuredOpacity);
     }
     if (this.hintId && this.hintImage && this.engine.canPick(this.hintId)) {
       const p = this.engine.position(this.hintId);
@@ -361,7 +422,7 @@ class PuzzleScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (!this.ready || this.disposed) return;
-    const profiling=import.meta.env.DEV||import.meta.env.MODE==='verification',start=profiling?performance.now():0;let physicsCost=0,visibilityCost=0,paintCost=0;
+    const profiling=import.meta.env.DEV||import.meta.env.MODE==='verification'||(typeof location!=='undefined'&&new URLSearchParams(location.search).has('check')),start=profiling?performance.now():0;let physicsCost=0,visibilityCost=0,paintCost=0;
     this.clock += delta;
     const moving=[...this.plates.values()].some(p=>p.remaining<2);
     if (!this.pausedByUI && !this.inspected && this.engine.state.phase !== 'stuck' && moving) {
@@ -374,20 +435,22 @@ class PuzzleScene extends Phaser.Scene {
     }
     if(!this.pausedByUI&&!this.inspected){const events=this.engine.advanceWorld(delta);if(events.length){this.sync(events);this.callbacks.onReveal?.(events);}}
     const paintStart=profiling?performance.now():0;
-    if(this.dirty||this.hintId||this.melt||[...this.blockedUntil.values()].some(t=>t>this.clock)){this.paint();this.dirty=false;}
+    const pulsing=!this.settings.reducedMotion&&(!!this.hintId||this.melt||this.inspected!==null||[...this.blockedUntil.values()].some(t=>t>this.clock)||this.engine.state.boxes.some(b=>b.color));
+    if(pulsing&&this.clock-this.lastPulsePaint>=66){this.dirty=true;this.lastPulsePaint=this.clock;}
+    if(this.dirty){this.paint();this.dirty=false;}
     if(profiling){paintCost=performance.now()-paintStart;this.frameCosts.push({at:start,delta,total:performance.now()-start,physics:physicsCost,visibility:visibilityCost,paint:paintCost,plates:this.plates.size,pins:this.screws.size});if(this.frameCosts.length>2400)this.frameCosts.shift();}
   }
   diagnostics(){return this.frameCosts;}
 
   private cssScale(): number {
     if (!this.ready || this.disposed || !this.game.canvas?.isConnected) return 0;
-    const width = (this.canvasRect??=this.game.canvas.getBoundingClientRect()).width;
+    const width = this.measureCanvas().width;
     return width > 0 && this.scale.width > 0 ? this.cameras.main.zoom * width / this.scale.width : 0;
   }
 
   screenPoint(point: Vec2): Vec2 | null {
     if (!this.ready || this.disposed || !this.game.canvas?.isConnected || this.cssScale() <= 0) return null;
-    const canvas = this.canvasRect??=this.game.canvas.getBoundingClientRect(), camera = this.cameras.main;
+    const canvas = this.measureCanvas(), camera = this.cameras.main;
     return { x: canvas.left + (this.scale.width / 2 + (point.x - this.cameraCenter.x) * camera.zoom) * canvas.width / this.scale.width,
       y: canvas.top + (this.scale.height / 2 + (point.y - this.cameraCenter.y) * camera.zoom) * canvas.height / this.scale.height };
   }
@@ -428,6 +491,7 @@ class PuzzleScene extends Phaser.Scene {
     if (this.disposed) return;
     this.disposed = true;
     this.gestures?.destroy();
+    for(const stop of this.layoutWatchers)stop();this.layoutWatchers=[];
     this.ready = false;
     this.clearObjects();
   }
@@ -448,7 +512,7 @@ export function mountGame(container: HTMLElement, engine: GameEngine, settings: 
         getScrewScreenPosition: id => engine.state.screws.some(s => s.id === id && s.place === 'board') ? scene.screenPoint(engine.position(id)) : null,
         screenPoint: point => scene.screenPoint(point), whenSettled: timeoutMs => scene.whenSettled(timeoutMs),
         zoomBy:factor=>scene.zoomBy(factor),resetCamera:()=>scene.resetCamera(),isInspecting:()=>scene.isInspecting(),
-        diagnostics:()=>scene.diagnostics(),
+        diagnostics:()=>scene.diagnostics(),invalidateLayout:()=>scene.invalidateLayout(),
         destroy: () => { if (destroyed) return; destroyed = true; observer?.disconnect(); scene.dispose(); game.destroy(true); },
       });
     }, error => { if (!settled) { settled = true; observer?.disconnect(); setTimeout(() => game?.destroy(true), 0); reject(error); } });

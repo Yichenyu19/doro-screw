@@ -1,7 +1,7 @@
 import {sprite} from './art';
 import {COLORS,type GameEvent,type GameState,type Settings,type Vec2,type ColorId} from './types';
 const copy=(s:GameState):GameState=>({...s,boxes:s.boxes.map(b=>({...b,screws:[...b.screws]})),buffer:[...s.buffer],pocket:[...s.pocket],collected:[...s.collected]});
-interface Hooks{render:(state:GameState)=>void;screenPoint:(p:Vec2)=>Vec2|null;boxSound:()=>void;arriveSound?:()=>void}
+interface Hooks{render:(state:GameState)=>void;screenPoint:(p:Vec2)=>Vec2|null;boxSound:()=>void;arriveSound?:()=>void;refillSound?:()=>void}
 interface Cohort{id:number;generation:number;color:ColorId|null;ids:string[];arrived:Set<string>;readyAt:number;lastArrival:number;closed:boolean;packing:boolean}
 /** 归属即时预留，抵达仅改变显示；每个盒子的代次独立结算。 */
 export class PresentationDirector{
@@ -43,7 +43,7 @@ export class PresentationDirector{
     this.arrived.delete(e.screwId);const sourceTime=Math.max(now,this.sourceReady.get(e.screwId)??now),arrival=Math.max(sourceTime+duration,(cohort?.readyAt??now)+duration*.5);this.sourceReady.set(e.screwId,arrival);if(cohort)cohort.lastArrival=Math.max(cohort.lastArrival,arrival);
     const target=e.destination==='box'?this.anchor('box',e.boxId):e.destination==='buffer'?this.anchor('buffer',e.slotIndex):this.anchor('pocket');
     const fly=()=>this.fly(e.color,starts.get(e)??null,target,arrival-sourceTime);if(sourceTime<=now)fly();else this.at(sourceTime,fly);
-    this.at(arrival,()=>{cohort?.arrived.add(e.screwId);if(this.latest?.buffer.includes(e.screwId)||this.latest?.pocket.includes(e.screwId))this.arrived.add(e.screwId);if(e.destination==='box')this.hooks.arriveSound?.();this.draw();});
+    this.at(arrival,()=>{cohort?.arrived.add(e.screwId);if(this.latest?.buffer.includes(e.screwId)||this.latest?.pocket.includes(e.screwId))this.arrived.add(e.screwId);if(e.destination==='box'&&e.sourcePlace==='buffer')this.hooks.refillSound?.();else if(e.destination==='box')this.hooks.arriveSound?.();this.draw();});
    }else if(e.type==='box-completed'){
     const c=this.cohorts.get(this.key(e.boxId,e.boxGeneration??0));if(!c)continue;const completeAt=Math.max(now,c.lastArrival)+(this.settings.reducedMotion?15:55);const closeAt=completeAt+(this.settings.reducedMotion?35:135);
     this.at(completeAt,()=>{c.packing=true;this.hooks.boxSound();this.draw();});this.at(closeAt,()=>{c.closed=true;this.draw();});

@@ -1,3 +1,13 @@
+Doro · 打个螺丝 · 修订4
+第三方声明与同人说明
+
+本构建包含下方第三方软件的源码或再分发文本，各自保留其许可证。
+项目原创代码和关卡数据以仓库根目录 LICENSE（MIT）授权。
+
+角色说明（非第三方许可）：游戏中的 Doro 是《胜利女神：妮姬》（GODDESS OF VICTORY: NIKKE）角色 Dorothy 的同人形象，非官方、未获权利人授权。MIT 许可证不覆盖该角色或相关标识。详见仓库 ASSETS.md 中的版权风险提示。
+
+---
+
 Phaser
 https://phaser.io
 
@@ -54,4 +64,30 @@ poly-decomp.js (bundled with Phaser)
 Author: Stefan Hedman
 License: MIT
 https://github.com/schteppe/poly-decomp.js
-
+
+
+音效采样（public/sfx）
+--------------------------------
+运行时短采样由下列第三方录音裁切、均衡后编码为 Ogg Vorbis，再叠以本项目的程序化合成层。完整用途表见仓库 ASSETS.md 与 docs/sfx-design.md。
+
+Freesound 条目均为 CC0 1.0（https://creativecommons.org/publicdomain/zero/1.0/），不强制署名，仍列出作品以便查源：
+
+  353245  screwing and unscrewing brass
+  442313  Metal Tssht
+  181635  Tools Screw Clamp
+  706440  Flashlight battery compartment unscrew
+  220179  Click Metal Ting
+  422516  Menu FX 03 (ascending)
+  63531   click1
+  448393  Satisfying Plastic Handle Unlock
+  582904  Snap Click 03
+  822397  small metal clasp open close switching
+
+Mixkit Sound Effects 按 https://mixkit.co/license/ 的 Sound Effects 许可使用（可免费用于商业与非商业项目）：
+
+  2936  Wine glass clink
+  3158  Thin metal plate drop
+  835   Metal tool drop
+  833   Metal hammer hit
+
+未包含 Kenney 或 Pixabay 文件（本构建环境无法下载）。未使用 BY-NC 素材。

@@ -156,7 +156,7 @@ test('作品进度与材料边界归一化，非法尝试号不进入记录', ()
   storage.setItem(SAVE_KEY, JSON.stringify(invalid));
   const loaded = loadSave().data;
   assert.equal(loaded.materialBalance, 0);
-  assert.deepEqual(loaded.artworkProgress, [600, 0, 0, 7, 0, 0]);
+  assert.deepEqual(loaded.artworkProgress, [ARTWORKS[0].columns*ARTWORKS[0].rows, 0, 0, 7, 0, 0]);
   assert.deepEqual(loaded.album, [1]);
   assert.deepEqual(loaded.attempts, { 2: 3 });
   assert.deepEqual(loaded.rewardedAttempts, ['1:2']);

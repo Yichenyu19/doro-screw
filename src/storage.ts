@@ -1,24 +1,31 @@
 import {assertConservation,makeAttemptId,occupiedBuffer} from './core';
-import {assistCount,clearRank,freshStats,newRunId,RANK_ORDER} from './run';
-import type {BestRecord,GameState,RunCheckpoint,RunStats,SaveData,Settings} from './types';
+import {assistCount,clearRank,freshStats,newRunId,RANK_ORDER,CONTENT_REVISION} from './run';
+import {CAMPAIGN_COUNT,remapR2Completed,remapR2Unlocked,remapR3Completed,remapR3Unlocked} from './r2-catalog';
+import type {BestRecord,DailyMark,GameState,RunCheckpoint,RunStats,SaveData,Settings} from './types';
 import {readJournal,unpackRun,writeJournal,recoveryText as exportJournal,readPending,archiveRecovery,flushJournal,getSaveStatus} from './journal';
+import {ALBUM_REVISION,ARTWORKS,campaignMaterialGrant as albumGrant,migrateAlbumLayout} from './album';
+import {knownTitles,noteVictoryMeta,syncTitles} from './meta';
 
 export const SAVE_KEY='doro-screw-reborn:v4:r2';
 export const R1_KEY='doro-screw-reborn:v4';
 export const V3_KEY='doro-screw-reborn:v3';
 export const LEGACY_KEY='doro-screw-reborn:v2';
 export const V1_KEY='doro-screw-reborn:v1';
-export const ARTWORKS=[
-  {id:1,title:'睡到螺丝松',columns:25,rows:24},{id:2,title:'今天也摸鱼',columns:27,rows:26},
-  {id:3,title:'草莓补给站',columns:28,rows:28},{id:4,title:'螺丝小宇宙',columns:30,rows:29},
-  {id:5,title:'花田休息日',columns:32,rows:30},{id:6,title:'今日螺丝王',columns:34,rows:32},
-] as const;
+export {
+  ALBUM_REVISION,ALBUM_VOLUME_COUNT,ALBUM_VOLUME_CELLS,ALBUM_TOTAL_CELLS,ARTWORKS,ARTWORK_STAGE_NAMES,
+  CAMPAIGN_MATERIAL_GRANTS,LEGACY_ALBUM_CELLS,projectAlbumFill,describeAlbumGoal,campaignAlbumSchedule,
+  migrateAlbumLayout,volumeCompleted,filledArtworkCount,artworkCells,
+} from './album';
+export function campaignMaterialGrant(levelId:number,revision:number,pinCount:number):number{
+  return albumGrant(levelId,revision,pinCount,CONTENT_REVISION);
+}
 export interface ProgressSave extends SaveData {
   materialBalance:number;artworkProgress:number[];rewardedAttempts:string[];completedRuns:string[];
   attemptCounter:number;attempts:Record<string,number>;legacyCompleted:number[];currentAttempt:number;
   records:Record<string,BestRecord>;endlessNextId:number;tutorialSeen:string[];totalScrews:number;
   starterSticker:boolean;randomCounter:number;
-  contentRevision:2;r1Campaign:{completed:number[];unlocked:number};
+  contentRevision:number;r1Campaign:{completed:number[];unlocked:number};
+  albumRevision:number;titles:string[];dailyMarks:Record<string,DailyMark>;
 }
 export const DEFAULT_SETTINGS:Settings={sound:true,reducedMotion:false,colorLabels:false};
 let recoveryText:string|null=null;
@@ -31,15 +38,21 @@ const ids=(value:unknown,max=30):number[]=>Array.isArray(value)?[...new Set(valu
 const strings=(value:unknown):string[]=>Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'):[];
 export function freshSave():ProgressSave {
   const reducedMotion=typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  return{version:4,contentRevision:2,r1Campaign:{completed:[],unlocked:1},current:null,completed:[],unlocked:1,album:[],settings:{...DEFAULT_SETTINGS,reducedMotion:!!reducedMotion},updatedAt:Date.now(),materialBalance:0,artworkProgress:ARTWORKS.map(()=>0),rewardedAttempts:[],completedRuns:[],attemptCounter:0,attempts:{},legacyCompleted:[],currentAttempt:0,records:{},endlessNextId:31,tutorialSeen:[],totalScrews:0,starterSticker:false,randomCounter:0};
+  return{version:4,contentRevision:CONTENT_REVISION,r1Campaign:{completed:[],unlocked:1},current:null,completed:[],unlocked:1,album:[],settings:{...DEFAULT_SETTINGS,reducedMotion:!!reducedMotion},updatedAt:Date.now(),materialBalance:0,artworkProgress:ARTWORKS.map(()=>0),rewardedAttempts:[],completedRuns:[],attemptCounter:0,attempts:{},legacyCompleted:[],currentAttempt:0,records:{},endlessNextId:31,tutorialSeen:[],totalScrews:0,starterSticker:false,randomCounter:0,albumRevision:ALBUM_REVISION,titles:[],dailyMarks:{}};
 }
 function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
   data.completed=ids(stored.completed);data.legacyCompleted=ids(stored.legacyCompleted);
   data.unlocked=Math.min(31,Math.max(1,integer(stored.unlocked)?stored.unlocked:1,...data.completed.map(id=>id+1),...data.legacyCompleted.map(id=>id+1)));
   for(const key of ['sound','reducedMotion','colorLabels'] as const)if(typeof stored.settings?.[key]==='boolean')data.settings[key]=stored.settings[key]!;
   data.materialBalance=integer(stored.materialBalance)?stored.materialBalance:0;
-  data.artworkProgress=ARTWORKS.map((art,index)=>Math.min(art.columns*art.rows,integer(stored.artworkProgress?.[index])?stored.artworkProgress![index]:0));
+  const album=migrateAlbumLayout(stored.artworkProgress,stored.albumRevision);
+  data.artworkProgress=album.progress;data.albumRevision=album.revision;
   data.album=ARTWORKS.filter((art,index)=>data.artworkProgress[index]>=art.columns*art.rows).map(art=>art.id);
+  data.titles=knownTitles(stored.titles);
+  data.dailyMarks={};
+  if(stored.dailyMarks&&typeof stored.dailyMarks==='object')for(const [date,mark] of Object.entries(stored.dailyMarks)){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&mark&&['complete','independent','clean'].includes(mark.rank)&&integer(mark.theme)&&integer(mark.attempt))data.dailyMarks[date]={rank:mark.rank,theme:mark.theme,attempt:mark.attempt,updatedAt:integer(mark.updatedAt)?mark.updatedAt:0};
+  }
   data.rewardedAttempts=strings(stored.rewardedAttempts).slice(-10000);data.completedRuns=strings(stored.completedRuns).slice(-10000);
   data.attemptCounter=integer(stored.attemptCounter)?stored.attemptCounter:0;
   data.currentAttempt=integer(stored.currentAttempt)?stored.currentAttempt:0;
@@ -50,12 +63,32 @@ function readMeta(data:ProgressSave,stored:Partial<ProgressSave>):void {
   data.starterSticker=stored.starterSticker===true;data.randomCounter=integer(stored.randomCounter)?stored.randomCounter:0;
   if(stored.r1Campaign)data.r1Campaign={completed:ids(stored.r1Campaign.completed),unlocked:Math.min(31,Math.max(1,integer(stored.r1Campaign.unlocked)?stored.r1Campaign.unlocked:1))};
   if(stored.records&&typeof stored.records==='object')for(const [key,record]of Object.entries(stored.records)){
-    if(record&&key===record.puzzleId&&['complete','independent','clean'].includes(record.rank)&&integer(record.levelId)&&integer(record.seed)&&Number.isFinite(record.elapsedMs)&&record.elapsedMs>=0&&integer(record.clears))data.records[key]=record;
+    if(record&&key===record.puzzleId&&['complete','independent','clean'].includes(record.rank)&&integer(record.levelId)&&integer(record.seed)&&Number.isFinite(record.elapsedMs)&&record.elapsedMs>=0&&integer(record.clears)){
+      const next={...record};
+      if(!integer(next.moves))delete next.moves;
+      if(!integer(next.bestMoves))delete next.bestMoves;
+      if(!integer(next.peakBuffer))delete next.peakBuffer;
+      if(!integer(next.capacity))delete next.capacity;
+      data.records[key]=next;
+    }
   }
+  syncTitles(data);
+}
+export function revisionWarning(storedRevision:unknown):string|null {
+  if(storedRevision===CONTENT_REVISION)return null;
+  if(storedRevision===2)return '主线第一关换成了更清楚的开局。已通关的第二关大墙和后面的进度都还在。';
+  if(storedRevision===3)return '主线第二关收回成原来的 120 颗大墙。短桥关已撤出主线；那三关都打完的，第二关记为已通关。';
+  return '旧修订的盘面、成绩和画册已保留；当前主线从新的成绩记录开始。';
 }
 function migrateRevision(data:ProgressSave,stored:Partial<ProgressSave>):void {
-  if(stored.version===4&&stored.contentRevision!==2){data.r1Campaign={completed:[...data.completed],unlocked:data.unlocked};data.completed=[];}
-  data.completed=ids(data.completed,8);data.unlocked=Math.min(9,data.unlocked);data.contentRevision=2;
+  if(stored.version===4&&stored.contentRevision===1){data.r1Campaign={completed:[...data.completed],unlocked:data.unlocked};data.completed=[];data.unlocked=1;}
+  else if(stored.version===4&&stored.contentRevision===2){data.completed=remapR2Completed(data.completed);data.unlocked=remapR2Unlocked(data.unlocked,data.completed);}
+  else if(stored.version===4&&stored.contentRevision===3){
+    data.completed=remapR3Completed(data.completed);data.unlocked=remapR3Unlocked(data.unlocked,data.completed);
+    // 修订 3 未上线，进行中的短桥关盘面与修订 4 的 120 颗墙不兼容，丢弃以免结算进错误关号。
+    if(data.current&&(data.current.mode??'campaign')==='campaign')data.current=null;
+  }
+  data.completed=ids(data.completed,CAMPAIGN_COUNT);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(1,data.unlocked,...data.completed.map(id=>id+1)));data.contentRevision=CONTENT_REVISION;
 }
 export function migrateV2State(raw:unknown):GameState {
   const state=JSON.parse(JSON.stringify(raw)) as GameState&{version:number};
@@ -79,7 +112,7 @@ export function loadSave():{data:ProgressSave;warning:string|null} {
       if(stored.version!==4||!Array.isArray(stored.completed))throw Error('存档版本不匹配');
       readMeta(data,stored);
       if(stored.current){assertConservation(stored.current);data.current=stored.current.phase==='won'?null:stored.current;}
-      migrateRevision(data,stored);return{data,warning:stored.contentRevision===2?null:'旧修订的盘面、成绩和画册已保留；八关主线从新的成绩记录开始。'};
+      migrateRevision(data,stored);return{data,warning:revisionWarning(stored.contentRevision)};
     }
     const v3Text=localStorage.getItem(V3_KEY);
     if(v3Text){
@@ -105,7 +138,7 @@ export function loadSave():{data:ProgressSave;warning:string|null} {
       return{data,warning:data.current?'旧局已保留，继续完成它；下一局会使用新版关卡。':'旧版作品、材料和通关进度已保留。'};
     }
     const first=localStorage.getItem(V1_KEY);
-    if(first){const old=JSON.parse(first);data.legacyCompleted=ids(old.completed);data.unlocked=Math.min(9,Math.max(1,...data.legacyCompleted.map(id=>id+1)));for(const key of ['sound','reducedMotion','colorLabels'] as const)if(typeof old.settings?.[key]==='boolean')data.settings[key]=old.settings[key];for(const id of ids(old.album,6)){const art=ARTWORKS[id-1];data.artworkProgress[id-1]=art.columns*art.rows;}data.album=ids(old.album,6);return{data,warning:'旧版已得到的作品和关卡解锁仍然保留。'};}
+    if(first){const old=JSON.parse(first);data.legacyCompleted=ids(old.completed);data.unlocked=Math.min(9,Math.max(1,...data.legacyCompleted.map(id=>id+1)));for(const key of ['sound','reducedMotion','colorLabels'] as const)if(typeof old.settings?.[key]==='boolean')data.settings[key]=old.settings[key];for(const id of ids(old.album,6)){const art=ARTWORKS[id-1];data.artworkProgress[id-1]=art.columns*art.rows;}data.album=ids(old.album,6);syncTitles(data);return{data,warning:'旧版已得到的作品和关卡解锁仍然保留。'};}
     return{data,warning:null};
   }catch{recoveryText=text;return{data,warning:'这份盘面没有完整读取，原记录仍保留着。'};}
 }
@@ -122,23 +155,29 @@ export function awardVictory(data:ProgressSave,state:GameState,attempt=0):number
   if(state.phase!=='won'||data.completedRuns.includes(state.runId))return 0;
   data.completedRuns.push(state.runId);
   const rank=clearRank(state.stats),old=data.records[state.attemptId];
-  const record:BestRecord={puzzleId:state.attemptId,contentVersion:state.contentVersion,levelId:state.levelId,attempt,seed:state.seed,rank,elapsedMs:state.elapsedMs,undos:state.stats.undos,hintsShown:state.stats.hintsShown,assists:assistCount(state.stats),clears:(old?.clears??0)+1,updatedAt:Date.now(),mode:state.contentVersion==='v4'?state.mode??'campaign':'legacy',contentRevision:state.contentRevision};
-  const better=!old||RANK_ORDER[rank]>RANK_ORDER[old.rank]||(rank===old.rank&&(record.elapsedMs<old.elapsedMs||(record.elapsedMs===old.elapsedMs&&record.undos<old.undos)));
-  data.records[state.attemptId]=better?record:{...old,clears:record.clears,updatedAt:record.updatedAt};
+  const moves=state.moves,peakBuffer=Math.max(0,state.stats.peakBuffer),capacity=Math.max(peakBuffer,state.capacity);
+  const bestMoves=Math.min(moves,old?.bestMoves??old?.moves??moves);
+  const record:BestRecord={puzzleId:state.attemptId,contentVersion:state.contentVersion,levelId:state.levelId,attempt,seed:state.seed,rank,elapsedMs:state.elapsedMs,undos:state.stats.undos,hintsShown:state.stats.hintsShown,assists:assistCount(state.stats),clears:(old?.clears??0)+1,updatedAt:Date.now(),mode:state.contentVersion==='v4'?state.mode??'campaign':'legacy',contentRevision:state.contentRevision,moves,bestMoves,peakBuffer,capacity};
+  const better=!old||RANK_ORDER[rank]>RANK_ORDER[old.rank]||(rank===old.rank&&(record.elapsedMs<old.elapsedMs||(record.elapsedMs===old.elapsedMs&&(record.undos<old.undos||(record.undos===old.undos&&moves<(old.moves??moves))))));
+  data.records[state.attemptId]=better?record:{...old,clears:record.clears,updatedAt:record.updatedAt,bestMoves};
   const v4campaign=state.contentVersion==='v4'&&(state.mode??'campaign')==='campaign';
-  const campaign=v4campaign&&(state.contentRevision??1)===2;
+  const campaign=v4campaign&&((state.contentRevision??1)===CONTENT_REVISION||(state.contentRevision??1)===2);
+  const currentCampaign=v4campaign&&(state.contentRevision??1)===CONTENT_REVISION;
+  const legacyR2=v4campaign&&(state.contentRevision??1)===2;
   const oldCampaign=v4campaign&&!campaign;
   const legacy=state.contentVersion!=='v4';
   const firstClear=campaign?!data.completed.includes(state.levelId):oldCampaign?!data.r1Campaign.completed.includes(state.levelId):legacy&&state.levelId<=30&&!data.legacyCompleted.includes(state.levelId);
   if(!data.rewardedAttempts.includes(state.attemptId))data.rewardedAttempts.push(state.attemptId);
-  if(campaign&&!data.completed.includes(state.levelId)){data.completed.push(state.levelId);data.completed.sort((a,b)=>a-b);data.unlocked=Math.min(9,Math.max(data.unlocked,state.levelId+1));if(state.levelId===1)data.starterSticker=true;}
+  if(currentCampaign&&!data.completed.includes(state.levelId)){data.completed.push(state.levelId);data.completed.sort((a,b)=>a-b);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(data.unlocked,state.levelId+1));if(state.levelId===1)data.starterSticker=true;}
+  if(legacyR2){const mapped=remapR2Completed([state.levelId]);for(const id of mapped)if(!data.completed.includes(id))data.completed.push(id);data.completed.sort((a,b)=>a-b);data.unlocked=Math.min(CAMPAIGN_COUNT+1,Math.max(data.unlocked,...mapped.map(id=>id+1)));if(mapped.includes(1))data.starterSticker=true;}
   if(oldCampaign){if(!data.r1Campaign.completed.includes(state.levelId))data.r1Campaign.completed.push(state.levelId);data.r1Campaign.unlocked=Math.min(31,Math.max(data.r1Campaign.unlocked,state.levelId+1));}
   if(legacy&&state.levelId<=30&&!data.legacyCompleted.includes(state.levelId)){data.legacyCompleted.push(state.levelId);data.unlocked=Math.min(9,Math.max(data.unlocked,state.levelId+1));}
   if(state.contentVersion==='v4'&&state.mode==='endless')data.endlessNextId=Math.min(1000000,Math.max(data.endlessNextId,state.levelId+1));
-  const challenge=state.contentVersion==='v4'&&state.contentRevision===2&&(state.mode==='rescue'||state.mode==='mastery');
+  const challenge=state.contentVersion==='v4'&&((state.contentRevision??1)>=2)&&(state.mode==='rescue'||state.mode==='mastery');
   const eligible=new Set(state.rewardableIds??state.screws.map(s=>s.id));
   const newCollected=state.screws.filter(s=>eligible.has(s.id)&&s.place==='done').length;
-  const earned=firstClear?state.screws.length:challenge?newCollected:0;data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;return earned;
+  const earned=firstClear?(currentCampaign?campaignMaterialGrant(state.levelId,state.contentRevision??1,state.screws.length):state.screws.length):challenge?newCollected:0;
+  data.materialBalance+=earned;data.totalScrews+=challenge?newCollected:state.screws.length;data.current=null;noteVictoryMeta(data,state);return earned;
 }
 export async function importRecovery(text:string,previous:ProgressSave):Promise<{data:ProgressSave;run:RunCheckpoint|null}> {
   if(text.length>35_000_000)throw Error('恢复文件过大，请使用游戏导出的 JSON 文件');

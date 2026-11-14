@@ -2,11 +2,11 @@
 
 听力状态：**未经耳听。** 本说明只依据检索证据（下载量、评分数、上传者描述）、ffmpeg 测量（时长、能量位置、真峰值、RMS）与分层混音规则，不能代替人耳验收。试听文件在 `/workspace/doro-screw-review/sfx-v2/*.wav`。发行文件是 `public/sfx/*.ogg`，合计 **89 345 字节（0.085 MiB）**，低于 1.5 MiB 上限。
 
-门限（按 audio-mixing / procedural-audio）：短音效的 Integrated LUFS 常落到 −70（片段太短，ebur128 给不出有意义的响度），因此不以 Integrated LUFS 作为通过条件。实际门限是 **真峰值 ≤ −1 dBTP**，并用 max volume 与 RMS 做层间对比。本批全部真峰值在 −4.7 到 −1.6 dBTP 之间，无削波。运行时另有 ±3% 音高、±8% 音量抖动、6 路复音上限和同类短间隔合并，避免连点机枪声和叠加削波。
+门限：短音效的 Integrated LUFS 常落到 −70（片段太短，ebur128 给不出有意义的响度），因此不以 Integrated LUFS 作为通过条件。实际门限是 **真峰值 ≤ −1 dBTP**，并用 max volume 与 RMS 做层间对比。本批全部真峰值在 −4.7 到 −1.6 dBTP 之间，无削波。运行时另有 ±3% 音高、±8% 音量抖动、6 路复音上限和同类短间隔合并，避免连点机枪声和叠加削波。
 
 ## 检索与不可达来源
 
-按 sxsound `sfx-sources` 的方法，用 `python3 /workspace/sxsound/sfx-sources/scripts/sfx.py` 检索与下载。
+用本地检索脚本按下载量、评分数与声源描述检索并下载候选素材。
 
 - **Kenney**：优先考虑用于点击/入盒。目录页可打开，但当前站点用 `initiateDownload` + `https://kenney.nl/download-link/<hex>`，本环境请求返回 `{"error":"forbidden"}` / HTTP 403，**未能取得官方 zip，发行包不含 Kenney 文件。**
 - **Pixabay**：按下载量排序检索，本环境（含 curl_cffi）返回 HTTP 403，**未能检索或下载。**
